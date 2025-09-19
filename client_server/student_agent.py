@@ -120,28 +120,19 @@ def get_valid_moves_for_piece(board, x: int, y: int, player: str, rows: int, col
     return moves
 
 def generate_all_moves(board: List[List[Any]], player: str, rows: int, cols: int, score_cols: List[int]) -> List[Dict[str, Any]]:
-    """
-    Generate all legal moves for the current player.
-    
-    Args:
-        board: Current board state
-        player: Current player ("circle" or "square")
-        rows, cols: Board dimensions
-        score_cols: Scoring column indices
-    
-    Returns:
-        List of all valid move dictionaries
-    """
-    all_moves = []
-    
-    for y in range(rows):
-        for x in range(cols):
-            piece = board[y][x]
-            if piece and piece.owner == player:
-                piece_moves = get_valid_moves_for_piece(board, x, y, player, rows, cols, score_cols)
-                all_moves.extend(piece_moves)
-    
-    return all_moves
+    """Prefer authoritative generator from gameEngine (includes river flow), fallback to local."""
+    try:
+        from gameEngine import generate_all_moves as engine_generate_all_moves
+        return engine_generate_all_moves(board, player, rows, cols, score_cols)
+    except Exception:
+        all_moves = []
+        for y in range(rows):
+            for x in range(cols):
+                piece = board[y][x]
+                if piece and piece.owner == player:
+                    piece_moves = get_valid_moves_for_piece(board, x, y, player, rows, cols, score_cols)
+                    all_moves.extend(piece_moves)
+        return all_moves
 
 # ==================== BOARD EVALUATION ====================
 
@@ -267,7 +258,7 @@ class StudentAgent(BaseAgent):
         # Minimax search depth (ply)
         self.minimax_depth: int = 2
         # MCTS configuration
-        self.mcts_time_limit_s: float = 0.001  # wall-clock seconds per move
+        self.mcts_time_limit_s: float = 0.01  # wall-clock seconds per move
         self.mcts_exploration_c: float = 1.414
         self.mcts_rollout_depth_limit: int = 30
         # Heuristic tunables
@@ -275,6 +266,8 @@ class StudentAgent(BaseAgent):
         self.weight_forward_push: float = 0.5
         self.weight_center_control: float = 0.05
         self.weight_advancement: float = 0.1
+        # Debug toggles
+        self.debug_mcts: bool = True
 
     # --------------- Core choose entrypoint ---------------
     
@@ -304,6 +297,8 @@ class StudentAgent(BaseAgent):
             best_move, _ = self._minimax_root(board, rows, cols, score_cols, self.minimax_depth)
             return best_move if best_move else random.choice(moves)
         elif self.strategy == "mcts":
+            if self.debug_mcts:
+                print(f"[MCTS] Starting search (limit={self.mcts_time_limit_s:.3f}s, c={self.mcts_exploration_c}, rollout_limit={self.mcts_rollout_depth_limit})")
             return self._mcts_search(board, rows, cols, score_cols, time_limit_s=self.mcts_time_limit_s)
         else:
             # Fallback
@@ -335,30 +330,56 @@ class StudentAgent(BaseAgent):
         return False, None
 
     # --------------- Heuristic evaluation ---------------
-    def _evaluate(self, board: List[List[Any]], player: str, rows: int, cols: int, score_cols: List[int]) -> float:
-        """Heuristic evaluation from the viewpoint of 'player'.
-        You are encouraged to adjust weights and add terms.
-        """
-        # Start with provided basic evaluation
-        value = basic_evaluate_board(board, player, rows, cols, score_cols)
+    def _evaluate(self, board, player, rows, cols, score_cols):
+        value = 0.0
+        opponent = get_opponent(player)
 
-        # Extra heuristics (simple, fast):
-        # - Encourage central control (stones near center columns)
-        # - Reward advancement towards own scoring side
-        center_cols = set(score_cols)  # scoring window approximates "center"
+        # Stones in scoring area (win)
+        value += 120 * count_stones_in_scoring_area(board, player, rows, cols, score_cols)
+        value -= 120 * count_stones_in_scoring_area(board, opponent, rows, cols, score_cols)
+
+        # Stones that can reach scoring area in one move
+        try:
+            from gameEngine import countreachableinone
+            value += 50 * countreachableinone(board, player, rows, cols, score_cols)
+        except Exception:
+            pass
+
+        # Blocking opponent's entrance and rivers that block flows
+        block_row = top_score_row() if player == "square" else bottom_score_row(rows)
+        for x in score_cols:
+            p = board[block_row][x]
+            if p and p.owner == player:
+                if p.side == "stone":
+                    value += 40
+                if p.side == "river":
+                    value += 15
+
+        # Central control, advancement and clustering
+        center_cols = set(score_cols)
         for y in range(rows):
             for x in range(cols):
                 p = board[y][x]
-                if p and p.owner == player and p.side == "stone":
-                    if x in center_cols:
-                        value += self.weight_center_control
-                    # Advancement along y: circles advance upward (lower y), squares downward (higher y)
-                    if player == "circle":
-                        value += (rows - y) * self.weight_advancement * 0.01
-                    else:
-                        value += y * self.weight_advancement * 0.01
+                if p and p.owner == player:
+                    if p.side == "stone":
+                        if x in center_cols:
+                            value += 0.25
+                        value += (rows - y) * 0.15 if player == "circle" else y * 0.15
+                        # Clustering: adjacent stones
+                        for dx in [-1, 0, 1]:
+                            for dy in [-1, 0, 1]:
+                                nx, ny = x + dx, y + dy
+                                if in_bounds(nx, ny, rows, cols):
+                                    q = board[ny][nx]
+                                    if q and q.owner == player and q.side == "stone" and (nx,ny)!=(x,y):
+                                        value += 1
+                    # Rivers: potentially add logic to score useful river networks
+        
+        # Penalize pieces threatened by opponent (not detailed here for speed)
+        # Bonus: reward for controlling flows, strategic flips, or pins
 
         return value
+
 
     # --------------- Minimax with alpha-beta ---------------
     def _minimax_root(self, board: List[List[Any]], rows: int, cols: int, score_cols: List[int], depth: int) -> Tuple[Optional[Dict[str, Any]], float]:
@@ -442,19 +463,21 @@ class StudentAgent(BaseAgent):
         def is_fully_expanded(self) -> bool:
             return len(self.untried_moves) == 0
 
-        def best_child(self, c: float) -> 'StudentAgent._MCTSNode':
-            # UCT selection
-            def uct(n: 'StudentAgent._MCTSNode') -> float:
+        def best_child(self, c: float):
+            def uct(n):
                 if n.N == 0:
-                    return math.inf
-                return n.Q + c * math.sqrt(math.log(self.N + 1) / n.N)
+                    return float("inf")
+                h = self._evaluate(n.board, self.player, len(n.board), len(n.board[0]), score_cols_for(len(n.board[0])))
+                return n.Q + c * math.sqrt(math.log(self.N + 1) / n.N) + 0.002 * h  # Tune the bias weight
             return max(self.children, key=uct)
+
 
     def _mcts_search(self, board: List[List[Any]], rows: int, cols: int, score_cols: List[int], time_limit_s: float) -> Dict[str, Any]:
         root = StudentAgent._MCTSNode(parent=None, move=None, player_to_move=self.player, board=copy.deepcopy(board))
         root.untried_moves = generate_all_moves(root.board, root.player_to_move, rows, cols, score_cols)
 
-        end_time = time.time() + max(0.01, time_limit_s)
+        start_time = time.time()
+        end_time = start_time + max(0.01, time_limit_s)
         iterations = 0
 
         while time.time() < end_time:
@@ -489,10 +512,18 @@ class StudentAgent(BaseAgent):
             legal = generate_all_moves(board, self.player, rows, cols, score_cols)
             return random.choice(legal) if legal else None
         best = max(root.children, key=lambda n: n.N)
+        if self.debug_mcts:
+            elapsed = max(1e-6, time.time() - start_time)
+            iters_per_s = iterations / elapsed
+            print(f"[MCTS] Finished: iterations={iterations}, elapsed={elapsed:.3f}s, iters/s={iters_per_s:.0f}, children={len(root.children)}")
+            # Show top-3 children by visits
+            top = sorted(root.children, key=lambda n: n.N, reverse=True)[:3]
+            for i, ch in enumerate(top, 1):
+                print(f"[MCTS]  #{i} visits={ch.N}, Q={ch.Q:.3f}, move={ch.move}")
+            print(f"[MCTS] Selected move visits={best.N}, Q={best.Q:.3f}, move={best.move}")
         return best.move if best.move else random.choice(generate_all_moves(board, self.player, rows, cols, score_cols))
 
-    def _mcts_rollout(self, board: List[List[Any]], to_move: str, rows: int, cols: int, score_cols: List[int]) -> float:
-        """Play random (epsilon-greedy) up to depth/time or terminal; return value in [-1,1]."""
+    def _mcts_rollout(self, board, to_move, rows, cols, score_cols):
         depth = 0
         current_board = copy.deepcopy(board)
         current_player = to_move
@@ -506,33 +537,35 @@ class StudentAgent(BaseAgent):
                 return 0.0
             moves = generate_all_moves(current_board, current_player, rows, cols, score_cols)
             if not moves:
-                # Heuristic fallback
                 v = self._evaluate(current_board, self.player, rows, cols, score_cols)
-                # squash to [-1,1]
                 return max(-1.0, min(1.0, v / 1000.0))
-            # Simple epsilon-greedy: prefer moves that increase eval for our root player
-            if random.random() < 0.2:
-                m = random.choice(moves)
-            else:
-                best_m = None
-                best_v = -math.inf
-                for m in moves:
-                    ok, nb = simulate_move(current_board, m, current_player, rows, cols, score_cols)
-                    if not ok:
-                        continue
-                    v = self._evaluate(nb, self.player, rows, cols, score_cols)
-                    if v > best_v:
-                        best_v = v
-                        best_m = m
-                m = best_m if best_m else random.choice(moves)
+            
+            # FIXED: Evaluate from current player's perspective
+            best_m = None
+            best_v = -math.inf
+            for m in moves:
+                ok, nb = simulate_move(current_board, m, current_player, rows, cols, score_cols)
+                if not ok:
+                    continue
+                # KEY FIX: Evaluate from current_player perspective
+                v = self._evaluate(nb, current_player, rows, cols, score_cols)
+                # Convert to root player perspective for consistent comparison
+                if current_player != self.player:
+                    v = -v  # Invert score if opponent is moving
+                if v > best_v:
+                    best_v = v
+                    best_m = m
+            m = best_m if best_m else random.choice(moves)
+            
             ok, current_board = simulate_move(current_board, m, current_player, rows, cols, score_cols)
             if not ok:
                 return 0.0
             current_player = get_opponent(current_player)
             depth += 1
-        # Non-terminal cutoff: use evaluation
         v = self._evaluate(current_board, self.player, rows, cols, score_cols)
         return max(-1.0, min(1.0, v / 1000.0))
+
+
 
     def _mcts_backpropagate(self, node: 'StudentAgent._MCTSNode', value: float) -> None:
         cur = node
