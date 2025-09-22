@@ -398,7 +398,7 @@ class BaseAgent(ABC):
         self.opponent = get_opponent(player)
     
     @abstractmethod
-    def choose(self, board: List[List[Any]], rows: int, cols: int, score_cols: List[int]) -> Optional[Dict[str, Any]]:
+    def choose(self, board: List[List[Any]], rows: int, cols: int, score_cols: List[int], current_player_time: float, opponent_time: float) -> Optional[Dict[str, Any]]:
         """
         Choose the best move for the current board state.
         
@@ -406,6 +406,8 @@ class BaseAgent(ABC):
             board: 2D list representing the game board
             rows, cols: Board dimensions
             score_cols: List of column indices for scoring areas
+            current_player_time : Remaining time for this player (in seconds)
+            opponent_time : Remaining time for the opponent (in seconds)
         
         Returns:
             Dictionary representing the chosen move, or None if no moves available
@@ -424,57 +426,62 @@ class BaseAgent(ABC):
         Generate all legal moves for the current player.
         
         This is a helper method that students can use in their implementations.
-        Prefer the authoritative generator from gameEngine (includes river flow/push rules),
-        with a fallback to the local implementation.
         """
-        try:
-            from gameEngine import generate_all_moves as engine_generate_all_moves
-            return engine_generate_all_moves(board, self.player, rows, cols, score_cols)
-        except Exception:
-            moves = []
-            directions = [(1, 0), (-1, 0), (0, 1), (0, -1)]
-            
-            for y in range(rows):
-                for x in range(cols):
-                    piece = board[y][x]
-                    if not piece or piece.owner != self.player:
-                        continue
-                    
-                    if piece.side == "stone":
-                        # Generate moves for stones
-                        for dx, dy in directions:
-                            nx, ny = x + dx, y + dy
-                            if not in_bounds(nx, ny, rows, cols):
-                                continue
-                            
-                            # Block destination in opponent score
-                            if is_opponent_score_cell(nx, ny, self.player, rows, cols, score_cols):
-                                continue
-                            
-                            if board[ny][nx] is None:
-                                moves.append({"action": "move", "from": [x, y], "to": [nx, ny]})
-                            else:
-                                if board[ny][nx].owner != self.player:
-                                    px, py = nx + dx, ny + dy
-                                    if (in_bounds(px, py, rows, cols) and 
-                                        board[py][px] is None and 
-                                        not is_opponent_score_cell(px, py, self.player, rows, cols, score_cols)):
-                                        moves.append({"action": "push", "from": [x, y], "to": [nx, ny], "pushed_to": [px, py]})
+        moves = []
+        directions = [(1, 0), (-1, 0), (0, 1), (0, -1)]
+        
+        for y in range(rows):
+            for x in range(cols):
+                piece = board[y][x]
+                if not piece or piece.owner != self.player:
+                    continue
+                
+                if piece.side == "stone":
+                    # Generate moves for stones
+                    for dx, dy in directions:
+                        nx, ny = x + dx, y + dy
+                        if not in_bounds(nx, ny, rows, cols):
+                            continue
                         
-                        # Generate flip moves (stone -> river) conservatively
-                        for orientation in ("horizontal", "vertical"):
-                            temp = copy.deepcopy(board)
-                            temp[y][x].side = "river"
-                            temp[y][x].orientation = orientation
-                            # conservative: do not enter opponent score, skip flow calc here
-                            moves.append({"action": "flip", "from": [x, y], "orientation": orientation})
+                        # Block destination in opponent score
+                        if is_opponent_score_cell(nx, ny, self.player, rows, cols, score_cols):
+                            continue
+                        
+                        if board[ny][nx] is None:
+                            moves.append({"action": "move", "from": [x, y], "to": [nx, ny]})
+                        else:
+                            if board[ny][nx].owner != self.player:
+                                px, py = nx + dx, ny + dy
+                                if (in_bounds(px, py, rows, cols) and 
+                                    board[py][px] is None and 
+                                    not is_opponent_score_cell(px, py, self.player, rows, cols, score_cols)):
+                                    moves.append({"action": "push", "from": [x, y], "to": [nx, ny], "pushed_to": [px, py]})
                     
-                    else:  # River piece
-                        # Flip river -> stone
-                        moves.append({"action": "flip", "from": [x, y]})
-                        # Rotate (no safety check here in fallback)
+                    # Generate flip moves (stone -> river)
+                    for orientation in ("horizontal", "vertical"):
+                        # Check if flip is safe
+                        temp = copy.deepcopy(board)
+                        temp[y][x].side = "river"
+                        temp[y][x].orientation = orientation
+                        flow = agent_river_flow(temp, x, y, x, y, self.player, rows, cols, score_cols)
+                        
+                        if not any(is_opponent_score_cell(dx, dy, self.player, rows, cols, score_cols) for dx, dy in flow):
+                            moves.append({"action": "flip", "from": [x, y], "orientation": orientation})
+                
+                else:  # River piece
+                    # Flip river -> stone
+                    moves.append({"action": "flip", "from": [x, y]})
+                    
+                    # Rotate if safe
+                    new_orientation = "vertical" if piece.orientation == "horizontal" else "horizontal"
+                    temp = copy.deepcopy(board)
+                    temp[y][x].orientation = new_orientation
+                    flow = agent_river_flow(temp, x, y, x, y, self.player, rows, cols, score_cols)
+                    
+                    if not any(is_opponent_score_cell(dx, dy, self.player, rows, cols, score_cols) for dx, dy in flow):
                         moves.append({"action": "rotate", "from": [x, y]})
-            return moves
+        
+        return moves
     
     def evaluate_board(self, board: List[List[Any]], rows: int, cols: int, score_cols: List[int]) -> float:
         """
@@ -538,7 +545,7 @@ class RandomAgent(BaseAgent):
     This serves as a baseline and example implementation.
     """
     
-    def choose(self, board: List[List[Any]], rows: int, cols: int, score_cols: List[int]) -> Optional[Dict[str, Any]]:
+    def choose(self, board: List[List[Any]], rows: int, cols: int, score_cols: List[int], current_player_time: float, opponent_time: float) -> Optional[Dict[str, Any]]:
         moves = self.generate_all_moves(board, rows, cols, score_cols)
         if not moves:
             return None
@@ -557,7 +564,7 @@ except ImportError:
     class StudentAgent(BaseAgent):
         """Placeholder StudentAgent - implement in student_agent.py"""
         
-        def choose(self, board: List[List[Any]], rows: int, cols: int, score_cols: List[int]) -> Optional[Dict[str, Any]]:
+        def choose(self, board: List[List[Any]], rows: int, cols: int, score_cols: List[int], current_player_time: float, opponent_time: float) -> Optional[Dict[str, Any]]:
             moves = self.generate_all_moves(board, rows, cols, score_cols)
             return random.choice(moves) if moves else None
 

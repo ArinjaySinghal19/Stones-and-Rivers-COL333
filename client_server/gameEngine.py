@@ -134,6 +134,10 @@ def count_reachable_in_one(board:List[List[Optional[Piece]]],
                         if is_own_score_cell(ptx, pty, player, rows, cols, score_cols):
                             m += 1
                             break
+            if p and p.owner == player and p.side == "river":
+                # if the river piece is in the scoring area already then can be flipped to get a stone in the scoring area
+                if is_own_score_cell(x, y, player, rows, cols, score_cols):
+                    m += 1
     return m
 
 def compute_final_scores(board:List[List[Optional[Piece]]],
@@ -265,7 +269,7 @@ def compute_valid_targets(board:List[List[Optional[Piece]]],
             # stone occupied
             if p.side == "stone":
                 px,py = tx+dx, ty+dy
-                if in_bounds(px,py,rows,cols) and board[py][px] is None and not is_opponent_score_cell(px,py,player,rows,cols,score_cols):
+                if in_bounds(px,py,rows,cols) and board[py][px] is None and not is_opponent_score_cell(px,py,p.owner,rows,cols,score_cols):
                     pushes.append(((tx,ty),(px,py)))
             else:
                 pushed_player = target.owner
@@ -417,26 +421,46 @@ def generate_all_moves(board:List[List[Optional[Piece]]],
                     if board[ny][nx] is None:
                         moves.append({"action":"move","from":[x,y],"to":[nx,ny]})
                     else:
-                        if board[ny][nx].owner != player:
+                        target = board[ny][nx]
+                        if target.side == "river":
+                            # moves that flow through the river
+                            flow = get_river_flow_destinations(board, nx, ny, x, y, player, rows, cols, score_cols)
+                            for d in flow:
+                                moves.append({"action":"move","from":[x,y],"to":d})
+                        else:
+                            # moves to push the stone pieces (can push self and opponent pieces both)
                             px,py = nx+dx, ny+dy
-                            if in_bounds(px,py,rows,cols) and board[py][px] is None and not is_opponent_score_cell(px,py,player,rows,cols,score_cols):
+                            if in_bounds(px,py,rows,cols) and board[py][px] is None and not is_opponent_score_cell(px,py,target.owner,rows,cols,score_cols):
                                 moves.append({"action":"push","from":[x,y],"to":[nx,ny],"pushed_to":[px,py]})
-                # flips: only add flips that are safe (flow won't reach opponent score)
+                # flips
                 for ori in ("horizontal","vertical"):
                     p.side="river"; p.orientation=ori
-                    flow = get_river_flow_destinations(board, x, y, x, y, player, rows, cols, score_cols)
-                    p.side="stone"; p.orientation=None
-                    if not any(is_opponent_score_cell(dx,dy,player,rows,cols,score_cols) for dx,dy in flow):
-                        moves.append({"action":"flip","from":[x,y],"orientation":ori})
+                    moves.append({"action":"flip","from":[x,y],"orientation":ori})
             else:
+                for dx,dy in dirs:
+                    nx,ny = x+dx,y+dy
+                    if not in_bounds(nx,ny,rows,cols): continue
+                    if is_opponent_score_cell(nx,ny,player,rows,cols,score_cols): continue
+                    if board[ny][nx] is None:
+                        moves.append({"action":"move","from":[x,y],"to":[nx,ny]})
+                    else:
+                        target = board[ny][nx]
+                        if target.side == "river":
+                            # moves that flow through the river
+                            flow = get_river_flow_destinations(board, nx, ny, x, y, player, rows, cols, score_cols)
+                            for d in flow:
+                                moves.append({"action":"move","from":[x,y],"to":d})
+                        else:
+                            # moves to push the stone pieces (can push self and opponent pieces both)
+                            px,py = nx+dx, ny+dy
+                            if in_bounds(px,py,rows,cols) and board[py][px] is None and not is_opponent_score_cell(px,py,target.owner,rows,cols,score_cols):
+                                moves.append({"action":"push","from":[x,y],"to":[nx,ny],"pushed_to":[px,py]})
+                # flip to stone side
                 moves.append({"action":"flip","from":[x,y]})
-                # rotate if safe
+                # rotate
                 new_ori = "vertical" if p.orientation=="horizontal" else "horizontal"
                 p.orientation = new_ori
-                flow = get_river_flow_destinations(board, x, y, x, y, player, rows, cols, score_cols)
-                p.orientation = "horizontal" if new_ori=="vertical" else "vertical"
-                if not any(is_opponent_score_cell(dx,dy,player,rows,cols,score_cols) for dx,dy in flow):
-                    moves.append({"action":"rotate","from":[x,y]})
+                moves.append({"action":"rotate","from":[x,y]})
     return moves
 
 # ---------------- Win check ----------------
@@ -704,6 +728,7 @@ def run_gui(mode:str, circle_strategy:str, square_strategy:str, load_file:Option
         return
     score_cols = score_cols_for(cols)
     board = default_start_board(rows, cols)
+    turn=0
 
     window_width = max(800, cols*CELL + MARGIN*2 + 200)
     window_height = max(600, rows*CELL + MARGIN*2 + 100)
@@ -766,7 +791,7 @@ def run_gui(mode:str, circle_strategy:str, square_strategy:str, load_file:Option
         if players[current] == "ai" and not winner and not game_over:
             ai_start = time.time()
             agent = agents[current]
-            move = agent.choose(board, rows, cols, score_cols)
+            move = agent.choose(board, rows, cols, score_cols, timers[current], timers[opponent(current)])
             ai_end = time.time()
             ai_elapsed = ai_end - ai_start
             timers[current] -= ai_elapsed
@@ -789,6 +814,10 @@ def run_gui(mode:str, circle_strategy:str, square_strategy:str, load_file:Option
                     current = opponent(current)
                     turn_start = time.time()
             draw_board(screen, board, rows, cols, score_cols, selected, highlights, msg, timers, current)
+            turn += 1
+            # print(turn)
+            if turn > 1000:
+                print("Turn limit reached -> draw"); break
             continue
 
         for ev in pygame.event.get():
@@ -964,6 +993,10 @@ def run_gui(mode:str, circle_strategy:str, square_strategy:str, load_file:Option
                                 msg=f"Selected {selected}"
                             else:
                                 msg="Invalid click"
+        # turn += 1
+        # print(turn)
+        # if turn > 1000:
+        #     print("Turn limit reached -> draw"); break
 
         # --- DRAW ---
         draw_board(screen, board, rows, cols, score_cols, selected, highlights, msg, timers, current)
@@ -1029,7 +1062,7 @@ def run_cli(mode:str, circle_strategy:str, square_strategy:str, load_file:Option
             print(f"🤖 AI {current} is thinking...")
             agent = agent_circle if current=="circle" else agent_square
             ai_start = time.time()  # ADDED: measure AI thinking time
-            move = agent.choose(board, rows, cols, score_cols)
+            move = agent.choose(board, rows, cols, score_cols, timers[current], timers[opponent(current)])
             ai_end = time.time()  # ADDED
             elapsed = ai_end - ai_start  # ADDED
             timers[current] -= elapsed  # ADDED: subtract AI think time from clock
@@ -1044,7 +1077,7 @@ def run_cli(mode:str, circle_strategy:str, square_strategy:str, load_file:Option
                 print(f"AI {current} has no moves; pass")
                 current = opponent(current)
                 turn += 1
-                if turn > 2000:
+                if turn > 1000:
                     print("Turn limit reached -> draw"); break
                 # do not count the "press enter to continue" as clock time; skip it
                 input("\nPress Enter to continue...")  # keep for readability
@@ -1055,7 +1088,7 @@ def run_cli(mode:str, circle_strategy:str, square_strategy:str, load_file:Option
             if not ok:
                 current = opponent(current)
                 turn += 1
-                if turn > 2000:
+                if turn > 1000:
                     print("Turn limit reached -> draw"); break
                 input("\nPress Enter to continue...")
                 continue
@@ -1106,7 +1139,7 @@ def run_cli(mode:str, circle_strategy:str, square_strategy:str, load_file:Option
         # next player's turn
         current = opponent(current)
         turn += 1
-        if turn > 2000:
+        if turn > 1000:
             print("Turn limit reached -> draw"); break
 
         # Press Enter pause for readability — DO NOT count this time as player's clock (unchanged behavior)
