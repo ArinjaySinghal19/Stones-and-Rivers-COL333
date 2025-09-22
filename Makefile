@@ -74,7 +74,6 @@ $(BUILD_DIR)/student_agent_module.cpython-*.so: $(BUILD_DIR)/Makefile $(CPP_DIR)
 $(CLIENT_DIR)/build: $(BUILD_DIR)/student_agent_module.cpython-*.so
 	@echo "📦 Setting up client directory..."
 	@cp -r $(BUILD_DIR) $(CLIENT_DIR)/
-	@cp $(CPP_DIR)/student_agent_cpp.py $(CLIENT_DIR)/
 	@echo "✅ Client directory setup complete"
 
 # Complete build process
@@ -111,7 +110,7 @@ test: $(CLIENT_DIR)/build
 	@echo "   Testing C++ module import..."
 	@cd $(CLIENT_DIR) && $(PYTHON) -c "import build.student_agent_module as student_agent; print('✅ C++ module imported successfully!')"
 	@echo "   Testing agent creation..."
-	@cd $(CLIENT_DIR) && $(PYTHON) -c "from student_agent_cpp import StudentAgent; agent = StudentAgent('circle'); print('✅ C++ agent created successfully!')"
+	@cd $(CPP_DIR) && $(PYTHON) -c "from student_agent_cpp import StudentAgent; agent = StudentAgent('circle'); print('✅ C++ agent created successfully!')"
 	@echo "✅ All tests passed!"
 
 # Run the game without GUI
@@ -119,21 +118,20 @@ run: test
 	@echo "🎮 Starting Stones and Rivers Game (no GUI)..."
 	@echo "==============================================="
 	@echo "Mode: aivai | Circle: random | Square: student_cpp"
-	@cd $(CLIENT_DIR) && $(PYTHON) gameEngine.py --mode aivai --circle random --square student_cpp --nogui
+	@cd $(CLIENT_DIR) && PYTHONPATH=$(CPP_DIR):$$PYTHONPATH $(PYTHON) gameEngine.py --mode aivai --circle random --square student_cpp --nogui
 
 # Run the game with GUI
 run-gui: test
 	@echo "🎮 Starting Stones and Rivers Game (with GUI)..."
 	@echo "==============================================="
 	@echo "Mode: aivai | Circle: random | Square: student_cpp"
-	@cd $(CLIENT_DIR) && $(PYTHON) gameEngine.py --mode aivai --circle random --square student_cpp
+	@cd $(CLIENT_DIR) && PYTHONPATH=$(CPP_DIR):$$PYTHONPATH $(PYTHON) gameEngine.py --mode aivai --circle random --square student_cpp
 
 # Clean build artifacts but keep virtual environment
 clean:
 	@echo "🧹 Cleaning build artifacts..."
 	@rm -rf $(BUILD_DIR)
 	@rm -rf $(CLIENT_DIR)/build
-	@rm -f $(CLIENT_DIR)/student_agent_cpp.py
 	@echo "✅ Build artifacts cleaned"
 
 # Complete cleanup - remove everything

@@ -57,10 +57,23 @@ class StudentAgent(BaseAgent):
 
         self.agent = student_agent.StudentAgent(player)
 
-    def choose(self, game_state: dict,  rows: int, cols: int, score_cols: List[int], current_player_time: float, opponent_time: float) -> Optional[Dict[str, Any]]:
-        board = game_state["board"]
-        print(board)
-        cpp_move = self.agent.choose(board, rows, cols, score_cols)
+    def choose(self, board: List[List[Any]], rows: int, cols: int, score_cols: List[int], current_player_time: float, opponent_time: float) -> Optional[Dict[str, Any]]:
+        # Convert board to the format expected by C++
+        cpp_board = []
+        for row in board:
+            cpp_row = []
+            for cell in row:
+                if cell is None:
+                    cpp_row.append({})  # Empty cell
+                else:
+                    cpp_row.append({
+                        "owner": cell.owner,
+                        "side": cell.side,
+                        "orientation": cell.orientation if cell.orientation is not None else "horizontal"
+                    })
+            cpp_board.append(cpp_row)
+        
+        cpp_move = self.agent.choose(cpp_board, rows, cols, score_cols, current_player_time, opponent_time)
         if cpp_move is None:
             return None
 
