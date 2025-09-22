@@ -726,6 +726,10 @@ def run_gui(mode:str, circle_strategy:str, square_strategy:str, load_file:Option
     if not pygame:
         print("pygame not available; use --nogui")
         return
+    
+    # Initialize pygame
+    # pygame.init()
+    
     score_cols = score_cols_for(cols)
     board = default_start_board(rows, cols)
     turn=0
@@ -814,6 +818,8 @@ def run_gui(mode:str, circle_strategy:str, square_strategy:str, load_file:Option
                     current = opponent(current)
                     turn_start = time.time()
             draw_board(screen, board, rows, cols, score_cols, selected, highlights, msg, timers, current)
+            pygame.event.pump()  # Process pygame events to keep window responsive
+            pygame.time.wait(500)  # Add a 500ms delay to make moves visible
             turn += 1
             # print(turn)
             if turn > 1000:

@@ -21,22 +21,24 @@ help:
 	@echo "=============================================="
 	@echo ""
 	@echo "Available targets:"
-	@echo "  all        - Build the complete project (default)"
-	@echo "  setup      - Set up Python virtual environment and dependencies"
-	@echo "  build      - Complete build: setup + compile + deploy"
-	@echo "  rebuild    - Quick rebuild after C++ changes"
-	@echo "  run        - Run the game (C++ agent vs random, no GUI)"
-	@echo "  run-gui    - Run the game with GUI"
-	@echo "  test       - Test the compiled module"
-	@echo "  clean      - Remove build artifacts"
-	@echo "  distclean  - Remove everything (build + venv + client files)"
-	@echo "  help       - Show this help message"
+	@echo "  all            - Build the complete project (default)"
+	@echo "  setup          - Set up Python virtual environment and dependencies"
+	@echo "  build          - Complete build: setup + compile + deploy"
+	@echo "  rebuild        - Quick rebuild after C++ changes"
+	@echo "  run            - Run the game (AI vs AI, no GUI)"
+	@echo "  run-gui        - Run the game with GUI (AI vs AI)"
+	@echo "  run-gui-human  - Run the game with GUI (Human vs AI)"
+	@echo "  test           - Test the compiled module"
+	@echo "  clean          - Remove build artifacts"
+	@echo "  distclean      - Remove everything (build + venv + client files)"
+	@echo "  help           - Show this help message"
 	@echo ""
 	@echo "Examples:"
 	@echo "  make                    # Build everything"
 	@echo "  make rebuild            # Quick recompile after changes"
-	@echo "  make run                # Run game without GUI"
-	@echo "  make run-gui            # Run game with GUI"
+	@echo "  make run                # Run game without GUI (AI vs AI)"
+	@echo "  make run-gui            # Run game with GUI (AI vs AI)"
+	@echo "  make run-gui-human      # Run game with GUI (Human vs AI)"
 	@echo "  make clean              # Clean build artifacts"
 	@echo "  make distclean          # Complete cleanup"
 
@@ -124,14 +126,15 @@ run: test
 run-gui: test
 	@echo "🎮 Starting Stones and Rivers Game (with GUI)..."
 	@echo "==============================================="
-	@echo "Mode: aivai | Circle: random | Square: student_cpp"
-	@cd $(CLIENT_DIR) && PYTHONPATH=$(CPP_DIR):$$PYTHONPATH $(PYTHON) gameEngine.py --mode aivai --circle student_cpp --square student_cpp
+	@echo "Mode: aivai | Circle: student_cpp | Square: student_cpp"
+	@cd $(CLIENT_DIR) && PYTHONPATH=$(CPP_DIR):$$PYTHONPATH $(PYTHON) gameEngine.py --mode aivai --circle student_cpp --square student_cpp 
 
-dry-run-gui: test
-	@echo "🎮 Starting Stones and Rivers Game (with GUI)..."
-	@echo "==============================================="
-	@echo "Mode: hvai | Circle: student_cpp | Square: vihaan"
-	@cd $(CLIENT_DIR) && PYTHONPATH=$(CPP_DIR):$$PYTHONPATH $(PYTHON) gameEngine.py --mode hvai --circle student_cpp --time 10
+# Run the game with GUI (Human vs AI)
+run-gui-human: test
+	@echo "🎮 Starting Stones and Rivers Game (with GUI - Human vs AI)..."
+	@echo "============================================================="
+	@echo "Mode: hvai | Circle: human | Square: student_cpp"
+	@cd $(CLIENT_DIR) && PYTHONPATH=$(CPP_DIR):$$PYTHONPATH $(PYTHON) gameEngine.py --mode hvai --square student_cpp --time 10
 
 # Clean build artifacts but keep virtual environment
 clean:

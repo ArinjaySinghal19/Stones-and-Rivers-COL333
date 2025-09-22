@@ -733,8 +733,8 @@ public:
         GameState current_state(board, side, rows, cols, score_cols);
         
         // Calculate number of iterations based on game state
-        // Base iterations: 500, but can be adjusted based on remaining time
-        int base_iterations = 1000;
+        // Base iterations: 100, but can be adjusted based on remaining time
+        int base_iterations = 100;
         
         // Reduce iterations if we have very little time left
         int max_iterations = base_iterations;
