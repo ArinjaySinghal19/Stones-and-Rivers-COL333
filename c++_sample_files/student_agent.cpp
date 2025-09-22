@@ -426,8 +426,8 @@ double GameState::evaluate(const std::string& player) const {
     }
     
     // Check for immediate win/loss
-    if (my_in_score >= WIN_COUNT) return 1000.0;
-    if (opp_in_score >= WIN_COUNT) return -1000.0;
+    if (my_in_score >= WIN_COUNT) return 1.0;
+    if (opp_in_score >= WIN_COUNT) return 0.0;
     
     // Count pieces that can reach scoring area in one move
     for (int y = 0; y < rows; y++) {
@@ -435,9 +435,9 @@ double GameState::evaluate(const std::string& player) const {
             const auto& cell = board[y][x];
             if (cell.empty()) continue;
             
-            if (cell.at("owner") == player && cell.at("side") == "stone") {
+            if (cell.at("owner") == player) {
                 // Check if not already in scoring area
-                if ((player == "circle" && y != top) || (player == "square" && y != bot)) {
+                if (((player == "circle" && y != top) || (player == "square" && y != bot)) && cell.at("side")=="stone") {
                     auto valid_targets = compute_valid_targets(board, x, y, player, rows, cols, score_cols);
                     // Check moves
                     for (const auto& target : valid_targets.moves) {
@@ -471,9 +471,9 @@ double GameState::evaluate(const std::string& player) const {
                     }
                 }
             }
-            else if (cell.at("owner") == opponent && cell.at("side") == "stone") {
+            else if (cell.at("owner") == opponent) {
                 // Similar logic for opponent
-                if ((opponent == "circle" && y != top) || (opponent == "square" && y != bot)) {
+                if (((opponent == "circle" && y != top) || (opponent == "square" && y != bot)) && cell.at("side") == "stone") {
                     auto valid_targets = compute_valid_targets(board, x, y, opponent, rows, cols, score_cols);
                     for (const auto& target : valid_targets.moves) {
                         if ((opponent == "circle" && target.second == top && 
@@ -578,7 +578,7 @@ ValidTargets compute_valid_targets(
 // ---- MCTS Implementation ----
 double MCTSNode::ucb1_value(double exploration_param) const {
     if (visits == 0) return std::numeric_limits<double>::infinity();
-    
+    if (parent == nullptr || parent->visits == 0) return std::numeric_limits<double>::infinity();
     double avg_reward = wins / visits;
     double exploration = exploration_param * sqrt(log(parent->visits) / visits);
     return avg_reward + exploration;
@@ -689,6 +689,23 @@ Move MCTSNode::get_best_move() const {
 
 // ---- MCTS Algorithm ----
 Move run_mcts(const GameState& initial_state, int max_iterations) {
+    // Immediate winning-move heuristic: if any legal move leads to an immediate
+    // win for the current player, commit to it and skip MCTS entirely.
+    {
+        std::vector<Move> root_legal_moves = initial_state.get_legal_moves();
+        const std::string player = initial_state.current_player;
+        for (const Move& candidate_move : root_legal_moves) {
+            GameState test_state = initial_state.copy();
+            test_state.apply_move(candidate_move);
+            if (test_state.is_terminal()) {
+                double eval = test_state.evaluate(player);
+                if (eval >= 1.0) {
+                    return candidate_move;
+                }
+            }
+        }
+    }
+
     auto root = std::make_unique<MCTSNode>(initial_state);
     
     for (int iteration = 0; iteration < max_iterations; iteration++) {

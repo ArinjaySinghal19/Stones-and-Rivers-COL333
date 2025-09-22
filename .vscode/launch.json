@@ -1,0 +1,13 @@
+{
+  "version": "0.2.0",
+  "configurations": [
+    {
+      "name": "C/C++ Runner: Debug Session",
+      "type": "lldb",
+      "request": "launch",
+      "args": [],
+      "cwd": "/Users/arinjaysinghal/Desktop/Stones-and-Rivers-COL333/c++_sample_files",
+      "program": "/Users/arinjaysinghal/Desktop/Stones-and-Rivers-COL333/c++_sample_files/build/Debug/outDebug"
+    }
+  ]
+}
