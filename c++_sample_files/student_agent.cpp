@@ -10,35 +10,18 @@
 #include <cmath>
 #include <memory>
 #include <limits>
+#include <thread>
 
 namespace py = pybind11;
 
-
 /*
-=========================================================
- STUDENT AGENT FOR STONES & RIVERS GAME
----------------------------------------------------------
- The Python game engine passes the BOARD state into C++.
- Each board cell is represented as a dictionary in Python:
-
-    {
-        "owner": "circle" | "square",          // which player owns this piece
-        "side": "stone" | "river",             // piece type
-        "orientation": "horizontal" | "vertical"  // only relevant if side == "river"
-    }
-
- In C++ with pybind11, this becomes:
-
-    std::vector<std::vector<std::map<std::string, std::string>>>
-
- Meaning:
-   - board[y][x] gives the cell at (x, y).
-   - board[y][x].empty() → true if the cell is empty (no piece).
-   - board[y][x].at("owner") → "circle" or "square".
-   - board[y][x].at("side") → "stone" or "river".
-   - board[y][x].at("orientation") → "horizontal" or "vertical".
-
-=========================================================
+ Patched student_agent.cpp for Stones & Rivers:
+  - Fixes backpropagation bug
+  - Removes dummy fallback move
+  - Marks states with no legal moves as terminal
+  - Improves UCB1 and selection null checks
+  - Single RNG per thread, improved rollout (epsilon-greedy biased)
+  - Larger/adaptive rollout depth
 */
 
 // ---- Forward declarations ----
@@ -136,6 +119,9 @@ bool is_opponent_score_cell(int x, int y, const std::string& player, int rows, i
     }
 }
 
+// Thread-local RNG (one per thread)
+static thread_local std::mt19937 tls_rng((std::random_device())());
+
 // River flow destination calculation (based on gameEngine.py implementation)
 std::vector<std::pair<int,int>> get_river_flow_destinations(
     const std::vector<std::vector<std::map<std::string, std::string>>>& board,
@@ -147,28 +133,32 @@ std::vector<std::pair<int,int>> get_river_flow_destinations(
     std::set<std::pair<int,int>> visited;
     std::queue<std::pair<int,int>> queue;
     
+    if (!in_bounds(rx, ry, rows, cols)) return destinations;
     queue.push({rx, ry});
     
     while (!queue.empty()) {
         auto [x, y] = queue.front();
         queue.pop();
         
-        if (visited.count({x, y}) || !in_bounds(x, y, rows, cols)) continue;
+        if (!in_bounds(x, y, rows, cols)) continue;
+        if (visited.count({x, y})) continue;
         visited.insert({x, y});
         
         const auto& cell = board[y][x];
         
-        // Handle special case for river_push
+        // Handle special case for river_push: treat original source as occupied by the push origin
         const auto* actual_cell = &cell;
+        std::map<std::string, std::string> fake_cell;
         if (river_push && x == rx && y == ry) {
-            actual_cell = &board[sy][sx];
+            if (in_bounds(sx, sy, rows, cols)) {
+                fake_cell = board[sy][sx];
+                actual_cell = &fake_cell;
+            }
         }
         
         if (actual_cell->empty()) {
-            if (is_opponent_score_cell(x, y, player, rows, cols, score_cols)) {
-                // Block entering opponent score
-                continue;
-            } else {
+            // empty cell is a valid destination unless it's opponent score (we block entering opponent score)
+            if (!is_opponent_score_cell(x, y, player, rows, cols, score_cols)) {
                 destinations.push_back({x, y});
             }
             continue;
@@ -282,6 +272,7 @@ void GameState::apply_move(const Move& move) {
                 board[fy][fx]["orientation"] = move.orientation;
             } else {
                 board[fy][fx]["side"] = "stone";
+                // orientation key may remain but is irrelevant for stones
             }
         }
     }
@@ -332,15 +323,13 @@ std::vector<Move> GameState::get_legal_moves() const {
             if (side_type == "stone") {
                 // Check if flipping to river would be safe (not flowing into opponent score)
                 for (const std::string& orientation : {"horizontal", "vertical"}) {
-                    // Simulate the flip and check resulting flow
-                    bool safe = true;
-                    
                     // Create a temporary modified board to test the flip
                     auto test_board = board;
                     test_board[y][x]["side"] = "river";
                     test_board[y][x]["orientation"] = orientation;
                     
                     auto flow = get_river_flow_destinations(test_board, x, y, x, y, current_player, rows, cols, score_cols);
+                    bool safe = true;
                     for (const auto& dest : flow) {
                         if (is_opponent_score_cell(dest.first, dest.second, current_player, rows, cols, score_cols)) {
                             safe = false;
@@ -380,19 +369,21 @@ std::vector<Move> GameState::get_legal_moves() const {
         }
     }
 
-    if (moves.empty()) {
-        moves.push_back({"move", {0,0}, {0,0}, {}, ""}); // fallback
-    }
-
+    // NOTE: DO NOT inject dummy moves here. If there are no legal moves, the caller
+    // can treat the state as terminal / no-move available.
     return moves;
 }
 
 bool GameState::is_terminal() const {
-    return check_win_state(board, rows, cols, score_cols);
+    // Terminal if somebody has won, OR no legal moves available for the current player
+    if (check_win_state(board, rows, cols, score_cols)) return true;
+    auto legal = get_legal_moves();
+    return legal.empty();
 }
 
 double GameState::evaluate(const std::string& player) const {
-    // Count pieces in scoring areas and pieces that can reach in one move
+    // Count pieces in scoring areas and pieces that can reach in one move.
+    // Provide a stronger signal (wider range) to guide biased rollouts.
     int WIN_COUNT = 4;
     int top = top_score_row();
     int bot = bottom_score_row(rows);
@@ -425,21 +416,19 @@ double GameState::evaluate(const std::string& player) const {
         }
     }
     
-    // Check for immediate win/loss
+    // Immediate win/loss
     if (my_in_score >= WIN_COUNT) return 1.0;
     if (opp_in_score >= WIN_COUNT) return 0.0;
     
-    // Count pieces that can reach scoring area in one move
+    // Check pieces that can reach scoring area in one move
     for (int y = 0; y < rows; y++) {
         for (int x = 0; x < cols; x++) {
             const auto& cell = board[y][x];
             if (cell.empty()) continue;
             
             if (cell.at("owner") == player) {
-                // Check if not already in scoring area
                 if (((player == "circle" && y != top) || (player == "square" && y != bot)) && cell.at("side")=="stone") {
                     auto valid_targets = compute_valid_targets(board, x, y, player, rows, cols, score_cols);
-                    // Check moves
                     for (const auto& target : valid_targets.moves) {
                         if ((player == "circle" && target.second == top && 
                              std::find(score_cols.begin(), score_cols.end(), target.first) != score_cols.end()) ||
@@ -449,7 +438,6 @@ double GameState::evaluate(const std::string& player) const {
                             break;
                         }
                     }
-                    // Check pushes
                     for (const auto& push : valid_targets.pushes) {
                         auto pushed_pos = push.second;
                         if ((player == "circle" && pushed_pos.second == top && 
@@ -461,7 +449,6 @@ double GameState::evaluate(const std::string& player) const {
                         }
                     }
                 }
-                // Check rivers that can be flipped
                 if (cell.at("side") == "river") {
                     if ((player == "circle" && y == top && 
                          std::find(score_cols.begin(), score_cols.end(), x) != score_cols.end()) ||
@@ -472,7 +459,6 @@ double GameState::evaluate(const std::string& player) const {
                 }
             }
             else if (cell.at("owner") == opponent) {
-                // Similar logic for opponent
                 if (((opponent == "circle" && y != top) || (opponent == "square" && y != bot)) && cell.at("side") == "stone") {
                     auto valid_targets = compute_valid_targets(board, x, y, opponent, rows, cols, score_cols);
                     for (const auto& target : valid_targets.moves) {
@@ -507,12 +493,12 @@ double GameState::evaluate(const std::string& player) const {
         }
     }
     
-    // Evaluation based on pieces in scoring area and reachable pieces
-    // Higher weight for pieces already in scoring area
-    double score = (my_in_score * 10.0 + my_can_reach * 1.0) - (opp_in_score * 10.0 + opp_can_reach * 1.0);
+    // Weighted score: heavier weight to pieces already in scoring area and nearer threats
+    double score = (my_in_score * 12.0 + my_can_reach * 2.0) - (opp_in_score * 12.0 + opp_can_reach * 2.0);
     
-    // Normalize to [0, 1] range for MCTS
-    return std::tanh(score / 20.0) * 0.5 + 0.5;
+    // Map raw score into [0,1] but keep steeper slope for discrimination
+    double scaled = 1.0 / (1.0 + std::exp(-score / 4.0)); // logistic
+    return scaled;
 }
 
 // Compute valid targets for a piece (based on compute_valid_targets in gameEngine.py)
@@ -577,10 +563,16 @@ ValidTargets compute_valid_targets(
 
 // ---- MCTS Implementation ----
 double MCTSNode::ucb1_value(double exploration_param) const {
+    // Standard UCB1: if child unvisited -> +inf (force visit)
     if (visits == 0) return std::numeric_limits<double>::infinity();
-    if (parent == nullptr || parent->visits == 0) return std::numeric_limits<double>::infinity();
-    double avg_reward = wins / visits;
-    double exploration = exploration_param * sqrt(log(parent->visits) / visits);
+    if (parent == nullptr || parent->visits == 0) {
+        // If parent has zero visits (rare), provide a conservative exploration term
+        double avg_reward = wins / (double)visits;
+        double exploration = exploration_param * std::sqrt(1.0 / (double)visits);
+        return avg_reward + exploration;
+    }
+    double avg_reward = wins / (double)visits;
+    double exploration = exploration_param * std::sqrt(std::log((double)parent->visits) / (double)visits);
     return avg_reward + exploration;
 }
 
@@ -602,11 +594,8 @@ MCTSNode* MCTSNode::select_child() {
 MCTSNode* MCTSNode::expand() {
     if (untried_moves.empty()) return nullptr;
     
-    // Select a random untried move
-    std::random_device rd;
-    std::mt19937 gen(rd());
-    std::uniform_int_distribution<> dist(0, untried_moves.size() - 1);
-    int idx = dist(gen);
+    std::uniform_int_distribution<> dist(0, (int)untried_moves.size() - 1);
+    int idx = dist(tls_rng);
     
     Move move = untried_moves[idx];
     untried_moves.erase(untried_moves.begin() + idx);
@@ -625,55 +614,79 @@ MCTSNode* MCTSNode::expand() {
 
 double MCTSNode::simulate() {
     GameState sim_state = state.copy();
-    std::random_device rd;
-    std::mt19937 gen(rd());
-    
-    // Limit simulation depth to avoid infinite games
-    int max_depth = 50;
+    // Adaptive max depth: at most rows*cols*2 or 200 cap
+    int max_depth = std::min(200, std::max(50, sim_state.rows * sim_state.cols * 2));
     int depth = 0;
     
-    std::string original_player = state.current_player;
+    // Evaluate from perspective of the player who is about to move at this node
+    std::string rollout_player = sim_state.current_player;
+    
+    // epsilon-greedy biased rollout: with probability eps choose a random move,
+    // otherwise choose move that maximizes immediate evaluation for current player.
+    const double eps = 0.15;
+    std::uniform_real_distribution<> coin(0.0, 1.0);
     
     while (!sim_state.is_terminal() && depth < max_depth) {
         std::vector<Move> moves = sim_state.get_legal_moves();
         if (moves.empty()) break;
         
-        // Select random move
-        std::uniform_int_distribution<> dist(0, moves.size() - 1);
-        Move move = moves[dist(gen)];
-        
-        sim_state.apply_move(move);
+        Move chosen;
+        if (coin(tls_rng) < eps) {
+            std::uniform_int_distribution<> r(0, (int)moves.size() - 1);
+            chosen = moves[r(tls_rng)];
+        } else {
+            // Evaluate resulting states and take best (greedy)
+            double best_val = -1.0;
+            bool set = false;
+            for (const auto &m : moves) {
+                GameState temp = sim_state.copy();
+                temp.apply_move(m);
+                double val = temp.evaluate(rollout_player);
+                if (!set || val > best_val) {
+                    best_val = val;
+                    chosen = m;
+                    set = true;
+                }
+            }
+            // if something failed fallback to random
+            if (!set) {
+                std::uniform_int_distribution<> r(0, (int)moves.size() - 1);
+                chosen = moves[r(tls_rng)];
+            }
+        }
+        sim_state.apply_move(chosen);
         depth++;
     }
     
-    // Evaluate the final state from the perspective of the original player
-    return sim_state.evaluate(original_player);
+    // Return evaluation from the perspective of the rollout root player
+    return sim_state.evaluate(rollout_player);
 }
 
 void MCTSNode::backpropagate(double result) {
-    visits++;
-    wins += result;
-    
-    if (parent != nullptr) {
-        // Invert result for parent (opponent's perspective)
-        parent->backpropagate(1.0 - result);
+    // Iterative propagation, alternating perspective (result is for this node's current player at time of simulation)
+    MCTSNode* node = this;
+    double value = result;
+    while (node != nullptr) {
+        node->visits++;
+        node->wins += value;
+        // Switch perspective for parent
+        value = 1.0 - value;
+        node = node->parent;
     }
 }
 
 Move MCTSNode::get_best_move() const {
     if (children.empty()) {
-        // Return a random legal move if no children
+        // If there are no children, return a random legal move if available
         std::vector<Move> legal_moves = state.get_legal_moves();
         if (!legal_moves.empty()) {
-            std::random_device rd;
-            std::mt19937 gen(rd());
-            std::uniform_int_distribution<> dist(0, legal_moves.size() - 1);
-            return legal_moves[dist(gen)];
+            std::uniform_int_distribution<> dist(0, (int)legal_moves.size() - 1);
+            return legal_moves[dist(tls_rng)];
         }
         return {"move", {0,0}, {0,0}, {}, ""};
     }
     
-    // Select child with highest visit count (most promising)
+    // Select child with highest visit count (most explored)
     MCTSNode* best_child = nullptr;
     int max_visits = -1;
     
@@ -689,51 +702,65 @@ Move MCTSNode::get_best_move() const {
 
 // ---- MCTS Algorithm ----
 Move run_mcts(const GameState& initial_state, int max_iterations) {
-    // Immediate winning-move heuristic: if any legal move leads to an immediate
-    // win for the current player, commit to it and skip MCTS entirely.
-    {
-        std::vector<Move> root_legal_moves = initial_state.get_legal_moves();
-        const std::string player = initial_state.current_player;
-        for (const Move& candidate_move : root_legal_moves) {
-            GameState test_state = initial_state.copy();
-            test_state.apply_move(candidate_move);
-            if (test_state.is_terminal()) {
-                double eval = test_state.evaluate(player);
-                if (eval >= 1.0) {
-                    return candidate_move;
+    const std::string player = initial_state.current_player;
+    std::vector<Move> root_legal_moves = initial_state.get_legal_moves();
+
+    // 0. Deterministic scoring move check
+    int target_row = (player == "circle") ? top_score_row() : bottom_score_row(initial_state.rows);
+
+    for (const Move& candidate_move : root_legal_moves) {
+        GameState test_state = initial_state.copy();
+        test_state.apply_move(candidate_move);
+
+        // Check if this move places *any* of player's stones in scoring row
+        bool scored = false;
+        for (int x : initial_state.score_cols) {
+            if (in_bounds(x, target_row, initial_state.rows, initial_state.cols)) {
+                const auto& cell = test_state.board[target_row][x];
+                if (!cell.empty() && cell.at("side") == "stone" && cell.at("owner") == player) {
+                    scored = true;
+                    break;
                 }
             }
         }
+        if (scored) {
+            return candidate_move; // take the scoring move immediately
+        }
     }
 
+    // 1. Initialize root
     auto root = std::make_unique<MCTSNode>(initial_state);
-    
+
+    // 2. Run MCTS iterations
     for (int iteration = 0; iteration < max_iterations; iteration++) {
-        // MCTS iteration
         MCTSNode* node = root.get();
-        
-        // 1. Selection - traverse down the tree using UCB1
+
+        // Selection
         while (node->is_fully_expanded() && !node->children.empty()) {
-            node = node->select_child();
+            MCTSNode* next = node->select_child();
+            if (next == nullptr) break;
+            node = next;
         }
-        
-        // 2. Expansion - add a new child node
-        if (!node->state.is_terminal() && !node->is_fully_expanded()) {
-            node = node->expand();
+
+        // Expansion
+        if (node != nullptr && !node->state.is_terminal() && !node->is_fully_expanded()) {
+            MCTSNode* expanded = node->expand();
+            if (expanded != nullptr) node = expanded;
         }
-        
-        // 3. Simulation - play out from this node
-        double result = 0.5; // default draw
+
+        // Simulation
+        double result = 0.5;
         if (node != nullptr) {
             result = node->simulate();
         }
-        
-        // 4. Backpropagation - update statistics
+
+        // Backpropagation
         if (node != nullptr) {
             node->backpropagate(result);
         }
     }
-    
+
+    // 3. Return best move from root
     return root->get_best_move();
 }
 
@@ -749,23 +776,14 @@ public:
         // Create game state
         GameState current_state(board, side, rows, cols, score_cols);
         
-        // Calculate number of iterations based on game state
-        // Base iterations: 100, but can be adjusted based on remaining time
-        int base_iterations = 100;
-        
-        // Reduce iterations if we have very little time left
+        // Base iterations and simple time-based scaling
+        int base_iterations = 400;
         int max_iterations = base_iterations;
-        if (current_player_time < 10.0) {
-            max_iterations = base_iterations / 2;  // 50 iterations
-        }
-        if (current_player_time < 5.0) {
-            max_iterations = base_iterations / 4;  // 25 iterations
-        }
-        if (current_player_time < 2.0) {
-            max_iterations = base_iterations / 10; // 10 iterations
-        }
+        if (current_player_time < 10.0) max_iterations = base_iterations / 2;
+        if (current_player_time < 5.0) max_iterations = base_iterations / 4;
+        if (current_player_time < 2.0) max_iterations = std::max(10, base_iterations / 10);
         
-        // Run MCTS to find the best move
+        // Run MCTS
         Move best_move = run_mcts(current_state, max_iterations);
         
         return best_move;
