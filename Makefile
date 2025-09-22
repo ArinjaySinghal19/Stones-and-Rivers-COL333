@@ -117,15 +117,21 @@ test: $(CLIENT_DIR)/build
 run: test
 	@echo "🎮 Starting Stones and Rivers Game (no GUI)..."
 	@echo "==============================================="
-	@echo "Mode: aivai | Circle: random | Square: student_cpp"
-	@cd $(CLIENT_DIR) && PYTHONPATH=$(CPP_DIR):$$PYTHONPATH $(PYTHON) gameEngine.py --mode aivai --circle random --square student_cpp --nogui
+	@echo "Mode: aivai | Circle: student_cpp | Square: student_cpp"
+	@cd $(CLIENT_DIR) && PYTHONPATH=$(CPP_DIR):$$PYTHONPATH $(PYTHON) gameEngine.py --mode aivai --circle student_cpp --square student_cpp --nogui
 
 # Run the game with GUI
 run-gui: test
 	@echo "🎮 Starting Stones and Rivers Game (with GUI)..."
 	@echo "==============================================="
 	@echo "Mode: aivai | Circle: random | Square: student_cpp"
-	@cd $(CLIENT_DIR) && PYTHONPATH=$(CPP_DIR):$$PYTHONPATH $(PYTHON) gameEngine.py --mode aivai --circle random --square student_cpp
+	@cd $(CLIENT_DIR) && PYTHONPATH=$(CPP_DIR):$$PYTHONPATH $(PYTHON) gameEngine.py --mode aivai --circle student_cpp --square student_cpp
+
+dry-run-gui: test
+	@echo "🎮 Starting Stones and Rivers Game (with GUI)..."
+	@echo "==============================================="
+	@echo "Mode: hvai | Circle: student_cpp | Square: vihaan"
+	@cd $(CLIENT_DIR) && PYTHONPATH=$(CPP_DIR):$$PYTHONPATH $(PYTHON) gameEngine.py --mode hvai --circle student_cpp --time 10
 
 # Clean build artifacts but keep virtual environment
 clean:

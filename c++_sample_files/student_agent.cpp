@@ -9,7 +9,6 @@
 #include <algorithm>
 #include <cmath>
 #include <memory>
-#include <chrono>
 #include <limits>
 
 namespace py = pybind11;
@@ -689,17 +688,10 @@ Move MCTSNode::get_best_move() const {
 }
 
 // ---- MCTS Algorithm ----
-Move run_mcts(const GameState& initial_state, double time_limit_seconds) {
-    auto start_time = std::chrono::high_resolution_clock::now();
+Move run_mcts(const GameState& initial_state, int max_iterations) {
     auto root = std::make_unique<MCTSNode>(initial_state);
     
-    int iterations = 0;
-    while (true) {
-        // Check time limit
-        auto current_time = std::chrono::high_resolution_clock::now();
-        auto elapsed = std::chrono::duration_cast<std::chrono::milliseconds>(current_time - start_time);
-        if (elapsed.count() >= time_limit_seconds * 1000) break;
-        
+    for (int iteration = 0; iteration < max_iterations; iteration++) {
         // MCTS iteration
         MCTSNode* node = root.get();
         
@@ -723,11 +715,6 @@ Move run_mcts(const GameState& initial_state, double time_limit_seconds) {
         if (node != nullptr) {
             node->backpropagate(result);
         }
-        
-        iterations++;
-        
-        // Minimum number of iterations
-        if (iterations < 100) continue;
     }
     
     return root->get_best_move();
@@ -745,17 +732,24 @@ public:
         // Create game state
         GameState current_state(board, side, rows, cols, score_cols);
         
-        // Calculate time to spend on this move
-        // Use a fraction of remaining time, but at least 0.1 seconds, at most 5 seconds
-        double time_limit = std::max(0.1, std::min(5.0, current_player_time * 0.1));
+        // Calculate number of iterations based on game state
+        // Base iterations: 500, but can be adjusted based on remaining time
+        int base_iterations = 1000;
         
-        // If we have very little time left, use less time per move
+        // Reduce iterations if we have very little time left
+        int max_iterations = base_iterations;
         if (current_player_time < 10.0) {
-            time_limit = std::max(0.05, current_player_time * 0.05);
+            max_iterations = base_iterations / 2;  // 50 iterations
+        }
+        if (current_player_time < 5.0) {
+            max_iterations = base_iterations / 4;  // 25 iterations
+        }
+        if (current_player_time < 2.0) {
+            max_iterations = base_iterations / 10; // 10 iterations
         }
         
         // Run MCTS to find the best move
-        Move best_move = run_mcts(current_state, time_limit);
+        Move best_move = run_mcts(current_state, max_iterations);
         
         return best_move;
     }
