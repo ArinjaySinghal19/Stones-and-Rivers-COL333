@@ -29,21 +29,6 @@ pip install -r requirements.txt
 ## Run Instructions
 Here are the instructions used to match ai or human players against each other.
 
-### Quick Start (C++ Agent)
-```sh
-# First time setup - compiles C++ agent and sets up environment
-./compile_cpp.sh
-
-# Run game with C++ agent (no GUI)
-./run_game.sh
-
-# Run game with GUI
-./run_game.sh aivai random student_cpp --gui
-
-# Quick rebuild after changing C++ code
-./quick_rebuild.sh
-```
-
 
 ## Main Files
 - `gameEngine.py`: It is an instance of the game. It can be run locally on your environment. You can run in GUI or CLI mode.
@@ -75,11 +60,8 @@ python gameEngine.py --mode aivai --circle random --square student
 python gameEngine.py --mode aivai --circle random --square student --nogui
 ```
 
-## Automation Scripts
 
-This project includes automation tools to streamline development. You can use either the new **Makefile** (recommended) or the legacy shell scripts.
-
-## Using the Makefile (Recommended)
+## Using the Makefile 
 
 The Makefile provides a clean, standardized interface for all development tasks:
 
@@ -103,30 +85,5 @@ make distclean  # Complete cleanup (build + venv)
 
 # Test the compiled module
 make test
-```
 
-## Legacy Shell Scripts
-
-Alternatively, you can still use the original shell scripts:
-
-- **`./compile_cpp.sh`** - Complete setup and compilation of C++ agent (run once or when setting up fresh)
-- **`./quick_rebuild.sh`** - Fast recompilation after C++ code changes
-- **`./run_game.sh`** - Convenient game launcher with automatic environment activation
-
-### Script Usage Examples
-```sh
-# Initial setup
-./compile_cpp.sh
-
-# Test your C++ agent
-./run_game.sh
-
-# Run with different configurations  
-./run_game.sh hvh              # Human vs Human
-./run_game.sh hvai random      # Human vs AI
-./run_game.sh aivai random student_cpp --gui  # AI vs AI with GUI
-
-# After making changes to student_agent.cpp
-./quick_rebuild.sh
-./run_game.sh
 ```
