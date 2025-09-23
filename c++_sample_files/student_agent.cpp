@@ -55,7 +55,7 @@ public:
         std::cout << "hello" << std::endl;
         
         if (algorithm == "minimax") {
-            // Use Minimax with Alpha-Beta Pruning (depth 4)
+            // Use Minimax with Alpha-Beta Pruning (depth 3)
             const int MINIMAX_DEPTH = 3;
             return run_minimax(current_state, MINIMAX_DEPTH);
         } else {

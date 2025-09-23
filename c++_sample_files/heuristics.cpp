@@ -182,10 +182,10 @@ int Heuristics::pieces_in_scoring_h(const GameState& state, const std::string& p
     const auto& score_cols = state.score_cols;
 
     int score = 0;
-    const int w1 = 10;
-    const int w2 = 8;
-    const int w3 = 6;
-    const int w4 = 3;
+    const int w1 = 100;
+    const int w2 = 50;
+    const int w3 = 25;
+    const int w4 = 10;
     const int w5 = 1;
 
     int target_row, direction;
@@ -528,8 +528,110 @@ int Heuristics::horizontal_negative(const GameState& state, const std::string& p
 
 
 
+int Heuristics::horizontal_attack(const GameState& state, const std::string& player) {
+    const auto& board = state.board;
+    int rows = state.rows;
+    int cols = state.cols;
+
+    int count = 0;
+    std::vector<int> check_rows;
+
+    if (player == "circle") {
+        check_rows.push_back(top_score_row()-1);
+        check_rows.push_back(top_score_row());
+        
+        
+    } else {
+        check_rows.push_back(bottom_score_row(rows) + 1);
+        check_rows.push_back(bottom_score_row(rows));
+        
+    }
+
+    for (int r : check_rows) {
+        if (in_bounds(0, r, rows, cols)) {
+            for (int x = 0; x < cols; ++x) {
+                const auto& cell = board[r][x];
+                if (!cell.empty() && cell.find("owner") != cell.end() && cell.at("owner") == player) {
+                    count++;
+                }
+            }
+        }
+    }
+    return count;
+}
+
+
+
+int Heuristics::inactive_pieces(const GameState& state, const std::string& player) {
+    const auto& board = state.board;
+    int rows = state.rows;
+    int cols = state.cols;
+
+    int inactive_count = 0;
+
+    for (int y = 0; y < rows; ++y) {
+        int x = 0;
+        const auto& cell = board[y][x];
+        if (!cell.empty() && cell.find("owner") != cell.end() && cell.at("owner") == player) {
+            inactive_count++;
+        }
+        x = cols - 1;
+        const auto& cell2 = board[y][x];
+        if (!cell2.empty() && cell2.find("owner") != cell2.end() && cell2.at("owner") == player) {
+            inactive_count++;
+        }
+    }
+    for (int x = 0; x < cols; ++x) {
+        int y = 0;
+        const auto& cell = board[y][x];
+        if (!cell.empty() && cell.find("owner") != cell.end() && cell.at("owner") == player) {
+            inactive_count++;
+        }
+        y = rows - 1;
+        const auto& cell2 = board[y][x];
+        if (!cell2.empty() && cell2.find("owner") != cell2.end() && cell2.at("owner") == player) {
+            inactive_count++;
+        }
+    }
+    return inactive_count;
+}
+
+
+int Heuristics::terminal_result(const GameState& state, const std::string& player) {
+    int WIN_COUNT = 4;
+    int top = top_score_row();
+    int bot = bottom_score_row(state.rows);
+    int ccount = 0, scount = 0;
+    
+    for (int x : state.score_cols) {
+        if (x >= 0 && x < state.cols) {
+            if (top >= 0 && top < state.rows) {
+                const auto& cell = state.board[top][x];
+                if (!cell.empty() && cell.at("owner") == "circle" && cell.at("side") == "stone") {
+                    ccount++;
+                }
+            }
+            if (bot >= 0 && bot < state.rows) {
+                const auto& cell = state.board[bot][x];
+                if (!cell.empty() && cell.at("owner") == "square" && cell.at("side") == "stone") {
+                    scount++;
+                }
+            }
+        }
+    }
+    if (player == "circle") {
+        if (ccount >= WIN_COUNT) return 1;
+        if (scount >= WIN_COUNT) return 0;
+    } else {
+        if (scount >= WIN_COUNT) return 1;
+        if (ccount >= WIN_COUNT) return 0;
+    }
+    
+    
+}
 
 double Heuristics::evaluate_position(const GameState& state, const std::string& player) {
+    if (state.is_terminal()) return terminal_result(state, player);
     
     double final_score = 0;
 
@@ -540,7 +642,8 @@ double Heuristics::evaluate_position(const GameState& state, const std::string& 
     final_score += 100 * pieces_in_scoring_h(state, player, true);
     final_score += 5 * possible_moves_h(state, player);
     final_score += 10 * stones_reaching_riv_h(state, player, true);
-
+    final_score += 20 * horizontal_attack(state, player);
+    final_score -= 10 * inactive_pieces(state, player);
 
     // self: defense
     final_score += 20 * pieces_blocking_vertical_h(state, player);
@@ -554,6 +657,9 @@ double Heuristics::evaluate_position(const GameState& state, const std::string& 
     final_score -= 20 * pieces_blocking_vertical_h(state, opponent);
 
     final_score -= 10 * horizontal_base_rivers(state, opponent);
+    final_score -= 20 * horizontal_attack(state, opponent);
+    final_score += 10 * inactive_pieces(state, opponent);
+
 
     double sigmoid_score = 1 / (1 + exp(-final_score/10.0));
 
@@ -576,6 +682,8 @@ void Heuristics::debug_heuristic(const GameState& state, const std::string& play
     std::cout << "Vertical River on Top Perimeter Heuristic: " << vertical_river_on_top_peri_h(state, player) << std::endl;
     std::cout << "Horizontal Base Rivers Heuristic: " << horizontal_base_rivers(state, player) << std::endl;
     std::cout << "Horizontal Negative Heuristic: " << horizontal_negative(state, player) << std::endl;
+    std::cout << "Horizontal Attack Heuristic: " << horizontal_attack(state, player) << std::endl;
+    std::cout << "Inactive Pieces Heuristic: " << inactive_pieces(state, player) << std::endl;
 
     std::string opponent = get_opponent(player);
     std::cout << "--- Opponent (" << opponent << ") Heuristics ---" << std::endl;
@@ -583,6 +691,8 @@ void Heuristics::debug_heuristic(const GameState& state, const std::string& play
     std::cout << "Possible Moves Heuristic: " << possible_moves_h(state, opponent) << std::endl;
     std::cout << "Pieces Blocking Vertical Rivers Heuristic: " << pieces_blocking_vertical_h(state, opponent) << std::endl;
     std::cout << "Horizontal Base Rivers Heuristic: " << horizontal_base_rivers(state, opponent) << std::endl;
+    std::cout << "Horizontal Attack Heuristic: " << horizontal_attack(state, opponent) << std::endl;
+    std::cout << "Inactive Pieces Heuristic: " << inactive_pieces(state, opponent) << std::endl;
     std::cout << "---------------------------" << std::endl;
 
 }
