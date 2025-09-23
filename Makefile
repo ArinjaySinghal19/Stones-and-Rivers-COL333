@@ -134,7 +134,7 @@ run-gui-human: test
 	@echo "🎮 Starting Stones and Rivers Game (with GUI - Human vs AI)..."
 	@echo "============================================================="
 	@echo "Mode: hvai | Circle: human | Square: student_cpp"
-	@cd $(CLIENT_DIR) && PYTHONPATH=$(CPP_DIR):$$PYTHONPATH $(PYTHON) gameEngine.py --mode hvh --time 20
+	@cd $(CLIENT_DIR) && PYTHONPATH=$(CPP_DIR):$$PYTHONPATH $(PYTHON) gameEngine.py --mode hvai --square student_cpp --time 10
 
 # Clean build artifacts but keep virtual environment
 clean:
