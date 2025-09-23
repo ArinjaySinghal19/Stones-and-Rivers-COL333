@@ -1,0 +1,548 @@
+#include "heuristics.h"
+#include <cmath>
+#include <algorithm>
+#include <set>
+#include <queue>
+#include <iostream>
+
+
+int Heuristics::max(int a, int b) {
+    return (a > b) ? a : b;
+}
+
+// ---- Custom Game-Specific Heuristic Functions ----
+
+int Heuristics::vertical_push_h(const GameState& state, const std::string& player) {
+    const auto& board = state.board;
+    int rows = state.rows;
+    int cols = state.cols;
+
+    int score = 0;
+    const int COLUMN_WEIGHT = 1;
+    std::vector<double> col_weight(12);
+    for (int i = 2; i <= 3; i++) {
+        col_weight[i] = 3;
+        col_weight[11-i] = 3;
+    }
+    col_weight[1] = 2;
+    col_weight[4] = 2;
+    col_weight[6] = 2;
+    col_weight[10] = 2;
+    col_weight[5] = 1;
+    col_weight[0] = 0.75;
+    col_weight[11] = 0.75;
+
+    std::string opponent = get_opponent(player);
+    int push_direction = (player == "circle") ? -1 : 1;
+
+    for (int y = 0; y < rows; ++y) {
+        for (int x = 0; x < cols; ++x) {
+            const auto& cell = board[y][x];
+            if (!cell.empty() && cell.find("owner") != cell.end() && cell.at("owner") == player &&
+                cell.find("side") != cell.end() && cell.at("side") == "river" && 
+                cell.find("orientation") != cell.end() && cell.at("orientation") == "vertical") {
+
+                for (int dist = 1; dist < rows; ++dist) {
+                    int ny = y + push_direction * dist;
+                    if (!in_bounds(x, ny, rows, cols)) {
+                        ny -= push_direction;
+                        score += col_weight[x] * (rows - dist);
+                        break;
+                    }
+
+                    const auto& next_cell = board[ny][x];
+                    if (next_cell.empty()) {
+                        continue;
+                    }
+                    else if (next_cell.find("owner") != next_cell.end() && next_cell.at("owner") == opponent) {
+                        score += COLUMN_WEIGHT * (rows - dist);
+                    }
+                    else {
+                        continue;
+                    }
+                }
+            }
+        }
+    }
+    return score;
+}
+
+int Heuristics::connectedness_h(const GameState& state, const std::string& player, bool self) {
+    const auto& board = state.board;
+    int rows = state.rows;
+    int cols = state.cols;
+
+    int connected_pairs = 0;
+    std::string opponent = get_opponent(player);
+    std::vector<std::pair<int, int>> rivers;
+
+    for (int y = 0; y < rows; ++y) {
+        for (int x = 0; x < cols; ++x) {
+            const auto& cell = board[y][x];
+            if (!cell.empty() && cell.find("side") != cell.end() && cell.at("side") == "river") {
+                if (self && cell.find("owner") != cell.end() && cell.at("owner") == player) {
+                    rivers.push_back({x, y});
+                } else if (!self) {
+                    rivers.push_back({x, y});
+                }
+            }
+        }
+    }
+
+    for (const auto& start_river_pos : rivers) {
+        std::set<std::pair<int, int>> visited;
+        std::queue<std::pair<int, int>> q;
+
+        q.push(start_river_pos);
+        visited.insert(start_river_pos);
+
+        while (!q.empty()) {
+            auto [x, y] = q.front();
+            q.pop();
+
+            const auto& current_river = board[y][x];
+            std::vector<std::pair<int, int>> dirs;
+            if (current_river.find("orientation") != current_river.end() && current_river.at("orientation") == "horizontal") {
+                dirs = {{-1, 0}, {1, 0}};
+            } else {
+                dirs = {{0, -1}, {0, 1}};
+            }
+
+            for (auto [dx, dy] : dirs) {
+                int nx = x + dx;
+                int ny = y + dy;
+                while (in_bounds(nx, ny, rows, cols)) {
+                    const auto& next_cell = board[ny][nx];
+                    if (!next_cell.empty() && next_cell.find("side") != next_cell.end() && next_cell.at("side") == "river") {
+                        bool is_target_river = false;
+                        if (self && next_cell.find("owner") != next_cell.end() && next_cell.at("owner") == player) is_target_river = true;
+                        else if (!self) is_target_river = true;
+
+                        if (is_target_river && visited.find({nx, ny}) == visited.end()) {
+                            connected_pairs++;
+                            visited.insert({nx, ny});
+                            q.push({nx, ny});
+                        }
+                        break;
+                    }
+                    if (!next_cell.empty()) {
+                       break;
+                    }
+                    nx += dx;
+                    ny += dy;
+                }
+            }
+        }
+    }
+    return connected_pairs;
+}
+
+int Heuristics::pieces_in_scoring_h(const GameState& state, const std::string& player, bool attack) {
+    const auto& board = state.board;
+    int rows = state.rows;
+    int cols = state.cols;
+    const auto& score_cols = state.score_cols;
+
+    int score = 0;
+    const int w1 = 10;
+    const int w2 = 8;
+    const int w3 = 6;
+    const int w4 = 3;
+    const int w5 = 1;
+
+    int target_row, direction;
+    std::string player_to_check;
+
+    if ((player == "circle" && attack) || (player == "square" && !attack)) {
+        target_row = top_score_row();
+        direction = -1; 
+        player_to_check = "circle";
+    } else {
+        
+        target_row = bottom_score_row(rows);
+        direction = 1;
+        player_to_check = "square";
+    }
+
+    std::map<int, std::map<int, int>> val;
+    
+    for (int col = 4; col <= 7; col++) {
+        if (board[target_row][col].empty()) continue;
+        val[target_row][col] = max(val[target_row][col], w1);
+    }
+    
+    for (int col = 3; col <= 8; col++) {
+        for (int r = 0; r <= 1; r++) {
+            int check_row = target_row + direction * r;
+            if (check_row < 0 || check_row >= rows || board[check_row][col].empty()) continue;
+            if (board[check_row][col].find("owner") != board[check_row][col].end() && 
+                board[check_row][col].at("owner") == player_to_check) {
+                val[check_row][col] = max(val[check_row][col], w2);
+            }
+        }
+    }
+    
+    for (int col = 2; col <= 9; col++) {
+        for (int r = -1; r <= 1; r++) {
+            int check_row = target_row + direction * r;
+            if (check_row < 0 || check_row >= rows || board[check_row][col].empty()) continue;
+            if (board[check_row][col].find("owner") != board[check_row][col].end() && 
+                board[check_row][col].at("owner") == player_to_check) {
+                val[check_row][col] = max(val[check_row][col], w3);
+            }
+        }
+    }
+    
+    for (int col = 1; col <= 10; col++) {
+        for (int r = -2; r <= 2; r++) {
+            int check_row = target_row + direction * r;
+            if (check_row < 0 || check_row >= rows || board[check_row][col].empty()) continue;
+            if (board[check_row][col].find("owner") != board[check_row][col].end() && 
+                board[check_row][col].at("owner") == player_to_check) {
+                val[check_row][col] = max(val[check_row][col], w4);
+            }
+        }
+    }
+    
+    for (int col = 0; col <= 11; col++) {
+        for (int r = -2; r <= 2; r++) {
+            int check_row = target_row + direction * r;
+            if (check_row < 0 || check_row >= rows || board[check_row][col].empty()) continue;
+            if (board[check_row][col].find("owner") != board[check_row][col].end() && 
+                board[check_row][col].at("owner") == player_to_check) {
+                val[check_row][col] = max(val[check_row][col], w5);
+            }
+        }
+    }
+    
+    for (auto &e1 : val) {
+        for (auto &e2 : e1.second) {
+            score += e2.second;
+            // std::cout << "Row: " << e1.first << ", Col: " << e2.first << ", Value: " << e2.second << std::endl;
+        }
+    }
+
+    return score;
+}
+
+int Heuristics::possible_moves_h(const GameState& state, const std::string& player) {
+    std::vector<Move> moves;
+
+    // Iterate over board to find current player's pieces
+    for (int y = 0; y < state.rows; y++) {
+        for (int x = 0; x < state.cols; x++) {
+            const auto &cell = state.board[y][x];
+            if (cell.empty()) continue;
+
+            if (cell.at("owner") != player) continue; // only current player's pieces
+
+            std::string side_type = cell.at("side");
+
+            // ---- MOVES (including river flow) ----
+            auto valid_targets = compute_valid_targets(state.board, x, y, player, state.rows, state.cols, state.score_cols);
+            
+            // Add regular moves and river flow moves
+            for (const auto& target : valid_targets.moves) {
+                moves.push_back({"move", {x,y}, {target.first, target.second}, {}, ""});
+            }
+
+            // ---- PUSHES (including river flow pushes) ----
+            for (const auto& push : valid_targets.pushes) {
+                auto target_pos = push.first;
+                auto pushed_pos = push.second;
+                moves.push_back({"push", {x,y}, {target_pos.first, target_pos.second}, 
+                               {pushed_pos.first, pushed_pos.second}, ""});
+            }
+
+            // ---- FLIP ----
+            if (side_type == "stone") {
+                // Check if flipping to river would be safe (not flowing into opponent score)
+                for (const std::string& orientation : {"horizontal", "vertical"}) {
+                    // Simulate the flip and check resulting flow
+                    bool safe = true;
+                    
+                    // Create a temporary modified board to test the flip
+                    auto test_board = state.board;
+                    test_board[y][x]["side"] = "river";
+                    test_board[y][x]["orientation"] = orientation;
+
+                    auto flow = get_river_flow_destinations(test_board, x, y, x, y, player, state.rows, state.cols, state.score_cols);
+                    for (const auto& dest : flow) {
+                        if (is_opponent_score_cell(dest.first, dest.second, player, state.rows, state.cols, state.score_cols)) {
+                            safe = false;
+                            break;
+                        }
+                    }
+                    
+                    if (safe) {
+                        moves.push_back({"flip", {x,y}, {x,y}, {}, orientation});
+                    }
+                }
+            }
+
+            // ---- ROTATE ----
+            if (side_type == "river") {
+                // Check if rotation would be safe
+                std::string current_orientation = cell.at("orientation");
+                std::string new_orientation = (current_orientation == "horizontal") ? "vertical" : "horizontal";
+                
+                // Create a temporary modified board to test the rotation
+                auto test_board = state.board;
+                test_board[y][x]["orientation"] = new_orientation;
+                
+                auto flow = get_river_flow_destinations(test_board, x, y, x, y, player, state.rows, state.cols, state.score_cols);
+                bool safe = true;
+                for (const auto& dest : flow) {
+                    if (is_opponent_score_cell(dest.first, dest.second, player, state.rows, state.cols, state.score_cols)) {
+                        safe = false;
+                        break;
+                    }
+                }
+                
+                if (safe) {
+                    moves.push_back({"rotate", {x,y}, {x,y}, {}, ""});
+                }
+            }
+        }
+    }
+
+    if (moves.empty()) {
+        moves.push_back({"move", {0,0}, {0,0}, {}, ""}); // fallback
+    }
+
+    return moves.size();
+}
+
+int Heuristics::stones_reaching_riv_h(const GameState& state, const std::string& player, bool self) {
+    const auto& board = state.board;
+    int rows = state.rows;
+    int cols = state.cols;
+
+    int count = 0;
+    std::string target_owner = self ? player : get_opponent(player);
+    std::vector<std::pair<int, int>> dirs = {{0, 1}, {0, -1}, {1, 0}, {-1, 0}};
+
+    for (int y = 0; y < rows; ++y) {
+        for (int x = 0; x < cols; ++x) {
+            const auto& cell = board[y][x];
+            if (!cell.empty() && cell.find("owner") != cell.end() && cell.at("owner") == player && 
+                cell.find("side") != cell.end() && cell.at("side") == "stone") {
+                bool can_reach = false;
+                for (auto [dx, dy] : dirs) {
+                    int nx = x + dx;
+                    int ny = y + dy;
+                    if (in_bounds(nx, ny, rows, cols)) {
+                        const auto& target_cell = board[ny][nx];
+                        if (!target_cell.empty() && 
+                            target_cell.find("side") != target_cell.end() && target_cell.at("side") == "river" && 
+                            target_cell.find("owner") != target_cell.end() && target_cell.at("owner") == target_owner) {
+                           can_reach = true;
+                           break;
+                        }
+                    }
+                }
+                if (can_reach) {
+                    count++;
+                }
+            }
+        }
+    }
+    return count;
+}
+
+int Heuristics::pieces_blocking_vertical_h(const GameState& state, const std::string& player) {
+    const auto& board = state.board;
+    int rows = state.rows;
+    int cols = state.cols;
+
+    int block_count = 0;
+    std::string opponent = get_opponent(player);
+    int flow_dy = (opponent == "square") ? -1 : 1;
+
+    for (int y = 0; y < rows; ++y) {
+        for (int x = 0; x < cols; ++x) {
+            const auto& cell = board[y][x];
+            if (!cell.empty() && cell.find("owner") != cell.end() && cell.at("owner") == opponent &&
+                cell.find("side") != cell.end() && cell.at("side") == "river" && 
+                cell.find("orientation") != cell.end() && cell.at("orientation") == "vertical") {
+
+                int ny = y + flow_dy;
+                while (in_bounds(x, ny, rows, cols)) {
+                    const auto& blocking_cell = board[ny][x];
+                    if (blocking_cell.empty()) {
+                        ny += flow_dy;
+                        continue;
+                    }
+                    if (blocking_cell.find("owner") != blocking_cell.end() && blocking_cell.at("owner") == player) {
+                        if (blocking_cell.find("side") != blocking_cell.end() && blocking_cell.at("side") == "river" && 
+                            blocking_cell.find("orientation") != blocking_cell.end() && blocking_cell.at("orientation") == "horizontal") {
+                            block_count++;
+                            break;
+                        }
+                        if (blocking_cell.find("side") != blocking_cell.end() && blocking_cell.at("side") == "stone" && 
+                            std::abs(ny - y) > 1) {
+                            block_count++;
+                            break;
+                        }
+                    }
+                    break;
+                }
+            }
+        }
+    }
+    return block_count;
+}
+
+int Heuristics::vertical_river_on_top_peri_h(const GameState& state, const std::string& player) {
+    const auto& board = state.board;
+    int rows = state.rows;
+    int cols = state.cols;
+
+    int count = 0;
+    int perimeter_row;
+
+    if (player == "circle") {
+        perimeter_row = top_score_row() + 1;
+    } else {
+        perimeter_row = bottom_score_row(rows) - 1;
+    }
+
+    if (!in_bounds(0, perimeter_row, rows, cols)) return 0;
+
+    for (int x = 0; x < cols; ++x) {
+        const auto& cell = board[perimeter_row][x];
+        if (!cell.empty() && cell.find("owner") != cell.end() && cell.at("owner") == player &&
+            cell.find("side") != cell.end() && cell.at("side") == "river" && 
+            cell.find("orientation") != cell.end() && cell.at("orientation") == "vertical") {
+            count++;
+        }
+    }
+    return count;
+}
+
+int Heuristics::horizontal_base_rivers(const GameState& state, const std::string& player) {
+    const auto& board = state.board;
+    int rows = state.rows;
+    int cols = state.cols;
+
+    int count = 0;
+    std::vector<int> check_rows;
+
+    if (player == "circle") {
+        check_rows.push_back(top_score_row() + 1);
+        check_rows.push_back(top_score_row() + 2);
+    } else {
+        check_rows.push_back(bottom_score_row(rows) - 1);
+        check_rows.push_back(bottom_score_row(rows) - 2);
+    }
+
+    for (int r : check_rows) {
+        if (in_bounds(0, r, rows, cols)) {
+            for (int x = 0; x < cols; ++x) {
+                const auto& cell = board[r][x];
+                if (!cell.empty() && cell.find("owner") != cell.end() && cell.at("owner") == player &&
+                    cell.find("side") != cell.end() && cell.at("side") == "river" && 
+                    cell.find("orientation") != cell.end() && cell.at("orientation") == "horizontal") {
+                    count++;
+                }
+            }
+        }
+    }
+    return count;
+}
+
+int Heuristics::horizontal_negative(const GameState& state, const std::string& player) {
+    const auto& board = state.board;
+    int rows = state.rows;
+    int cols = state.cols;
+
+    int count = 0;
+
+    if (player == "circle") {
+        int base_row = top_score_row();
+        for (int y = 0; y < base_row; ++y) {
+            for (int x = 0; x < cols; ++x) {
+                const auto& cell = board[y][x];
+                if (!cell.empty() && cell.find("owner") != cell.end() && cell.at("owner") == player &&
+                    cell.find("side") != cell.end() && cell.at("side") == "river" && 
+                    cell.find("orientation") != cell.end() && cell.at("orientation") == "horizontal") {
+                    count++;
+                }
+            }
+        }
+    } else {
+        int base_row = bottom_score_row(rows);
+        for (int y = base_row + 1; y < rows; ++y) {
+            for (int x = 0; x < cols; ++x) {
+                const auto& cell = board[y][x];
+                if (!cell.empty() && cell.find("owner") != cell.end() && cell.at("owner") == player &&
+                    cell.find("side") != cell.end() && cell.at("side") == "river" && 
+                    cell.find("orientation") != cell.end() && cell.at("orientation") == "horizontal") {
+                    count++;
+                }
+            }
+        }
+    }
+    return count;
+}
+
+
+
+
+double Heuristics::evaluate_position(const GameState& state, const std::string& player) {
+    
+    double final_score = 0;
+
+    // self: attack
+    final_score += 10 * vertical_push_h(state, player);
+    final_score += 10 * connectedness_h(state, player, true);
+    final_score += 5 * connectedness_h(state, player, false);
+    final_score += 100 * pieces_in_scoring_h(state, player, true);
+    final_score += 5 * possible_moves_h(state, player);
+    final_score += 10 * stones_reaching_riv_h(state, player, true);
+
+
+    // self: defense
+    final_score += 20 * pieces_blocking_vertical_h(state, player);
+    // add vertical_river_on_top_peri_h
+    final_score += 10 * horizontal_base_rivers(state, player);
+    final_score -= 20 * horizontal_negative(state, player);
+
+    final_score -= 100 * pieces_in_scoring_h(state, player, false);
+    std::string opponent = get_opponent(player);
+    final_score -= 5 * possible_moves_h(state, opponent);
+    final_score -= 20 * pieces_blocking_vertical_h(state, opponent);
+
+    final_score -= 10 * horizontal_base_rivers(state, opponent);
+
+    double sigmoid_score = 1 / (1 + exp(-final_score/10.0));
+
+    return sigmoid_score;
+
+}
+
+
+
+void Heuristics::debug_heuristic(const GameState& state, const std::string& player) {
+    std::cout << "----- Debug Heuristic -----" << std::endl;
+    std::cout << "Debugging Heuristic Components for player: " << player << std::endl;
+    std::cout << "Vertical Push Heuristic: " << vertical_push_h(state, player) << std::endl;
+    std::cout << "Connectedness Heuristic (self): " << connectedness_h(state, player, true) << std::endl;
+    std::cout << "Connectedness Heuristic (all): " << connectedness_h(state, player, false) << std::endl;
+    std::cout << "Pieces in Scoring Area Heuristic (attack): " << pieces_in_scoring_h(state, player, true) << std::endl;
+    std::cout << "Possible Moves Heuristic: " << possible_moves_h(state, player) << std::endl;
+    std::cout << "Stones Reaching River Heuristic (self): " << stones_reaching_riv_h(state, player, true) << std::endl;
+    std::cout << "Pieces Blocking Vertical Rivers Heuristic: " << pieces_blocking_vertical_h(state, player) << std::endl;
+    std::cout << "Vertical River on Top Perimeter Heuristic: " << vertical_river_on_top_peri_h(state, player) << std::endl;
+    std::cout << "Horizontal Base Rivers Heuristic: " << horizontal_base_rivers(state, player) << std::endl;
+    std::cout << "Horizontal Negative Heuristic: " << horizontal_negative(state, player) << std::endl;
+
+    std::string opponent = get_opponent(player);
+    std::cout << "--- Opponent (" << opponent << ") Heuristics ---" << std::endl;
+    std::cout << "Pieces in Scoring Area Heuristic (defense): " << pieces_in_scoring_h(state, player, false) << std::endl;
+    std::cout << "Possible Moves Heuristic: " << possible_moves_h(state, opponent) << std::endl;
+    std::cout << "Pieces Blocking Vertical Rivers Heuristic: " << pieces_blocking_vertical_h(state, opponent) << std::endl;
+    std::cout << "Horizontal Base Rivers Heuristic: " << horizontal_base_rivers(state, opponent) << std::endl;
+    std::cout << "---------------------------" << std::endl;
+
+}

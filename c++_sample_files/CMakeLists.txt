@@ -11,4 +11,5 @@ pybind11_add_module(student_agent_module
     game_state.cpp
     minimax.cpp
     mcts.cpp
+    heuristics.cpp
 )

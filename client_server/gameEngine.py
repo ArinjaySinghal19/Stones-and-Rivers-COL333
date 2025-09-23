@@ -275,7 +275,7 @@ def compute_valid_targets(board:List[List[Optional[Piece]]],
                 pushed_player = target.owner
                 flow = get_river_flow_destinations(board, tx, ty, sx, sy, pushed_player, rows, cols, score_cols, river_push=True)
                 for d in flow:
-                    if not is_opponent_score_cell(d[0],d[1],player,rows,cols,score_cols):
+                    if not is_opponent_score_cell(d[0],d[1],pushed_player,rows,cols,score_cols):
                         pushes.append(((tx,ty),(d[0],d[1])))
     return {'moves': moves, 'pushes': pushes}
 
@@ -726,12 +726,12 @@ def run_gui(mode:str, circle_strategy:str, square_strategy:str, load_file:Option
     if not pygame:
         print("pygame not available; use --nogui")
         return
-    
-    # Initialize pygame
-    # pygame.init()
-    
     score_cols = score_cols_for(cols)
-    board = default_start_board(rows, cols)
+    if load_file != None:
+        print("Loading New File")
+        board, rows, cols = load_board_from_file(load_file)
+    else:
+        board = default_start_board(rows, cols)
     turn=0
 
     window_width = max(800, cols*CELL + MARGIN*2 + 200)
@@ -746,15 +746,20 @@ def run_gui(mode:str, circle_strategy:str, square_strategy:str, load_file:Option
     if mode=="aivai": players={"circle":"ai","square":"ai"}
     elif mode=="hvh": players={"circle":"human","square":"human"}
     else:
-        if circle_strategy=="random": players={"circle":"ai","square":"human"}
+        if circle_strategy!="random": players={"circle":"ai","square":"human"}
         else: players={"circle":"human","square":"ai"}
     
+    print(f"Players: {players}")
+    
     # instantiate agents (they only receive board)
+    
     agent_circle = get_agent("circle", circle_strategy)
     agent_square = get_agent("square", square_strategy)
     agents = {}
     if players["circle"]=="ai": agents["circle"] = agent_circle
     if players["square"]=="ai": agents["square"] = agent_square
+    
+    print(f"agents: {agents}")
 
     timers = {"circle": time_per_player, "square": time_per_player}
 
@@ -818,10 +823,7 @@ def run_gui(mode:str, circle_strategy:str, square_strategy:str, load_file:Option
                     current = opponent(current)
                     turn_start = time.time()
             draw_board(screen, board, rows, cols, score_cols, selected, highlights, msg, timers, current)
-            pygame.event.pump()  # Process pygame events to keep window responsive
-            pygame.time.wait(500)  # Add a 500ms delay to make moves visible
             turn += 1
-            # print(turn)
             if turn > 1000:
                 print("Turn limit reached -> draw"); break
             continue
@@ -1021,7 +1023,11 @@ def run_gui(mode:str, circle_strategy:str, square_strategy:str, load_file:Option
 # ---------------- CLI interactive runner ----------------
 def run_cli(mode:str, circle_strategy:str, square_strategy:str, load_file:Optional[str], rows:int, cols:int, time_per_player:float):
     score_cols = score_cols_for(cols)
-    board = default_start_board(rows, cols)
+    if load_file != None:
+        print("Loading New File")
+        board, rows, cols = load_board_from_file(load_file)
+    else:
+        board = default_start_board(rows, cols)
     agent_circle = get_agent("circle", circle_strategy)
     agent_square = get_agent("square", square_strategy)
     players = {"circle":"human","square":"human"}
@@ -1030,7 +1036,6 @@ def run_cli(mode:str, circle_strategy:str, square_strategy:str, load_file:Option
     else:
         if circle_strategy=="random": players={"circle":"ai","square":"human"}
         else: players={"circle":"human","square":"ai"}
-    
     current="circle"; winner=None; turn=0
 
     print("🎮 Welcome to River and Stones! 🎮")

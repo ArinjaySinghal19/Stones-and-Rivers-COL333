@@ -2,6 +2,7 @@
 #include <algorithm>
 #include <queue>
 #include <cmath>
+#include <iostream>
 
 // ---- Helper functions ----
 int top_score_row() {

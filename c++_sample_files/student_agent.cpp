@@ -3,6 +3,8 @@
 #include "game_state.h"
 #include "minimax.h"
 #include "mcts.h"
+#include "heuristics.h"
+#include <iostream>
 
 namespace py = pybind11;
 
@@ -41,16 +43,20 @@ public:
     Move choose(const std::vector<std::vector<std::map<std::string, std::string>>>& board, 
                 int row, int col, const std::vector<int>& score_cols, 
                 float current_player_time, float opponent_time) {
-        const std::string algorithm = "mcts"; // "mcts" or "minimax"
+        const std::string algorithm = "minimax"; // "mcts" or "minimax"
         int rows = board.size();
         int cols = board[0].size();
 
         // Create game state
         GameState current_state(board, side, rows, cols, score_cols);
+
+        Heuristics heuristics;
+        heuristics.debug_heuristic(current_state, side);
+        std::cout << "hello" << std::endl;
         
         if (algorithm == "minimax") {
             // Use Minimax with Alpha-Beta Pruning (depth 4)
-            const int MINIMAX_DEPTH = 4;
+            const int MINIMAX_DEPTH = 3;
             return run_minimax(current_state, MINIMAX_DEPTH);
         } else {
             // Use MCTS (default)

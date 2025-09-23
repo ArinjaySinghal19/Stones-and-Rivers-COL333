@@ -1,26 +1,19 @@
 #include "minimax.h"
+#include "heuristics.h"
 #include <algorithm>
-
-// ---- User-defined Heuristic Function ----
-// This function can be replaced with your custom heuristic
-double user_heuristic(const GameState& state, const std::string& player) {
-    // Placeholder: Currently uses the same evaluation as MCTS
-    // Replace this function with your custom heuristic implementation
-    return state.evaluate(player);
-}
 
 // ---- Minimax with Alpha-Beta Pruning ----
 MinimaxResult minimax_alpha_beta(const GameState& state, int depth, double alpha, double beta, 
                                 bool maximizing_player, const std::string& original_player) {
     // Terminal conditions
     if (depth == 0 || state.is_terminal()) {
-        double value = user_heuristic(state, original_player);
+        double value = Heuristics::evaluate_position(state, original_player);
         return MinimaxResult(value, {"move", {0,0}, {0,0}, {}, ""});
     }
     
     std::vector<Move> legal_moves = state.get_legal_moves();
     if (legal_moves.empty()) {
-        double value = user_heuristic(state, original_player);
+        double value = Heuristics::evaluate_position(state, original_player);
         return MinimaxResult(value, {"move", {0,0}, {0,0}, {}, ""});
     }
     
@@ -74,8 +67,13 @@ MinimaxResult minimax_alpha_beta(const GameState& state, int depth, double alpha
 Move run_minimax(const GameState& initial_state, int max_depth) {
     const int MINIMAX_DEPTH = max_depth;
     std::string current_player = initial_state.current_player;
+
+    // Heuristics heuristics;
+    // heuristics.debug_heuristic(initial_state, current_player);
+
     
-    MinimaxResult result = minimax_alpha_beta(initial_state, MINIMAX_DEPTH, 
+
+    MinimaxResult result = minimax_alpha_beta(initial_state, MINIMAX_DEPTH,
                                             -std::numeric_limits<double>::infinity(),
                                             std::numeric_limits<double>::infinity(),
                                             true, current_player);
