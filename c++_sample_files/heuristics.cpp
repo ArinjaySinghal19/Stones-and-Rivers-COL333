@@ -21,16 +21,16 @@ int Heuristics::vertical_push_h(const GameState& state, const std::string& playe
     const int COLUMN_WEIGHT = 1;
     std::vector<double> col_weight(12);
     for (int i = 2; i <= 3; i++) {
-        col_weight[i] = 3;
-        col_weight[11-i] = 3;
+        col_weight[i] = 3.25;
+        col_weight[11-i] = 3.25;
     }
-    col_weight[1] = 2;
-    col_weight[4] = 2;
-    col_weight[6] = 2;
-    col_weight[10] = 2;
-    col_weight[5] = 1;
-    col_weight[0] = 0.75;
-    col_weight[11] = 0.75;
+    col_weight[1] = 2.25;
+    col_weight[4] = 2.25;
+    col_weight[6] = 2.25;
+    col_weight[10] = 2.25;
+    col_weight[5] = 1.5;
+    col_weight[0] = 1;
+    col_weight[11] = 1;
 
     std::string opponent = get_opponent(player);
     int push_direction = (player == "circle") ? -1 : 1;
@@ -51,6 +51,7 @@ int Heuristics::vertical_push_h(const GameState& state, const std::string& playe
                     }
 
                     const auto& next_cell = board[ny][x];
+                    //addd scoring rea constraint here
                     if (next_cell.empty()) {
                         continue;
                     }
@@ -67,75 +68,104 @@ int Heuristics::vertical_push_h(const GameState& state, const std::string& playe
     return score;
 }
 
-int Heuristics::connectedness_h(const GameState& state, const std::string& player, bool self) {
-    const auto& board = state.board;
-    int rows = state.rows;
-    int cols = state.cols;
 
-    int connected_pairs = 0;
-    std::string opponent = get_opponent(player);
-    std::vector<std::pair<int, int>> rivers;
+int connectedness_h(
+    const std::vector<std::vector<std::map<std::string, std::string>>>& board,
+    int rows, int cols,
+    const std::string& player, bool self) {
 
+    // 1. Collect all rivers that we should consider for the search.
+    std::vector<std::pair<int, int>> target_rivers;
     for (int y = 0; y < rows; ++y) {
         for (int x = 0; x < cols; ++x) {
             const auto& cell = board[y][x];
-            if (!cell.empty() && cell.find("side") != cell.end() && cell.at("side") == "river") {
-                if (self && cell.find("owner") != cell.end() && cell.at("owner") == player) {
-                    rivers.push_back({x, y});
-                } else if (!self) {
-                    rivers.push_back({x, y});
-                }
+            if (cell.empty() || cell.at("side") != "river") {
+                continue;
             }
+            // If 'self' is true, only include the current player's rivers.
+            if (self && cell.at("owner") != player) {
+                continue;
+            }
+            target_rivers.push_back({x, y});
         }
     }
 
-    for (const auto& start_river_pos : rivers) {
-        std::set<std::pair<int, int>> visited;
+    int total_connected_pairs = 0;
+    std::set<std::pair<int, int>> globally_visited;
+
+    // 2. Iterate through each river to find its connected component.
+    for (const auto& start_pos : target_rivers) {
+        if (globally_visited.count(start_pos)) {
+            continue; // This river is already part of a component we've counted.
+        }
+
+        // 3. Found a new component. Start a BFS to find all its members.
+        int component_size = 0;
         std::queue<std::pair<int, int>> q;
 
-        q.push(start_river_pos);
-        visited.insert(start_river_pos);
+        q.push(start_pos);
+        globally_visited.insert(start_pos);
 
         while (!q.empty()) {
             auto [x, y] = q.front();
             q.pop();
+            component_size++;
 
             const auto& current_river = board[y][x];
+            const std::string& orientation = current_river.at("orientation");
+
             std::vector<std::pair<int, int>> dirs;
-            if (current_river.find("orientation") != current_river.end() && current_river.at("orientation") == "horizontal") {
-                dirs = {{-1, 0}, {1, 0}};
-            } else {
-                dirs = {{0, -1}, {0, 1}};
+            if (orientation == "horizontal") {
+                dirs = {{-1, 0}, {1, 0}}; // Check left and right
+            } else { // vertical
+                dirs = {{0, -1}, {0, 1}}; // Check up and down
             }
 
+            // 4. Trace outwards from the current river.
             for (auto [dx, dy] : dirs) {
                 int nx = x + dx;
                 int ny = y + dy;
+
                 while (in_bounds(nx, ny, rows, cols)) {
                     const auto& next_cell = board[ny][nx];
-                    if (!next_cell.empty() && next_cell.find("side") != next_cell.end() && next_cell.at("side") == "river") {
-                        bool is_target_river = false;
-                        if (self && next_cell.find("owner") != next_cell.end() && next_cell.at("owner") == player) is_target_river = true;
-                        else if (!self) is_target_river = true;
 
-                        if (is_target_river && visited.find({nx, ny}) == visited.end()) {
-                            connected_pairs++;
-                            visited.insert({nx, ny});
-                            q.push({nx, ny});
+                    // Path is blocked if the cell is not empty.
+                    if (!next_cell.empty()) {
+                        // Check if the blocker is a valid, unvisited river of the SAME orientation.
+                        if (next_cell.at("side") == "river" &&
+                            next_cell.at("orientation") == orientation &&
+                            !globally_visited.count({nx, ny}))
+                        {
+                            // Check ownership if 'self' mode is enabled.
+                            bool is_valid_target = true;
+                            if (self && next_cell.at("owner") != player) {
+                                is_valid_target = false;
+                            }
+
+                            if (is_valid_target) {
+                                q.push({nx, ny});
+                                globally_visited.insert({nx, ny});
+                            }
                         }
+                        // Any piece (stone, wrong river type, etc.) stops the flow.
                         break;
                     }
-                    if (!next_cell.empty()) {
-                       break;
-                    }
+                    // Continue tracing if the path is clear.
                     nx += dx;
                     ny += dy;
                 }
             }
         }
+        
+        // 5. Once the component is fully explored, calculate and add its pairs.
+        if (component_size > 1) {
+            total_connected_pairs += component_size * (component_size - 1) / 2;
+        }
     }
-    return connected_pairs;
+
+    return total_connected_pairs;
 }
+     
 
 int Heuristics::pieces_in_scoring_h(const GameState& state, const std::string& player, bool attack) {
     const auto& board = state.board;
@@ -357,7 +387,7 @@ int Heuristics::pieces_blocking_vertical_h(const GameState& state, const std::st
 
     int block_count = 0;
     std::string opponent = get_opponent(player);
-    int flow_dy = (opponent == "square") ? -1 : 1;
+    int flow_dy = (opponent == "square") ? 1 : -1;
 
     for (int y = 0; y < rows; ++y) {
         for (int x = 0; x < cols; ++x) {
@@ -402,9 +432,9 @@ int Heuristics::vertical_river_on_top_peri_h(const GameState& state, const std::
     int perimeter_row;
 
     if (player == "circle") {
-        perimeter_row = top_score_row() + 1;
+        perimeter_row = bottom_score_row(rows) - 1; 
     } else {
-        perimeter_row = bottom_score_row(rows) - 1;
+        perimeter_row = top_score_row() + 1;
     }
 
     if (!in_bounds(0, perimeter_row, rows, cols)) return 0;
@@ -429,11 +459,13 @@ int Heuristics::horizontal_base_rivers(const GameState& state, const std::string
     std::vector<int> check_rows;
 
     if (player == "circle") {
-        check_rows.push_back(top_score_row() + 1);
-        check_rows.push_back(top_score_row() + 2);
-    } else {
         check_rows.push_back(bottom_score_row(rows) - 1);
         check_rows.push_back(bottom_score_row(rows) - 2);
+        
+    } else {
+        check_rows.push_back(top_score_row() + 1);
+        check_rows.push_back(top_score_row() + 2);
+        
     }
 
     for (int r : check_rows) {
@@ -458,7 +490,7 @@ int Heuristics::horizontal_negative(const GameState& state, const std::string& p
 
     int count = 0;
 
-    if (player == "circle") {
+    if (player == "square") {
         int base_row = top_score_row();
         for (int y = 0; y < base_row; ++y) {
             for (int x = 0; x < cols; ++x) {
