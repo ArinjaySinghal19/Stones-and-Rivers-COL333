@@ -54,11 +54,9 @@ MCTSNode* MCTSNode::expand() {
 
 double MCTSNode::simulate() {
     GameState sim_state = state.copy();
-    std::random_device rd;
-    std::mt19937 gen(rd());
     
     // Limit simulation depth to avoid infinite games
-    int max_depth = 50;
+    int max_depth = 500;
     int depth = 0;
     
     std::string original_player = state.current_player;
@@ -67,11 +65,22 @@ double MCTSNode::simulate() {
         std::vector<Move> moves = sim_state.get_legal_moves();
         if (moves.empty()) break;
         
-        // Select random move
-        std::uniform_int_distribution<> dist(0, moves.size() - 1);
-        Move move = moves[dist(gen)];
+        // Select greedy move based on evaluation function
+        Move best_move = moves[0];
+        double best_eval = -std::numeric_limits<double>::infinity();
         
-        sim_state.apply_move(move);
+        for (const Move& move : moves) {
+            GameState temp_state = sim_state.copy();
+            temp_state.apply_move(move);
+            double eval = temp_state.evaluate(sim_state.current_player);
+            
+            if (eval > best_eval) {
+                best_eval = eval;
+                best_move = move;
+            }
+        }
+
+        sim_state.apply_move(best_move);
         depth++;
     }
     
