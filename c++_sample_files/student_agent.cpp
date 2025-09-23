@@ -11,7 +11,7 @@
 #include <memory>
 #include <limits>
 #include <thread>
-#include <iostream>
+
 namespace py = pybind11;
 
 /*
@@ -724,7 +724,6 @@ Move run_mcts(const GameState& initial_state, int max_iterations) {
             }
         }
         if (scored) {
-            std::cout << "returning" << std::endl;
             return candidate_move; // take the scoring move immediately
         }
     }
