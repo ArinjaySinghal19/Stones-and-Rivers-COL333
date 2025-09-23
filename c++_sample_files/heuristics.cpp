@@ -34,6 +34,8 @@ int Heuristics::vertical_push_h(const GameState& state, const std::string& playe
 
     std::string opponent = get_opponent(player);
     int push_direction = (player == "circle") ? -1 : 1;
+    std::map<int,std::map<int,int>> reach;
+
 
     for (int y = 0; y < rows; ++y) {
         for (int x = 0; x < cols; ++x) {
@@ -45,24 +47,30 @@ int Heuristics::vertical_push_h(const GameState& state, const std::string& playe
                 for (int dist = 1; dist < rows; ++dist) {
                     int ny = y + push_direction * dist;
                     if (!in_bounds(x, ny, rows, cols)) {
-                        ny -= push_direction;
-                        score += col_weight[x] * (rows - dist);
                         break;
                     }
 
                     const auto& next_cell = board[ny][x];
+                    
                     //addd scoring rea constraint here
                     if (next_cell.empty()) {
+                        reach[x][y] = col_weight[x];
                         continue;
                     }
                     else if (next_cell.find("owner") != next_cell.end() && next_cell.at("owner") == opponent) {
-                        score += COLUMN_WEIGHT * (rows - dist);
+                        break;
                     }
                     else {
+                        reach[x][y] = col_weight[x];
                         continue;
                     }
                 }
             }
+        }
+    }
+    for (auto &e1 : reach){
+        for (auto &e2 : e1.second){
+            score += e2.second;
         }
     }
     return score;
@@ -526,7 +534,7 @@ double Heuristics::evaluate_position(const GameState& state, const std::string& 
     double final_score = 0;
 
     // self: attack
-    final_score += 10 * vertical_push_h(state, player);
+    final_score += 5 * vertical_push_h(state, player);
     final_score += 10 * connectedness_h(state, player, true);
     final_score += 5 * connectedness_h(state, player, false);
     final_score += 100 * pieces_in_scoring_h(state, player, true);
