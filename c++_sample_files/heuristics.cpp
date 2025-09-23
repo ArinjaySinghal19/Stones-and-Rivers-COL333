@@ -77,10 +77,10 @@ int Heuristics::vertical_push_h(const GameState& state, const std::string& playe
 }
 
 
-int connectedness_h(
-    const std::vector<std::vector<std::map<std::string, std::string>>>& board,
-    int rows, int cols,
-    const std::string& player, bool self) {
+int Heuristics::connectedness_h(const GameState& state, const std::string& player, bool self) {
+    const auto& board = state.board;
+    int rows = state.rows;
+    int cols = state.cols;
 
     // 1. Collect all rivers that we should consider for the search.
     std::vector<std::pair<int, int>> target_rivers;
