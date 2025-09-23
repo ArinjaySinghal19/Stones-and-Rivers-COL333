@@ -5,6 +5,8 @@
 #include "mcts.h"
 #include "heuristics.h"
 #include <iostream>
+#include <deque>
+#include <string>
 
 namespace py = pybind11;
 
@@ -54,35 +56,95 @@ public:
         heuristics.debug_heuristic(current_state, side);
         std::cout << "hello" << std::endl;
         
+        Move selected;
         if (algorithm == "minimax") {
             // Use Minimax with Alpha-Beta Pruning (depth 3)
-            const int MINIMAX_DEPTH = 3;
-            return run_minimax(current_state, MINIMAX_DEPTH);
+            const int MINIMAX_DEPTH = 2;
+            selected = run_minimax(current_state, MINIMAX_DEPTH);
         } else {
             // Use MCTS (default)
-            // Calculate number of iterations based on game state
-            // Base iterations: 100, but can be adjusted based on remaining time
             int base_iterations = 100;
-            
-            // Reduce iterations if we have very little time left
             int max_iterations = base_iterations;
-            if (current_player_time < 10.0) {
-                max_iterations = base_iterations / 2;  // 50 iterations
-            }
-            if (current_player_time < 5.0) {
-                max_iterations = base_iterations / 4;  // 25 iterations
-            }
-            if (current_player_time < 2.0) {
-                max_iterations = base_iterations / 10; // 10 iterations
-            }
-            
-            // Run MCTS to find the best move
-            return run_mcts(current_state, max_iterations);
+            if (current_player_time < 10.0) max_iterations = base_iterations / 2;
+            if (current_player_time < 5.0)  max_iterations = base_iterations / 4;
+            if (current_player_time < 2.0)  max_iterations = base_iterations / 10;
+            selected = run_mcts(current_state, max_iterations);
         }
+
+        // If the proposed move would repeat a recent state, try to pick a non-repeating alternative
+        if (would_repeat_after(current_state, selected)) {
+            auto legal = current_state.get_legal_moves();
+            bool replaced = false;
+            for (const auto& m : legal) {
+                if (!would_repeat_after(current_state, m)) {
+                    selected = m;
+                    replaced = true;
+                    break;
+                }
+            }
+            // if all moves repeat, keep the original 'selected'
+            (void)replaced;
+        }
+
+        // Record the resulting state key into rolling history (max 5)
+        record_resulting_key(current_state, selected);
+        return selected;
     }
 
 private:
     std::string side;
+    std::deque<std::string> recent_keys; // last 5 state keys
+
+    static std::string make_state_key(const std::vector<std::vector<std::map<std::string, std::string>>>& board,
+                                      const std::string& player_to_move,
+                                      int rows, int cols) {
+        std::string key;
+        // Rough reserve: player+sep + per-cell ~5 chars + row seps
+        key.reserve(player_to_move.size() + 1 + rows * cols * 5 + rows + 1);
+        key += player_to_move;
+        key.push_back('#');
+        for (int y = 0; y < rows; ++y) {
+            for (int x = 0; x < cols; ++x) {
+                const auto& cell = board[y][x];
+                if (cell.empty()) {
+                    key.push_back('.');
+                } else {
+                    char owner = (cell.at("owner") == "circle") ? 'c' : 's';
+                    if (cell.at("side") == "river") {
+                        char ori = (cell.at("orientation") == "horizontal") ? 'h' : 'v';
+                        key.push_back(owner);
+                        key.push_back('r');
+                        key.push_back(ori);
+                    } else {
+                        key.push_back(owner);
+                        key.push_back('t');
+                        key.push_back('-');
+                    }
+                }
+                key.push_back('|');
+            }
+            key.push_back('/');
+        }
+        return key;
+    }
+
+    bool would_repeat_after(const GameState& state, const Move& move) const {
+        GameState sim = state.copy();
+        sim.apply_move(move);
+        std::string key = make_state_key(sim.board, sim.current_player, sim.rows, sim.cols);
+        for (const auto& k : recent_keys) {
+            if (k == key) return true;
+        }
+        return false;
+    }
+
+    void record_resulting_key(const GameState& state, const Move& move) {
+        GameState sim = state.copy();
+        sim.apply_move(move);
+        std::string key = make_state_key(sim.board, sim.current_player, sim.rows, sim.cols);
+        recent_keys.push_back(key);
+        while (recent_keys.size() > 5) recent_keys.pop_front();
+    }
 };
 
 // ---- PyBind11 bindings ----
