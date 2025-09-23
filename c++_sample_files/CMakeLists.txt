@@ -5,4 +5,10 @@ set(CMAKE_CXX_STANDARD 17)
 
 find_package(pybind11 REQUIRED)
 
-pybind11_add_module(student_agent_module student_agent.cpp)
+# Add all source files
+pybind11_add_module(student_agent_module 
+    student_agent.cpp
+    game_state.cpp
+    minimax.cpp
+    mcts.cpp
+)
