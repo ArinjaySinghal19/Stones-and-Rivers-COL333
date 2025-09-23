@@ -188,8 +188,9 @@ ValidTargets compute_valid_targets(
             // Stone occupied
             if (piece.at("side") == "stone") {
                 int px = tx + dx, py = ty + dy;
+                std::string pushed_player = target.at("owner");
                 if (in_bounds(px, py, rows, cols) && board[py][px].empty() && 
-                    !is_opponent_score_cell(px, py, piece.at("owner"), rows, cols, score_cols)) {
+                    !is_opponent_score_cell(px, py, pushed_player, rows, cols, score_cols) && !is_opponent_score_cell(tx, ty, piece.at("owner"), rows, cols, score_cols)) {
                     result.pushes.push_back({{tx, ty}, {px, py}});
                 }
             } else {
@@ -197,7 +198,7 @@ ValidTargets compute_valid_targets(
                 std::string pushed_player = target.at("owner");
                 auto flow = get_river_flow_destinations(board, tx, ty, sx, sy, pushed_player, rows, cols, score_cols, true);
                 for (const auto& d : flow) {
-                    if (!is_opponent_score_cell(d.first, d.second, player, rows, cols, score_cols)) {
+                    if (!is_opponent_score_cell(d.first, d.second, pushed_player, rows, cols, score_cols)) {
                         result.pushes.push_back({{tx, ty}, d});
                     }
                 }
