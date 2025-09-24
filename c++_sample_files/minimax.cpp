@@ -74,10 +74,18 @@ Move run_minimax(const GameState& initial_state, int max_depth) {
 
     
 
+    // Compute initial evaluation for dynamic weight update
+    double initial_eval = Heuristics::evaluate_position(initial_state, current_player);
+
     MinimaxResult result = minimax_alpha_beta(initial_state, MINIMAX_DEPTH,
                                             -std::numeric_limits<double>::infinity(),
                                             std::numeric_limits<double>::infinity(),
                                             true, current_player);
+    // Update heuristic weights using the delta between result and initial eval
+    double delta = result.value - initial_eval;
+    if(delta > 1000) delta = 1000;
+    if(delta < -1000) delta = -1000;
+    Heuristics::adjust_weights(initial_state, current_player, delta);
     
     return result.best_move;
 }
