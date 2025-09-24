@@ -85,7 +85,7 @@ Move run_minimax(const GameState& initial_state, int max_depth) {
     double delta = result.value - initial_eval;
     if(delta > 1000) delta = 1000;
     if(delta < -1000) delta = -1000;
-    Heuristics::adjust_weights(initial_state, current_player, delta);
+    // Heuristics::adjust_weights(initial_state, current_player, delta);
     
     return result.best_move;
 }
