@@ -4,6 +4,72 @@
 #include <set>
 #include <queue>
 #include <iostream>
+#include <climits>
+#include <map>
+Heuristics::Weights Heuristics::weights_{};
+
+const Heuristics::Weights& Heuristics::get_weights() {
+    return weights_;
+}
+
+void Heuristics::set_weights(const Heuristics::Weights& new_weights) {
+    weights_ = new_weights;
+}
+
+void Heuristics::adjust_weights(const GameState& state, const std::string& player, double delta) {
+    // Simple linear update: w_i += lr * delta * component_i
+    const double lr = 0.01; // small learning rate
+
+    // self: attack
+    weights_.vertical_push += lr * delta * vertical_push_h(state, player, true);
+    weights_.connectedness_self += lr * delta * connectedness_h(state, player, true, true);
+    weights_.connectedness_all += lr * delta * connectedness_h(state, player, false, true);
+    weights_.pieces_in_scoring_attack += lr * delta * pieces_in_scoring_h(state, player, true, true);
+    weights_.manhattan_distance += lr * delta * manhattan_distance_h(state, player, true);
+    weights_.possible_moves_self += lr * delta * possible_moves_h(state, player, true);
+    weights_.stones_reaching_self += lr * delta * stones_reaching_riv_h(state, player, true, true);
+    weights_.horizontal_attack_self += lr * delta * horizontal_attack(state, player, true);
+    weights_.inactive_self += lr * delta * inactive_pieces(state, player, true);
+
+    // self: defense
+    weights_.pieces_blocking_vertical_self += lr * delta * pieces_blocking_vertical_h(state, player, true);
+    weights_.horizontal_base_self += lr * delta * horizontal_base_rivers(state, player, true);
+    weights_.horizontal_negative_self += lr * delta * horizontal_negative(state, player, true);
+
+    // opponent related
+    weights_.pieces_in_scoring_defense += lr * delta * pieces_in_scoring_h(state, player, false, true);
+    std::string opponent = get_opponent(player);
+    weights_.possible_moves_opp += lr * delta * possible_moves_h(state, opponent, false);
+    weights_.pieces_blocking_vertical_opp += lr * delta * pieces_blocking_vertical_h(state, opponent, false);
+    weights_.horizontal_base_opp += lr * delta * horizontal_base_rivers(state, opponent, false);
+    weights_.horizontal_attack_opp += lr * delta * horizontal_attack(state, opponent, false);
+    weights_.inactive_opp += lr * delta * inactive_pieces(state, opponent, false);
+
+    // Print updated weights for debugging/visibility
+    // std::cout
+    //     << "[Heuristics] Updated weights (delta=" << delta << ")\n"
+    //     << "  vertical_push=" << weights_.vertical_push
+    //     << ", connectedness_self=" << weights_.connectedness_self
+    //     << ", connectedness_all=" << weights_.connectedness_all
+    //     << ", pieces_in_scoring_attack=" << weights_.pieces_in_scoring_attack
+    //     << ", manhattan_distance=" << weights_.manhattan_distance
+    //     << ", possible_moves_self=" << weights_.possible_moves_self
+    //     << ", stones_reaching_self=" << weights_.stones_reaching_self
+    //     << ", horizontal_attack_self=" << weights_.horizontal_attack_self
+    //     << ", inactive_self=" << weights_.inactive_self
+    //     << "\n  pieces_blocking_vertical_self=" << weights_.pieces_blocking_vertical_self
+    //     << ", horizontal_base_self=" << weights_.horizontal_base_self
+    //     << ", horizontal_negative_self=" << weights_.horizontal_negative_self
+    //     << ", pieces_in_scoring_defense=" << weights_.pieces_in_scoring_defense
+    //     << ", possible_moves_opp=" << weights_.possible_moves_opp
+    //     << ", pieces_blocking_vertical_opp=" << weights_.pieces_blocking_vertical_opp
+    //     << ", horizontal_base_opp=" << weights_.horizontal_base_opp
+    //     << ", horizontal_attack_opp=" << weights_.horizontal_attack_opp
+    //     << ", inactive_opp=" << weights_.inactive_opp
+    //     << std::endl;
+}
+
+// compute_components removed; calls are inlined
 
 
 int Heuristics::max(int a, int b) {
@@ -12,10 +78,11 @@ int Heuristics::max(int a, int b) {
 
 // ---- Custom Game-Specific Heuristic Functions ----
 
-int Heuristics::vertical_push_h(const GameState& state, const std::string& player) {
+int Heuristics::vertical_push_h(const GameState& state, const std::string& player, bool wrt_self) {
     const auto& board = state.board;
     int rows = state.rows;
     int cols = state.cols;
+    const auto& score_cols = state.score_cols;
 
     int score = 0;
     const int COLUMN_WEIGHT = 1;
@@ -73,11 +140,11 @@ int Heuristics::vertical_push_h(const GameState& state, const std::string& playe
             score += e2.second;
         }
     }
-    return score;
+    return wrt_self ? score : -score;
 }
 
 
-int Heuristics::connectedness_h(const GameState& state, const std::string& player, bool self) {
+int Heuristics::connectedness_h(const GameState& state, const std::string& player, bool self, bool wrt_self) {
     const auto& board = state.board;
     int rows = state.rows;
     int cols = state.cols;
@@ -171,22 +238,22 @@ int Heuristics::connectedness_h(const GameState& state, const std::string& playe
         }
     }
 
-    return total_connected_pairs;
+    return wrt_self ? total_connected_pairs : -total_connected_pairs;
 }
      
 
-int Heuristics::pieces_in_scoring_h(const GameState& state, const std::string& player, bool attack) {
+int Heuristics::pieces_in_scoring_h(const GameState& state, const std::string& player, bool attack, bool wrt_self) {
     const auto& board = state.board;
     int rows = state.rows;
     int cols = state.cols;
     const auto& score_cols = state.score_cols;
 
     int score = 0;
-    const int w1 = 100;
-    const int w2 = 50;
-    const int w3 = 25;
-    const int w4 = 10;
-    const int w5 = 1;
+    const int w1 = 100;  // Pieces in exact scoring row/cols
+    const int w2 = 10;   // Pieces very close to scoring area
+    const int w3 = 1;   // Pieces moderately close
+    const int w4 = 1;   // Pieces somewhat close
+    const int w5 = 1;   // Pieces far but still relevant
 
     int target_row, direction;
     std::string player_to_check;
@@ -196,7 +263,6 @@ int Heuristics::pieces_in_scoring_h(const GameState& state, const std::string& p
         direction = -1; 
         player_to_check = "circle";
     } else {
-        
         target_row = bottom_score_row(rows);
         direction = 1;
         player_to_check = "square";
@@ -207,6 +273,9 @@ int Heuristics::pieces_in_scoring_h(const GameState& state, const std::string& p
     for (int col = 4; col <= 7; col++) {
         if (board[target_row][col].empty()) continue;
         val[target_row][col] = max(val[target_row][col], w1);
+        if(board[target_row][col].at("side") == "stone" && board[target_row][col].at("owner") == player_to_check) {
+            score += 500; // Extra bonus for stone in scoring area
+        }
     }
     
     for (int col = 3; col <= 8; col++) {
@@ -260,10 +329,10 @@ int Heuristics::pieces_in_scoring_h(const GameState& state, const std::string& p
         }
     }
 
-    return score;
+    return wrt_self ? score : -score;
 }
 
-int Heuristics::possible_moves_h(const GameState& state, const std::string& player) {
+int Heuristics::possible_moves_h(const GameState& state, const std::string& player, bool wrt_self) {
     std::vector<Move> moves;
 
     // Iterate over board to find current player's pieces
@@ -348,10 +417,11 @@ int Heuristics::possible_moves_h(const GameState& state, const std::string& play
         moves.push_back({"move", {0,0}, {0,0}, {}, ""}); // fallback
     }
 
-    return moves.size();
+    int result = static_cast<int>(moves.size());
+    return wrt_self ? result : -result;
 }
 
-int Heuristics::stones_reaching_riv_h(const GameState& state, const std::string& player, bool self) {
+int Heuristics::stones_reaching_riv_h(const GameState& state, const std::string& player, bool self, bool wrt_self) {
     const auto& board = state.board;
     int rows = state.rows;
     int cols = state.cols;
@@ -385,10 +455,10 @@ int Heuristics::stones_reaching_riv_h(const GameState& state, const std::string&
             }
         }
     }
-    return count;
+    return wrt_self ? count : -count;
 }
 
-int Heuristics::pieces_blocking_vertical_h(const GameState& state, const std::string& player) {
+int Heuristics::pieces_blocking_vertical_h(const GameState& state, const std::string& player, bool wrt_self) {
     const auto& board = state.board;
     int rows = state.rows;
     int cols = state.cols;
@@ -428,10 +498,10 @@ int Heuristics::pieces_blocking_vertical_h(const GameState& state, const std::st
             }
         }
     }
-    return block_count;
+    return wrt_self ? block_count : -block_count;
 }
 
-int Heuristics::vertical_river_on_top_peri_h(const GameState& state, const std::string& player) {
+int Heuristics::vertical_river_on_top_peri_h(const GameState& state, const std::string& player, bool wrt_self) {
     const auto& board = state.board;
     int rows = state.rows;
     int cols = state.cols;
@@ -455,10 +525,10 @@ int Heuristics::vertical_river_on_top_peri_h(const GameState& state, const std::
             count++;
         }
     }
-    return count;
+    return wrt_self ? count : -count;
 }
 
-int Heuristics::horizontal_base_rivers(const GameState& state, const std::string& player) {
+int Heuristics::horizontal_base_rivers(const GameState& state, const std::string& player, bool wrt_self) {
     const auto& board = state.board;
     int rows = state.rows;
     int cols = state.cols;
@@ -488,10 +558,10 @@ int Heuristics::horizontal_base_rivers(const GameState& state, const std::string
             }
         }
     }
-    return count;
+    return wrt_self ? count : -count;
 }
 
-int Heuristics::horizontal_negative(const GameState& state, const std::string& player) {
+int Heuristics::horizontal_negative(const GameState& state, const std::string& player, bool wrt_self) {
     const auto& board = state.board;
     int rows = state.rows;
     int cols = state.cols;
@@ -523,12 +593,12 @@ int Heuristics::horizontal_negative(const GameState& state, const std::string& p
             }
         }
     }
-    return count;
+    return wrt_self ? count : -count;
 }
 
 
 
-int Heuristics::horizontal_attack(const GameState& state, const std::string& player) {
+int Heuristics::horizontal_attack(const GameState& state, const std::string& player, bool wrt_self) {
     const auto& board = state.board;
     int rows = state.rows;
     int cols = state.cols;
@@ -557,12 +627,12 @@ int Heuristics::horizontal_attack(const GameState& state, const std::string& pla
             }
         }
     }
-    return count;
+    return wrt_self ? count : -count;
 }
 
 
 
-int Heuristics::inactive_pieces(const GameState& state, const std::string& player) {
+int Heuristics::inactive_pieces(const GameState& state, const std::string& player, bool wrt_self) {
     const auto& board = state.board;
     int rows = state.rows;
     int cols = state.cols;
@@ -593,11 +663,67 @@ int Heuristics::inactive_pieces(const GameState& state, const std::string& playe
             inactive_count++;
         }
     }
-    return inactive_count;
+    return wrt_self ? inactive_count : -inactive_count;
+}
+
+int Heuristics::manhattan_distance_h(const GameState& state, const std::string& player, bool wrt_self) {
+    const auto& board = state.board;
+    int rows = state.rows;
+    int cols = state.cols;
+    const auto& score_cols = state.score_cols;
+
+    int total_distance = 0;
+    int piece_count = 0;
+    int target_row;
+
+    // Determine the target scoring row based on player
+    if (player == "circle") {
+        target_row = top_score_row();
+    } else {
+        target_row = bottom_score_row(rows);
+    }
+
+    // Iterate through all board positions to find player's pieces
+    for (int y = 0; y < rows; ++y) {
+        for (int x = 0; x < cols; ++x) {
+            const auto& cell = board[y][x];
+            
+            // Check if this cell contains a piece owned by the current player
+            if (!cell.empty() && 
+                cell.find("owner") != cell.end() && 
+                cell.at("owner") == player) {
+                
+                piece_count++;
+                
+                // Calculate Manhattan distance to the closest scoring column
+                int min_col_distance = INT_MAX;
+                for (int score_col : score_cols) {
+                    if (score_col >= 0 && score_col < cols) {
+                        int col_distance = std::abs(x - score_col);
+                        min_col_distance = std::min(min_col_distance, col_distance);
+                    }
+                }
+                
+                // Add row distance to target row
+                int row_distance = std::abs(y - target_row);
+                
+                // Total Manhattan distance for this piece
+                int piece_distance = row_distance + min_col_distance;
+                total_distance += piece_distance;
+            }
+        }
+    }
+
+    // Return negative of average distance (lower distance = higher score)
+    // Add 1 to piece_count to avoid division by zero
+    {
+        int value = piece_count > 0 ? -(total_distance / piece_count) : 0;
+        return wrt_self ? value : -value;
+    }
 }
 
 
-int Heuristics::terminal_result(const GameState& state, const std::string& player) {
+int Heuristics::terminal_result(const GameState& state, const std::string& player, bool wrt_self) {
     int WIN_COUNT = 4;
     int top = top_score_row();
     int bot = bottom_score_row(state.rows);
@@ -619,52 +745,49 @@ int Heuristics::terminal_result(const GameState& state, const std::string& playe
             }
         }
     }
+    int result = 0;
     if (player == "circle") {
-        if (ccount >= WIN_COUNT) return 1;
-        if (scount >= WIN_COUNT) return 0;
+        if (ccount >= WIN_COUNT) result = 100000;
+        else if (scount >= WIN_COUNT) result = -100000;
     } else {
-        if (scount >= WIN_COUNT) return 1;
-        if (ccount >= WIN_COUNT) return 0;
+        if (scount >= WIN_COUNT) result = 100000;
+        else if (ccount >= WIN_COUNT) result = -100000;
     }
-    
-    
+    return wrt_self ? result : -result;
 }
 
 double Heuristics::evaluate_position(const GameState& state, const std::string& player) {
-    if (state.is_terminal()) return terminal_result(state, player);
-    
-    double final_score = 0;
+    if (state.is_terminal()) return terminal_result(state, player, true);
+    double final_score = 0.0;
 
     // self: attack
-    final_score += 5 * vertical_push_h(state, player);
-    final_score += 10 * connectedness_h(state, player, true);
-    final_score += 5 * connectedness_h(state, player, false);
-    final_score += 100 * pieces_in_scoring_h(state, player, true);
-    final_score += 5 * possible_moves_h(state, player);
-    final_score += 10 * stones_reaching_riv_h(state, player, true);
-    final_score += 20 * horizontal_attack(state, player);
-    final_score -= 10 * inactive_pieces(state, player);
+    final_score += weights_.vertical_push * vertical_push_h(state, player, true);
+    final_score += weights_.connectedness_self * connectedness_h(state, player, true, true);
+    final_score += weights_.connectedness_all * connectedness_h(state, player, false, true);
+    final_score += weights_.pieces_in_scoring_attack * pieces_in_scoring_h(state, player, true, true);
+    final_score += weights_.manhattan_distance * manhattan_distance_h(state, player, true);
+    final_score += weights_.possible_moves_self * possible_moves_h(state, player, true);
+    final_score += weights_.stones_reaching_self * stones_reaching_riv_h(state, player, true, true);
+    final_score += weights_.horizontal_attack_self * horizontal_attack(state, player, true);
+    final_score += weights_.inactive_self * inactive_pieces(state, player, true);
 
     // self: defense
-    final_score += 20 * pieces_blocking_vertical_h(state, player);
-    // add vertical_river_on_top_peri_h
-    final_score += 10 * horizontal_base_rivers(state, player);
-    final_score -= 20 * horizontal_negative(state, player);
+    final_score += weights_.pieces_blocking_vertical_self * pieces_blocking_vertical_h(state, player, true);
+    final_score += weights_.horizontal_base_self * horizontal_base_rivers(state, player, true);
+    final_score += weights_.horizontal_negative_self * horizontal_negative(state, player, true);
 
-    final_score -= 100 * pieces_in_scoring_h(state, player, false);
+    // opponent related
+    final_score += weights_.pieces_in_scoring_defense * pieces_in_scoring_h(state, player, false, true);
     std::string opponent = get_opponent(player);
-    final_score -= 5 * possible_moves_h(state, opponent);
-    final_score -= 20 * pieces_blocking_vertical_h(state, opponent);
+    final_score += weights_.possible_moves_opp * possible_moves_h(state, opponent, false);
+    final_score += weights_.pieces_blocking_vertical_opp * pieces_blocking_vertical_h(state, opponent, false);
+    final_score += weights_.horizontal_base_opp * horizontal_base_rivers(state, opponent, false);
+    final_score += weights_.horizontal_attack_opp * horizontal_attack(state, opponent, false);
+    final_score += weights_.inactive_opp * inactive_pieces(state, opponent, false);
 
-    final_score -= 10 * horizontal_base_rivers(state, opponent);
-    final_score -= 20 * horizontal_attack(state, opponent);
-    final_score += 10 * inactive_pieces(state, opponent);
+    std::cout << final_score << std::endl;
 
-
-    double sigmoid_score = 1 / (1 + exp(-final_score/10.0));
-
-    return sigmoid_score;
-
+    return final_score;
 }
 
 
@@ -672,27 +795,28 @@ double Heuristics::evaluate_position(const GameState& state, const std::string& 
 void Heuristics::debug_heuristic(const GameState& state, const std::string& player) {
     std::cout << "----- Debug Heuristic -----" << std::endl;
     std::cout << "Debugging Heuristic Components for player: " << player << std::endl;
-    std::cout << "Vertical Push Heuristic: " << vertical_push_h(state, player) << std::endl;
-    std::cout << "Connectedness Heuristic (self): " << connectedness_h(state, player, true) << std::endl;
-    std::cout << "Connectedness Heuristic (all): " << connectedness_h(state, player, false) << std::endl;
-    std::cout << "Pieces in Scoring Area Heuristic (attack): " << pieces_in_scoring_h(state, player, true) << std::endl;
-    std::cout << "Possible Moves Heuristic: " << possible_moves_h(state, player) << std::endl;
-    std::cout << "Stones Reaching River Heuristic (self): " << stones_reaching_riv_h(state, player, true) << std::endl;
-    std::cout << "Pieces Blocking Vertical Rivers Heuristic: " << pieces_blocking_vertical_h(state, player) << std::endl;
-    std::cout << "Vertical River on Top Perimeter Heuristic: " << vertical_river_on_top_peri_h(state, player) << std::endl;
-    std::cout << "Horizontal Base Rivers Heuristic: " << horizontal_base_rivers(state, player) << std::endl;
-    std::cout << "Horizontal Negative Heuristic: " << horizontal_negative(state, player) << std::endl;
-    std::cout << "Horizontal Attack Heuristic: " << horizontal_attack(state, player) << std::endl;
-    std::cout << "Inactive Pieces Heuristic: " << inactive_pieces(state, player) << std::endl;
+    std::cout << "Vertical Push Heuristic: " << vertical_push_h(state, player, true) << std::endl;
+    std::cout << "Connectedness Heuristic (self): " << connectedness_h(state, player, true, true) << std::endl;
+    std::cout << "Connectedness Heuristic (all): " << connectedness_h(state, player, false, true) << std::endl;
+    std::cout << "Pieces in Scoring Area Heuristic (attack): " << pieces_in_scoring_h(state, player, true, true) << std::endl;
+    std::cout << "Possible Moves Heuristic: " << possible_moves_h(state, player, true) << std::endl;
+    std::cout << "Stones Reaching River Heuristic (self): " << stones_reaching_riv_h(state, player, true, true) << std::endl;
+    std::cout << "Pieces Blocking Vertical Rivers Heuristic: " << pieces_blocking_vertical_h(state, player, true) << std::endl;
+    std::cout << "Vertical River on Top Perimeter Heuristic: " << vertical_river_on_top_peri_h(state, player, true) << std::endl;
+    std::cout << "Horizontal Base Rivers Heuristic: " << horizontal_base_rivers(state, player, true) << std::endl;
+    std::cout << "Horizontal Negative Heuristic: " << horizontal_negative(state, player, true) << std::endl;
+    std::cout << "Horizontal Attack Heuristic: " << horizontal_attack(state, player, true) << std::endl;
+    std::cout << "Inactive Pieces Heuristic: " << inactive_pieces(state, player, true) << std::endl;
+    std::cout << "Manhattan Distance Heuristic: " << manhattan_distance_h(state, player, true) << std::endl;
 
     std::string opponent = get_opponent(player);
     std::cout << "--- Opponent (" << opponent << ") Heuristics ---" << std::endl;
-    std::cout << "Pieces in Scoring Area Heuristic (defense): " << pieces_in_scoring_h(state, player, false) << std::endl;
-    std::cout << "Possible Moves Heuristic: " << possible_moves_h(state, opponent) << std::endl;
-    std::cout << "Pieces Blocking Vertical Rivers Heuristic: " << pieces_blocking_vertical_h(state, opponent) << std::endl;
-    std::cout << "Horizontal Base Rivers Heuristic: " << horizontal_base_rivers(state, opponent) << std::endl;
-    std::cout << "Horizontal Attack Heuristic: " << horizontal_attack(state, opponent) << std::endl;
-    std::cout << "Inactive Pieces Heuristic: " << inactive_pieces(state, opponent) << std::endl;
+    std::cout << "Pieces in Scoring Area Heuristic (defense): " << pieces_in_scoring_h(state, player, false, true) << std::endl;
+    std::cout << "Possible Moves Heuristic: " << possible_moves_h(state, opponent, false) << std::endl;
+    std::cout << "Pieces Blocking Vertical Rivers Heuristic: " << pieces_blocking_vertical_h(state, opponent, false) << std::endl;
+    std::cout << "Horizontal Base Rivers Heuristic: " << horizontal_base_rivers(state, opponent, false) << std::endl;
+    std::cout << "Horizontal Attack Heuristic: " << horizontal_attack(state, opponent, false) << std::endl;
+    std::cout << "Inactive Pieces Heuristic: " << inactive_pieces(state, opponent, false) << std::endl;
     std::cout << "---------------------------" << std::endl;
 
 }
