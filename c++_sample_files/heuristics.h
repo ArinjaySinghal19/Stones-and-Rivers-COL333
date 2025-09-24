@@ -11,25 +11,25 @@ class Heuristics {
 public:
     struct Weights {
         double vertical_push = 5.0;
-        double connectedness_self = 1.0;
-        double connectedness_all = 1.0;
-        double pieces_in_scoring_attack = 1.0;
-        double manhattan_distance = 1.0;
-        double possible_moves_self = 1.0;
-        double stones_reaching_self = 1.0;
-        double horizontal_attack_self = 1.0;
-        double inactive_self = -1.0;
+        double connectedness_self = 10.0;
+        double connectedness_all = 5.0;
+        double pieces_in_scoring_attack = 120.0;
+        double manhattan_distance = 5.0;
+        double possible_moves_self = 7.0;
+        double stones_reaching_self = 10.0;
+        double horizontal_attack_self = 15.0;
+        double inactive_self = 20.0;
 
-        double pieces_blocking_vertical_self = 1.0;
-        double horizontal_base_self = 1.0;
-        double horizontal_negative_self = -1.0;
+        double pieces_blocking_vertical_self = 20.0;
+        double horizontal_base_self = 10.0;
+        double horizontal_negative_self = 20.0;
 
-        double pieces_in_scoring_defense = -1.0; // opponent scoring threat
-        double possible_moves_opp = -1.0;
-        double pieces_blocking_vertical_opp = -1.0;
-        double horizontal_base_opp = -1.0;
-        double horizontal_attack_opp = -1.0;
-        double inactive_opp = 1.0;
+        double pieces_in_scoring_defense = 115.0; // opponent scoring threat
+        double possible_moves_opp = 5.0;
+        double pieces_blocking_vertical_opp = 20.0;
+        double horizontal_base_opp = 10.0;
+        double horizontal_attack_opp = 15.0;
+        double inactive_opp = 20.0;
     };
 
     // Main heuristic evaluation function

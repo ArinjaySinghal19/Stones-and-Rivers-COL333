@@ -593,7 +593,7 @@ int Heuristics::horizontal_negative(const GameState& state, const std::string& p
             }
         }
     }
-    return wrt_self ? count : -count;
+    return wrt_self ? -count : count;
 }
 
 
@@ -663,7 +663,7 @@ int Heuristics::inactive_pieces(const GameState& state, const std::string& playe
             inactive_count++;
         }
     }
-    return wrt_self ? inactive_count : -inactive_count;
+    return wrt_self ? -inactive_count : +inactive_count;
 }
 
 int Heuristics::manhattan_distance_h(const GameState& state, const std::string& player, bool wrt_self) {
@@ -714,12 +714,8 @@ int Heuristics::manhattan_distance_h(const GameState& state, const std::string& 
         }
     }
 
-    // Return negative of average distance (lower distance = higher score)
-    // Add 1 to piece_count to avoid division by zero
-    {
-        int value = piece_count > 0 ? -(total_distance / piece_count) : 0;
+        int value = -(total_distance);
         return wrt_self ? value : -value;
-    }
 }
 
 
@@ -747,11 +743,11 @@ int Heuristics::terminal_result(const GameState& state, const std::string& playe
     }
     int result = 0;
     if (player == "circle") {
-        if (ccount >= WIN_COUNT) result = 100000;
-        else if (scount >= WIN_COUNT) result = -100000;
+        if (ccount >= WIN_COUNT) result = 1e9;
+        else if (scount >= WIN_COUNT) result = -1e9;
     } else {
-        if (scount >= WIN_COUNT) result = 100000;
-        else if (ccount >= WIN_COUNT) result = -100000;
+        if (scount >= WIN_COUNT) result = 1e9;
+        else if (ccount >= WIN_COUNT) result = -1e9;
     }
     return wrt_self ? result : -result;
 }
@@ -760,30 +756,31 @@ double Heuristics::evaluate_position(const GameState& state, const std::string& 
     if (state.is_terminal()) return terminal_result(state, player, true);
     double final_score = 0.0;
 
-    // self: attack
-    final_score += weights_.vertical_push * vertical_push_h(state, player, true);
-    final_score += weights_.connectedness_self * connectedness_h(state, player, true, true);
-    final_score += weights_.connectedness_all * connectedness_h(state, player, false, true);
+    // // self: attack
+    // final_score += weights_.vertical_push * vertical_push_h(state, player, true);
+    // final_score += weights_.connectedness_self * connectedness_h(state, player, true, true);
+    // final_score += weights_.connectedness_all * connectedness_h(state, player, false, true);
     final_score += weights_.pieces_in_scoring_attack * pieces_in_scoring_h(state, player, true, true);
     final_score += weights_.manhattan_distance * manhattan_distance_h(state, player, true);
-    final_score += weights_.possible_moves_self * possible_moves_h(state, player, true);
-    final_score += weights_.stones_reaching_self * stones_reaching_riv_h(state, player, true, true);
-    final_score += weights_.horizontal_attack_self * horizontal_attack(state, player, true);
-    final_score += weights_.inactive_self * inactive_pieces(state, player, true);
+    // std::cout << "md: " << manhattan_distance_h(state, player, true) << std::endl;
+    // final_score += weights_.possible_moves_self * possible_moves_h(state, player, true);
+    // final_score += weights_.stones_reaching_self * stones_reaching_riv_h(state, player, true, true);
+    // final_score += weights_.horizontal_attack_self * horizontal_attack(state, player, true);
+    // final_score += weights_.inactive_self * inactive_pieces(state, player, true);
 
-    // self: defense
-    final_score += weights_.pieces_blocking_vertical_self * pieces_blocking_vertical_h(state, player, true);
-    final_score += weights_.horizontal_base_self * horizontal_base_rivers(state, player, true);
-    final_score += weights_.horizontal_negative_self * horizontal_negative(state, player, true);
+    // // self: defense
+    // final_score += weights_.pieces_blocking_vertical_self * pieces_blocking_vertical_h(state, player, true);
+    // final_score += weights_.horizontal_base_self * horizontal_base_rivers(state, player, true);
+    // final_score += weights_.horizontal_negative_self * horizontal_negative(state, player, true);
 
-    // opponent related
+    // // opponent related
     final_score += weights_.pieces_in_scoring_defense * pieces_in_scoring_h(state, player, false, true);
-    std::string opponent = get_opponent(player);
-    final_score += weights_.possible_moves_opp * possible_moves_h(state, opponent, false);
-    final_score += weights_.pieces_blocking_vertical_opp * pieces_blocking_vertical_h(state, opponent, false);
-    final_score += weights_.horizontal_base_opp * horizontal_base_rivers(state, opponent, false);
-    final_score += weights_.horizontal_attack_opp * horizontal_attack(state, opponent, false);
-    final_score += weights_.inactive_opp * inactive_pieces(state, opponent, false);
+    // std::string opponent = get_opponent(player);
+    // final_score += weights_.possible_moves_opp * possible_moves_h(state, opponent, false);
+    // final_score += weights_.pieces_blocking_vertical_opp * pieces_blocking_vertical_h(state, opponent, false);
+    // final_score += weights_.horizontal_base_opp * horizontal_base_rivers(state, opponent, false);
+    // final_score += weights_.horizontal_attack_opp * horizontal_attack(state, opponent, false);
+    // final_score += weights_.inactive_opp * inactive_pieces(state, opponent, false);
 
     std::cout << final_score << std::endl;
 
