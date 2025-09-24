@@ -45,7 +45,7 @@ public:
     Move choose(const std::vector<std::vector<std::map<std::string, std::string>>>& board, 
                 int row, int col, const std::vector<int>& score_cols, 
                 float current_player_time, float opponent_time) {
-        const std::string algorithm = "minimax"; // "mcts" or "minimax"
+        const std::string algorithm = "mcts"; // "mcts" or "minimax"
         int rows = board.size();
         int cols = board[0].size();
 
@@ -63,7 +63,7 @@ public:
             selected = run_minimax(current_state, MINIMAX_DEPTH);
         } else {
             // Use MCTS (default)
-            int base_iterations = 100;
+            int base_iterations = 200;
             int max_iterations = base_iterations;
             if (current_player_time < 10.0) max_iterations = base_iterations / 2;
             if (current_player_time < 5.0)  max_iterations = base_iterations / 4;

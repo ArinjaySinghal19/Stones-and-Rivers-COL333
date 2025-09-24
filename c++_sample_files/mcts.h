@@ -9,6 +9,7 @@
 class MCTSNode {
 public:
     GameState state;
+    
     MCTSNode* parent;
     std::vector<std::unique_ptr<MCTSNode>> children;
     std::vector<Move> untried_moves;

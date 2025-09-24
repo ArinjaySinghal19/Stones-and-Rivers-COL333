@@ -1,4 +1,5 @@
 #include "mcts.h"
+#include "heuristics.h"
 #include <random>
 #include <cmath>
 #include <algorithm>
@@ -31,21 +32,31 @@ MCTSNode* MCTSNode::select_child() {
 MCTSNode* MCTSNode::expand() {
     if (untried_moves.empty()) return nullptr;
     
-    // Select a random untried move
-    std::random_device rd;
-    std::mt19937 gen(rd());
-    std::uniform_int_distribution<> dist(0, untried_moves.size() - 1);
-    int idx = dist(gen);
     
-    Move move = untried_moves[idx];
-    untried_moves.erase(untried_moves.begin() + idx);
+    
+    
+    Move best_move;
+    float best_val = -1;
+    for (auto move : untried_moves){
+        GameState new_state = state.copy();
+        new_state.apply_move(move);
+        float k = Heuristics::evaluate_position(new_state,new_state.current_player);
+        if (k>best_val){
+            best_move = move;
+            best_val = k;
+        }
+        
+        // else if (k == best_val)
+
+
+    }
     
     // Create new state by applying the move
     GameState new_state = state.copy();
-    new_state.apply_move(move);
+    new_state.apply_move(best_move);
     
     // Create new child node
-    auto child = std::make_unique<MCTSNode>(new_state, this, move);
+    auto child = std::make_unique<MCTSNode>(new_state, this,best_move);
     MCTSNode* child_ptr = child.get();
     children.push_back(std::move(child));
     
@@ -68,15 +79,28 @@ double MCTSNode::simulate() {
         if (moves.empty()) break;
         
         // Select random move
-        std::uniform_int_distribution<> dist(0, moves.size() - 1);
-        Move move = moves[dist(gen)];
+        Move best_move;
+        float best_val = -1;
+        for (auto move : moves){
+        GameState new_state = sim_state.copy();
+        new_state.apply_move(move);
+        float k = Heuristics::evaluate_position(new_state,new_state.current_player);
+        if (k>best_val){
+            best_move = move;
+            best_val = k;
+        }
         
-        sim_state.apply_move(move);
+        // else if (k == best_val)
+
+
+    }
+        
+        sim_state.apply_move(best_move);
         depth++;
     }
     
     // Evaluate the final state from the perspective of the original player
-    return sim_state.evaluate(original_player);
+    return Heuristics::evaluate_position(sim_state,original_player);
 }
 
 void MCTSNode::backpropagate(double result) {
