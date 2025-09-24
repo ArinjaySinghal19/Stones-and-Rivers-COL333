@@ -45,6 +45,7 @@ int bottom_score_row(int rows);
 std::string get_opponent(const std::string& player);
 bool in_bounds(int x, int y, int rows, int cols);
 bool is_opponent_score_cell(int x, int y, const std::string& player, int rows, int cols, const std::vector<int>& score_cols);
+bool is_my_score_cell(int x, int y, const std::string& player, int rows, int cols, const std::vector<int>& score_cols);
 bool check_win_state(const std::vector<std::vector<std::map<std::string, std::string>>>& board, 
                      int rows, int cols, const std::vector<int>& score_cols);
 

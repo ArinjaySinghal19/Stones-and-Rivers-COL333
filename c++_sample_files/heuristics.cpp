@@ -4,6 +4,7 @@
 #include <set>
 #include <queue>
 #include <iostream>
+#include <climits>
 
 
 int Heuristics::max(int a, int b) {
@@ -16,6 +17,7 @@ int Heuristics::vertical_push_h(const GameState& state, const std::string& playe
     const auto& board = state.board;
     int rows = state.rows;
     int cols = state.cols;
+    const auto& score_cols = state.score_cols;
 
     int score = 0;
     const int COLUMN_WEIGHT = 1;
@@ -182,11 +184,11 @@ int Heuristics::pieces_in_scoring_h(const GameState& state, const std::string& p
     const auto& score_cols = state.score_cols;
 
     int score = 0;
-    const int w1 = 100;
-    const int w2 = 50;
-    const int w3 = 25;
-    const int w4 = 10;
-    const int w5 = 1;
+    const int w1 = 100;  // Pieces in exact scoring row/cols
+    const int w2 = 10;   // Pieces very close to scoring area
+    const int w3 = 1;   // Pieces moderately close
+    const int w4 = 1;   // Pieces somewhat close
+    const int w5 = 1;   // Pieces far but still relevant
 
     int target_row, direction;
     std::string player_to_check;
@@ -196,7 +198,6 @@ int Heuristics::pieces_in_scoring_h(const GameState& state, const std::string& p
         direction = -1; 
         player_to_check = "circle";
     } else {
-        
         target_row = bottom_score_row(rows);
         direction = 1;
         player_to_check = "square";
@@ -207,6 +208,9 @@ int Heuristics::pieces_in_scoring_h(const GameState& state, const std::string& p
     for (int col = 4; col <= 7; col++) {
         if (board[target_row][col].empty()) continue;
         val[target_row][col] = max(val[target_row][col], w1);
+        if(board[target_row][col].at("side") == "stone" && board[target_row][col].at("owner") == player_to_check) {
+            score += 500; // Extra bonus for stone in scoring area
+        }
     }
     
     for (int col = 3; col <= 8; col++) {
@@ -596,6 +600,59 @@ int Heuristics::inactive_pieces(const GameState& state, const std::string& playe
     return inactive_count;
 }
 
+int Heuristics::manhattan_distance_h(const GameState& state, const std::string& player) {
+    const auto& board = state.board;
+    int rows = state.rows;
+    int cols = state.cols;
+    const auto& score_cols = state.score_cols;
+
+    int total_distance = 0;
+    int piece_count = 0;
+    int target_row;
+
+    // Determine the target scoring row based on player
+    if (player == "circle") {
+        target_row = top_score_row();
+    } else {
+        target_row = bottom_score_row(rows);
+    }
+
+    // Iterate through all board positions to find player's pieces
+    for (int y = 0; y < rows; ++y) {
+        for (int x = 0; x < cols; ++x) {
+            const auto& cell = board[y][x];
+            
+            // Check if this cell contains a piece owned by the current player
+            if (!cell.empty() && 
+                cell.find("owner") != cell.end() && 
+                cell.at("owner") == player) {
+                
+                piece_count++;
+                
+                // Calculate Manhattan distance to the closest scoring column
+                int min_col_distance = INT_MAX;
+                for (int score_col : score_cols) {
+                    if (score_col >= 0 && score_col < cols) {
+                        int col_distance = std::abs(x - score_col);
+                        min_col_distance = std::min(min_col_distance, col_distance);
+                    }
+                }
+                
+                // Add row distance to target row
+                int row_distance = std::abs(y - target_row);
+                
+                // Total Manhattan distance for this piece
+                int piece_distance = row_distance + min_col_distance;
+                total_distance += piece_distance;
+            }
+        }
+    }
+
+    // Return negative of average distance (lower distance = higher score)
+    // Add 1 to piece_count to avoid division by zero
+    return piece_count > 0 ? -(total_distance / piece_count) : 0;
+}
+
 
 int Heuristics::terminal_result(const GameState& state, const std::string& player) {
     int WIN_COUNT = 4;
@@ -636,29 +693,30 @@ double Heuristics::evaluate_position(const GameState& state, const std::string& 
     double final_score = 0;
 
     // self: attack
-    final_score += 5 * vertical_push_h(state, player);
-    final_score += 10 * connectedness_h(state, player, true);
-    final_score += 5 * connectedness_h(state, player, false);
-    final_score += 100 * pieces_in_scoring_h(state, player, true);
-    final_score += 5 * possible_moves_h(state, player);
-    final_score += 10 * stones_reaching_riv_h(state, player, true);
-    final_score += 20 * horizontal_attack(state, player);
-    final_score -= 10 * inactive_pieces(state, player);
+    // final_score += 5 * vertical_push_h(state, player);
+    // final_score += 1 * connectedness_h(state, player, true);
+    final_score += 1 * connectedness_h(state, player, false);
+    final_score += 1 * pieces_in_scoring_h(state, player, true);
+    final_score += 1 * manhattan_distance_h(state, player);
+    final_score += 1 * possible_moves_h(state, player);
+    final_score += 1 * stones_reaching_riv_h(state, player, true);
+    final_score += 1 * horizontal_attack(state, player);
+    final_score -= 1 * inactive_pieces(state, player);
 
-    // self: defense
-    final_score += 20 * pieces_blocking_vertical_h(state, player);
-    // add vertical_river_on_top_peri_h
-    final_score += 10 * horizontal_base_rivers(state, player);
-    final_score -= 20 * horizontal_negative(state, player);
+    // // self: defense
+    // final_score += 1 * pieces_blocking_vertical_h(state, player);
+    // // add vertical_river_on_top_peri_h
+    // final_score += 1 * horizontal_base_rivers(state, player);
+    // final_score -= 1 * horizontal_negative(state, player);
 
-    final_score -= 100 * pieces_in_scoring_h(state, player, false);
-    std::string opponent = get_opponent(player);
-    final_score -= 5 * possible_moves_h(state, opponent);
-    final_score -= 20 * pieces_blocking_vertical_h(state, opponent);
+    // final_score -= 1 * pieces_in_scoring_h(state, player, false);
+    // std::string opponent = get_opponent(player);
+    // final_score -= 1 * possible_moves_h(state, opponent);
+    // final_score -= 1 * pieces_blocking_vertical_h(state, opponent);
 
-    final_score -= 10 * horizontal_base_rivers(state, opponent);
-    final_score -= 20 * horizontal_attack(state, opponent);
-    final_score += 10 * inactive_pieces(state, opponent);
+    // final_score -= 1 * horizontal_base_rivers(state, opponent);
+    // final_score -= 1 * horizontal_attack(state, opponent);
+    // final_score += 1 * inactive_pieces(state, opponent);
 
 
     double sigmoid_score = 1 / (1 + exp(-final_score/10.0));
@@ -684,6 +742,7 @@ void Heuristics::debug_heuristic(const GameState& state, const std::string& play
     std::cout << "Horizontal Negative Heuristic: " << horizontal_negative(state, player) << std::endl;
     std::cout << "Horizontal Attack Heuristic: " << horizontal_attack(state, player) << std::endl;
     std::cout << "Inactive Pieces Heuristic: " << inactive_pieces(state, player) << std::endl;
+    std::cout << "Manhattan Distance Heuristic: " << manhattan_distance_h(state, player) << std::endl;
 
     std::string opponent = get_opponent(player);
     std::cout << "--- Opponent (" << opponent << ") Heuristics ---" << std::endl;

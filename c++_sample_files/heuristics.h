@@ -24,6 +24,7 @@ public:
     static int horizontal_negative(const GameState& state, const std::string& player);
     static int horizontal_attack(const GameState& state, const std::string& player);
     static int inactive_pieces(const GameState& state, const std::string& player);
+    static int manhattan_distance_h(const GameState& state, const std::string& player);
     static int terminal_result(const GameState& state, const std::string& player);
     void debug_heuristic(const GameState& state, const std::string& player);
     

@@ -7,6 +7,8 @@
 #include <iostream>
 #include <deque>
 #include <string>
+#include <random>
+#include <algorithm>
 
 namespace py = pybind11;
 
@@ -53,8 +55,8 @@ public:
         GameState current_state(board, side, rows, cols, score_cols);
 
         Heuristics heuristics;
-        heuristics.debug_heuristic(current_state, side);
-        std::cout << "hello" << std::endl;
+        // heuristics.debug_heuristic(current_state, side);
+        // std::cout << "hello" << std::endl;
         
         Move selected;
         if (algorithm == "minimax") {
@@ -74,16 +76,10 @@ public:
         // If the proposed move would repeat a recent state, try to pick a non-repeating alternative
         if (would_repeat_after(current_state, selected)) {
             auto legal = current_state.get_legal_moves();
-            bool replaced = false;
-            for (const auto& m : legal) {
-                if (!would_repeat_after(current_state, m)) {
-                    selected = m;
-                    replaced = true;
-                    break;
-                }
-            }
-            // if all moves repeat, keep the original 'selected'
-            (void)replaced;
+            static std::random_device rd;
+            static std::mt19937 gen(rd());
+            std::uniform_int_distribution<> dis(0, legal.size() - 1);
+            selected = legal[dis(gen)];
         }
 
         // Record the resulting state key into rolling history (max 5)
@@ -93,7 +89,7 @@ public:
 
 private:
     std::string side;
-    std::deque<std::string> recent_keys; // last 5 state keys
+    std::deque<std::string> recent_keys; // last 5 player-only position keys
 
     static std::string make_state_key(const std::vector<std::vector<std::map<std::string, std::string>>>& board,
                                       const std::string& player_to_move,
@@ -128,10 +124,39 @@ private:
         return key;
     }
 
+    // Create a key based only on the current player's pieces for repetition detection
+    std::string make_player_only_key(const std::vector<std::vector<std::map<std::string, std::string>>>& board,
+                                     int rows, int cols) const {
+        std::string key;
+        // Reserve space for board representation
+        key.reserve(rows * cols * 5 + rows + 1);
+        for (int y = 0; y < rows; ++y) {
+            for (int x = 0; x < cols; ++x) {
+                const auto& cell = board[y][x];
+                if (cell.empty() || cell.at("owner") != side) {
+                    // Empty cell or opponent's piece - treat as empty for our purposes
+                    key.push_back('.');
+                } else {
+                    // Our piece
+                    if (cell.at("side") == "river") {
+                        char ori = (cell.at("orientation") == "horizontal") ? 'h' : 'v';
+                        key.push_back('r');
+                        key.push_back(ori);
+                    } else {
+                        key.push_back('s'); // stone
+                    }
+                }
+                key.push_back('|');
+            }
+            key.push_back('/');
+        }
+        return key;
+    }
+
     bool would_repeat_after(const GameState& state, const Move& move) const {
         GameState sim = state.copy();
         sim.apply_move(move);
-        std::string key = make_state_key(sim.board, sim.current_player, sim.rows, sim.cols);
+        std::string key = make_player_only_key(sim.board, sim.rows, sim.cols);
         for (const auto& k : recent_keys) {
             if (k == key) return true;
         }
@@ -141,7 +166,7 @@ private:
     void record_resulting_key(const GameState& state, const Move& move) {
         GameState sim = state.copy();
         sim.apply_move(move);
-        std::string key = make_state_key(sim.board, sim.current_player, sim.rows, sim.cols);
+        std::string key = make_player_only_key(sim.board, sim.rows, sim.cols);
         recent_keys.push_back(key);
         while (recent_keys.size() > 5) recent_keys.pop_front();
     }

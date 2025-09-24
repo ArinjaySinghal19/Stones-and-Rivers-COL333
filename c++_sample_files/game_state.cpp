@@ -33,6 +33,18 @@ bool is_opponent_score_cell(int x, int y, const std::string& player, int rows, i
     }
 }
 
+bool is_my_score_cell(int x, int y, const std::string& player, int rows, int cols, const std::vector<int>& score_cols) {
+    // Check if position is in the score_cols
+    bool in_score_cols = std::find(score_cols.begin(), score_cols.end(), x) != score_cols.end();
+    if (!in_score_cols) return false;
+    
+    if (player == "circle") {
+        return y == top_score_row();
+    } else {
+        return y == bottom_score_row(rows);
+    }
+}
+
 bool check_win_state(const std::vector<std::vector<std::map<std::string, std::string>>>& board, 
                      int rows, int cols, const std::vector<int>& score_cols) {
     int WIN_COUNT = 4;
@@ -274,49 +286,62 @@ std::vector<Move> GameState::get_legal_moves() const {
 
             std::string side_type = cell.at("side");
 
-            // ---- MOVES (including river flow) ----
-            auto valid_targets = compute_valid_targets(board, x, y, current_player, rows, cols, score_cols);
-            
-            // Add regular moves and river flow moves
-            for (const auto& target : valid_targets.moves) {
-                moves.push_back({"move", {x,y}, {target.first, target.second}, {}, ""});
-            }
+            // Check if piece is in scoring area
+            bool in_scoring_area = is_my_score_cell(x, y, current_player, rows, cols, score_cols);
 
-            // ---- PUSHES (including river flow pushes) ----
-            for (const auto& push : valid_targets.pushes) {
-                auto target_pos = push.first;
-                auto pushed_pos = push.second;
-                moves.push_back({"push", {x,y}, {target_pos.first, target_pos.second}, 
-                               {pushed_pos.first, pushed_pos.second}, ""});
+            // ---- MOVES (including river flow) ----
+            // Only allow moves if piece is NOT in scoring area
+            if (!in_scoring_area) {
+                auto valid_targets = compute_valid_targets(board, x, y, current_player, rows, cols, score_cols);
+                
+                // Add regular moves and river flow moves
+                for (const auto& target : valid_targets.moves) {
+                    moves.push_back({"move", {x,y}, {target.first, target.second}, {}, ""});
+                }
+
+                // ---- PUSHES (including river flow pushes) ----
+                for (const auto& push : valid_targets.pushes) {
+                    auto target_pos = push.first;
+                    auto pushed_pos = push.second;
+                    moves.push_back({"push", {x,y}, {target_pos.first, target_pos.second}, 
+                                   {pushed_pos.first, pushed_pos.second}, ""});
+                }
             }
 
             // ---- FLIP ----
             if (side_type == "stone") {
-                // Check if flipping to river would be safe (not flowing into opponent score)
-                for (const std::string& orientation : {"horizontal", "vertical"}) {
-                    // Simulate the flip and check resulting flow
-                    bool safe = true;
-                    
-                    // Create a temporary modified board to test the flip
-                    auto test_board = board;
-                    test_board[y][x]["side"] = "river";
-                    test_board[y][x]["orientation"] = orientation;
-                    
-                    auto flow = get_river_flow_destinations(test_board, x, y, x, y, current_player, rows, cols, score_cols);
-                    for (const auto& dest : flow) {
-                        if (is_opponent_score_cell(dest.first, dest.second, current_player, rows, cols, score_cols)) {
-                            safe = false;
-                            break;
+                // Only allow flipping stone to river if NOT in scoring area
+                if (!in_scoring_area) {
+                    // Check if flipping to river would be safe (not flowing into opponent score)
+                    for (const std::string& orientation : {"horizontal", "vertical"}) {
+                        // Simulate the flip and check resulting flow
+                        bool safe = true;
+                        
+                        // Create a temporary modified board to test the flip
+                        auto test_board = board;
+                        test_board[y][x]["side"] = "river";
+                        test_board[y][x]["orientation"] = orientation;
+                        
+                        auto flow = get_river_flow_destinations(test_board, x, y, x, y, current_player, rows, cols, score_cols);
+                        for (const auto& dest : flow) {
+                            if (is_opponent_score_cell(dest.first, dest.second, current_player, rows, cols, score_cols)) {
+                                safe = false;
+                                break;
+                            }
+                        }
+                        
+                        if (safe) {
+                            moves.push_back({"flip", {x,y}, {x,y}, {}, orientation});
                         }
                     }
-                    
-                    if (safe) {
-                        moves.push_back({"flip", {x,y}, {x,y}, {}, orientation});
-                    }
                 }
+            } else if (side_type == "river") {
+                // Always allow flipping river to stone (including in scoring area)
+                moves.push_back({"flip", {x,y}, {x,y}, {}, ""});
             }
 
             // ---- ROTATE ----
+            // Only allow rotation of rivers
             if (side_type == "river") {
                 // Check if rotation would be safe
                 std::string current_orientation = cell.at("orientation");
