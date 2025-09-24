@@ -74,16 +74,16 @@ public:
         }
 
         // If the proposed move would repeat a recent state, try to pick a non-repeating alternative
-        if (would_repeat_after(current_state, selected)) {
-            auto legal = current_state.get_legal_moves();
-            static std::random_device rd;
-            static std::mt19937 gen(rd());
-            std::uniform_int_distribution<> dis(0, legal.size() - 1);
-            selected = legal[dis(gen)];
-        }
+        // if (would_repeat_after(current_state, selected)) {
+        //     auto legal = current_state.get_legal_moves();
+        //     static std::random_device rd;
+        //     static std::mt19937 gen(rd());
+        //     std::uniform_int_distribution<> dis(0, legal.size() - 1);
+        //     selected = legal[dis(gen)];
+        // }
 
         // Record the resulting state key into rolling history (max 5)
-        record_resulting_key(current_state, selected);
+        // record_resulting_key(current_state, selected);
         return selected;
     }
 
