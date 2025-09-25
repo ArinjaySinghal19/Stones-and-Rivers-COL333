@@ -101,7 +101,7 @@ int Heuristics::vertical_push_h(const GameState& state, const std::string& playe
 
     std::string opponent = get_opponent(player);
     int push_direction = (player == "circle") ? -1 : 1;
-    std::map<int,std::map<int,int>> reach;
+    std::vector<std::vector<int>> reach(rows, std::vector<int>(cols, 0));
 
 
     for (int y = 0; y < rows; ++y) {
@@ -121,14 +121,14 @@ int Heuristics::vertical_push_h(const GameState& state, const std::string& playe
                     
                     //addd scoring rea constraint here
                     if (next_cell.empty()) {
-                        reach[x][y] = col_weight[x];
+                        reach[y][x] = col_weight[x];
                         continue;
                     }
                     else if (next_cell.find("owner") != next_cell.end() && next_cell.at("owner") == opponent) {
                         break;
                     }
                     else {
-                        reach[x][y] = col_weight[x];
+                        reach[y][x] = col_weight[x];
                         continue;
                     }
                 }
@@ -136,8 +136,8 @@ int Heuristics::vertical_push_h(const GameState& state, const std::string& playe
         }
     }
     for (auto &e1 : reach){
-        for (auto &e2 : e1.second){
-            score += e2.second;
+        for (auto &e2 : e1){
+            score += e2;
         }
     }
     return wrt_self ? score : -score;
@@ -242,31 +242,100 @@ int Heuristics::connectedness_h(const GameState& state, const std::string& playe
 }
      
 
-int Heuristics::pieces_in_scoring_h(const GameState& state, const std::string& player, bool attack, bool wrt_self) {
+// int Heuristics::pieces_in_scoring_h(const GameState& state, const std::string& player, bool attack, bool wrt_self) {
+//     const auto& board = state.board;
+//     int rows = state.rows;
+//     int cols = state.cols;
+//     const auto& score_cols = state.score_cols;
+
+//     int score = 0;
+//     const int w1 = 1e4;  // Pieces in exact scoring row/cols
+
+//     int target_row, direction;
+//     std::string player_to_check;
+
+//     if ((player == "circle" && attack) || (player == "square" && !attack)) {
+//         target_row = top_score_row();
+//         direction = -1; 
+//         player_to_check = "circle";
+//     } else {
+//         target_row = bottom_score_row(rows);
+//         direction = 1;
+//         player_to_check = "square";
+//     }
+
+//     int in_score_area = 0;
+//     std::vector <int> virgin_cols;
+//     for (int col = 4; col <= 7; col++) {
+//         if (board[target_row][col].empty()) {
+//             virgin_cols.push_back(col);
+//             continue;
+//         }
+//         score += w1;
+//         in_score_area++;
+//         if(board[target_row][col].at("side") == "stone" && board[target_row][col].at("owner") == player_to_check) {
+//             score += 4000; // Extra bonus for stone in scoring area
+//         }
+//     }
+
+//     for(int col = 1; col <= 10; col++) {
+//         for(int row = target_row - 2; row <= target_row + 2; row++) {
+//             if(row < 0 || row >= rows) continue;
+//             if(board[row][col].empty()) continue;
+//             if(board[row][col].at("owner") != player_to_check) continue;
+//             if(row==target_row && col>=4 && col<=7) continue;
+//             int max_score = 0;
+//             for(int vc: virgin_cols){
+//                 int man_dist = abs(vc - col) + abs(target_row - row);
+//                 if(man_dist == 1){
+//                     max_score = max(max_score, 300*in_score_area);
+//                 }
+//                 if(man_dist == 2){
+//                     max_score = max(max_score, 100*in_score_area);
+//                 }
+//                 if(man_dist == 3){
+//                     max_score = max(max_score, 50*in_score_area);
+//                 }
+//             }
+//             score += max_score;
+            
+//         }
+//     }
+
+//     return wrt_self ? score : -score;
+// }
+
+
+int Heuristics::pieces_in_scoring_h(const GameState& state, const std::string& player, bool wrt_self) {
     const auto& board = state.board;
     int rows = state.rows;
     int cols = state.cols;
     const auto& score_cols = state.score_cols;
 
     int score = 0;
-    const int w1 = 1e4;  // Pieces in exact scoring row/cols
-    const int w2 = 10;   // Pieces very close to scoring area
-    const int w3 = 1;   // Pieces moderately close
-    const int w4 = 1;   // Pieces somewhat close
-    const int w5 = 1;   // Pieces far but still relevant
+    const int w1 = 1e3;  // Pieces in exact scoring row/cols
+    const int w2 = 350;   // Pieces very close to scoring area
+    const int w3 = 175;   // Pieces moderately close
+    const int w4 = 80;   // Pieces somewhat close
+    const int w5 = 4;   // Pieces far but still relevant
 
     int target_row, direction;
     std::string player_to_check;
-
-    if ((player == "circle" && attack) || (player == "square" && !attack)) {
+if (!wrt_self){
+    if (player == "circle") player_to_check = "square";
+    else player_to_check = "circle";
+}
+if (player_to_check == "circle"){
         target_row = top_score_row();
         direction = -1; 
-        player_to_check = "circle";
+        // player_to_check = "circle";
     } else {
         target_row = bottom_score_row(rows);
         direction = 1;
-        player_to_check = "square";
-    }
+        // player_to_check = "square";
+}
+
+   
 
     std::map<int, std::map<int, int>> val;
     int in_score_area = 0;
@@ -279,7 +348,7 @@ int Heuristics::pieces_in_scoring_h(const GameState& state, const std::string& p
         val[target_row][col] = max(val[target_row][col], w1);
         in_score_area++;
         if(board[target_row][col].at("side") == "stone" && board[target_row][col].at("owner") == player_to_check) {
-            score += 500; // Extra bonus for stone in scoring area
+            score += 400; // Extra bonus for stone in scoring area
         }
     }
     // for(int col = 4; col <= 7; col++) {
@@ -312,7 +381,7 @@ int Heuristics::pieces_in_scoring_h(const GameState& state, const std::string& p
             for(int vc: virgin_cols){
                 int man_dist = abs(vc - col) + abs(target_row - row);
                 if(man_dist == 1){
-                    score += 300*in_score_area;
+                    score += 200*in_score_area;
                 }
                 if(man_dist == 2){
                     score += 100*in_score_area;
@@ -384,7 +453,7 @@ int Heuristics::pieces_in_scoring_h(const GameState& state, const std::string& p
 }
 
 int Heuristics::possible_moves_h(const GameState& state, const std::string& player, bool wrt_self) {
-    std::vector<Move> moves;
+    int num_moves = 0;
 
     // Iterate over board to find current player's pieces
     for (int y = 0; y < state.rows; y++) {
@@ -396,49 +465,61 @@ int Heuristics::possible_moves_h(const GameState& state, const std::string& play
 
             std::string side_type = cell.at("side");
 
-            // ---- MOVES (including river flow) ----
-            auto valid_targets = compute_valid_targets(state.board, x, y, player, state.rows, state.cols, state.score_cols);
-            
-            // Add regular moves and river flow moves
-            for (const auto& target : valid_targets.moves) {
-                moves.push_back({"move", {x,y}, {target.first, target.second}, {}, ""});
-            }
+            // Check if piece is in scoring area
+            bool in_scoring_area = is_my_score_cell(x, y, player, state.rows, state.cols, state.score_cols);
 
-            // ---- PUSHES (including river flow pushes) ----
-            for (const auto& push : valid_targets.pushes) {
-                auto target_pos = push.first;
-                auto pushed_pos = push.second;
-                moves.push_back({"push", {x,y}, {target_pos.first, target_pos.second}, 
-                               {pushed_pos.first, pushed_pos.second}, ""});
-            }
+            // ---- MOVES (including river flow) ----
+            // Only allow moves if piece is NOT in scoring area
+            // if (!in_scoring_area) {
+                auto valid_targets = compute_valid_targets(state.board, x, y, player, state.rows, state.cols, state.score_cols);
+                
+                // Add regular moves and river flow moves
+                for (const auto& target : valid_targets.moves) {
+                    num_moves++;
+                }
+
+                // ---- PUSHES (including river flow pushes) ----
+                for (const auto& push : valid_targets.pushes) {
+                    auto target_pos = push.first;
+                    auto pushed_pos = push.second;
+                    num_moves++;
+                }
+            // }
 
             // ---- FLIP ----
             if (side_type == "stone") {
-                // Check if flipping to river would be safe (not flowing into opponent score)
-                for (const std::string& orientation : {"horizontal", "vertical"}) {
-                    // Simulate the flip and check resulting flow
-                    bool safe = true;
-                    
-                    // Create a temporary modified board to test the flip
-                    auto test_board = state.board;
-                    test_board[y][x]["side"] = "river";
-                    test_board[y][x]["orientation"] = orientation;
+                // Only allow flipping stone to river if NOT in scoring area
+                // if (!in_scoring_area) {
+                    // Check if flipping to river would be safe (not flowing into opponent score)
+                    for (const std::string& orientation : {"horizontal", "vertical"}) {
+                        // Simulate the flip and check resulting flow
+                        bool safe = true;
+                        
+                        // Create a temporary modified board to test the flip
+                        auto test_board = state.board;
+                        test_board[y][x]["side"] = "river";
+                        test_board[y][x]["orientation"] = orientation;
 
-                    auto flow = get_river_flow_destinations(test_board, x, y, x, y, player, state.rows, state.cols, state.score_cols);
-                    for (const auto& dest : flow) {
-                        if (is_opponent_score_cell(dest.first, dest.second, player, state.rows, state.cols, state.score_cols)) {
-                            safe = false;
-                            break;
+                        auto flow = get_river_flow_destinations(test_board, x, y, x, y, player, state.rows, state.cols, state.score_cols);
+                        for (const auto& dest : flow) {
+                            if (is_opponent_score_cell(dest.first, dest.second, player, state.rows, state.cols, state.score_cols)) {
+                                safe = false;
+                                break;
+                            }
+                        }
+                        
+                        if (safe) {
+                            num_moves++;
                         }
                     }
-                    
-                    if (safe) {
-                        moves.push_back({"flip", {x,y}, {x,y}, {}, orientation});
-                    }
-                }
+                // }
+            } else if (side_type == "river") {
+                // Always allow flipping river to stone (including in scoring area)
+                num_moves++;
             }
 
             // ---- ROTATE ----
+            // Only allow rotation of rivers
             if (side_type == "river") {
                 // Check if rotation would be safe
                 std::string current_orientation = cell.at("orientation");
@@ -458,17 +539,13 @@ int Heuristics::possible_moves_h(const GameState& state, const std::string& play
                 }
                 
                 if (safe) {
-                    moves.push_back({"rotate", {x,y}, {x,y}, {}, ""});
+                    num_moves++;
                 }
             }
         }
     }
 
-    if (moves.empty()) {
-        moves.push_back({"move", {0,0}, {0,0}, {}, ""}); // fallback
-    }
-
-    int result = static_cast<int>(moves.size());
+    int result = num_moves;
     return wrt_self ? result : -result;
 }
 
@@ -671,13 +748,53 @@ int Heuristics::horizontal_attack(const GameState& state, const std::string& pla
     for (int r : check_rows) {
         if (in_bounds(0, r, rows, cols)) {
             for (int x = 0; x < cols; ++x) {
+                int mul = 2;
+                if (r == top_score_row() || r == bottom_score_row(rows)) {
+                    mul = 3;
+                }
                 const auto& cell = board[r][x];
-                if (!cell.empty() && cell.find("owner") != cell.end() && cell.at("owner") == player) {
-                    count++;
+                if (!cell.empty() && cell.find("owner") != cell.end() && cell.at("owner") == player && cell.at("side") == "river" && cell.at("orientation") == "horizontal") {
+                    //first left side case
+                    if (x < 4){
+                        int num_possible = 0;
+                        int curr_col = x+1;
+                        while(in_bounds(curr_col, r, rows, cols) && ((board[r][curr_col].empty() || (board[r][curr_col].at("side") == "river" && board[r][curr_col].at("orientation") == "horizontal") || (board[r][curr_col].at("owner") == player)))) {
+                            if( curr_col >7) break;
+                            num_possible+=mul;
+                            curr_col++;
+                        }
+                        count += num_possible;
+                    }
+                    else if (x > 7){ //right side case
+                        int num_possible = 0;
+                        int curr_col = x-1;
+                        while(in_bounds(curr_col, r, rows, cols) && ((board[r][curr_col].empty() || (board[r][curr_col].at("side") == "river" && board[r][curr_col].at("orientation") == "horizontal") || (board[r][curr_col].at("owner") == player)))) {
+                            if(curr_col <4) break;
+                            num_possible+=mul;
+                            curr_col--;
+                        }
+                        count += num_possible;
+                    }
+                    else{ //middle case
+                    int num_possible = 0;
+                    int curr_col = x+1;
+                    while(in_bounds(curr_col, r, rows, cols) && ((board[r][curr_col].empty() || (board[r][curr_col].at("side") == "river" && board[r][curr_col].at("orientation") == "horizontal") || (board[r][curr_col].at("owner") == player)))) {
+                        if(curr_col >=4 && curr_col <=7) break;
+                        num_possible+=mul;
+                        curr_col++;
+                    }
+                    curr_col = x-1;
+                    while(in_bounds(curr_col, r, rows, cols) && ((board[r][curr_col].empty() || (board[r][curr_col].at("side") == "river" && board[r][curr_col].at("orientation") == "horizontal") || (board[r][curr_col].at("owner") == player)))) {
+                        if(curr_col >=4 && curr_col <=7) break;
+                        num_possible+=mul;
+                        curr_col--;
+                    }
+                    count += num_possible;
                 }
             }
         }
     }
+}
     return wrt_self ? count : -count;
 }
 
@@ -823,7 +940,7 @@ double Heuristics::evaluate_position(const GameState& state, const std::string& 
     final_score += weights_.pieces_blocking_vertical_self * pieces_blocking_vertical_h(state, player, true);
     final_score += weights_.horizontal_base_self * horizontal_base_rivers(state, player, true);
     final_score += weights_.horizontal_negative_self * horizontal_negative(state, player, true);
-
+    
     // // opponent related
     final_score += weights_.pieces_in_scoring_defense * pieces_in_scoring_h(state, player, false, true);
     std::string opponent = get_opponent(player);

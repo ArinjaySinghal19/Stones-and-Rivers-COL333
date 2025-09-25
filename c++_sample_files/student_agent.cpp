@@ -9,6 +9,8 @@
 #include <string>
 #include <random>
 #include <algorithm>
+#include <chrono>
+
 
 namespace py = pybind11;
 
@@ -47,14 +49,19 @@ public:
     Move choose(const std::vector<std::vector<std::map<std::string, std::string>>>& board, 
                 int row, int col, const std::vector<int>& score_cols, 
                 float current_player_time, float opponent_time) {
-        const std::string algorithm = "mcts"; // "mcts" or "minimax"
+        // Start timing
+        auto start_time = std::chrono::high_resolution_clock::now();
+        
+        const std::string algorithm = "minimax"; // "mcts" or "minimax"
         int rows = board.size();
         int cols = board[0].size();
+
+
 
         // Create game state
         GameState current_state(board, side, rows, cols, score_cols);
 
-        Heuristics heuristics;
+        // Heuristics heuristics;
         // heuristics.debug_heuristic(current_state, side);
         // std::cout << "hello" << std::endl;
         
@@ -84,6 +91,14 @@ public:
 
         // Record the resulting state key into rolling history (max 5)
         // record_resulting_key(current_state, selected);
+        
+        // Calculate and display elapsed time
+        auto end_time = std::chrono::high_resolution_clock::now();
+        auto duration = std::chrono::duration_cast<std::chrono::milliseconds>(end_time - start_time);
+        double elapsed_seconds = duration.count();
+
+        std::cout << "Move returned in " << elapsed_seconds << " milliseconds" << std::endl;
+
         return selected;
     }
 
