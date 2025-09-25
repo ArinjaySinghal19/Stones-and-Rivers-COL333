@@ -313,14 +313,14 @@ int Heuristics::pieces_in_scoring_h(const GameState& state, const std::string& p
     const auto& score_cols = state.score_cols;
 
     int score = 0;
-    const int w1 = 1e3;  // Pieces in exact scoring row/cols
+    const int w1 = 1e5;  // Pieces in exact scoring row/cols
     const int w2 = 350;   // Pieces very close to scoring area
     const int w3 = 175;   // Pieces moderately close
     const int w4 = 80;   // Pieces somewhat close
     const int w5 = 4;   // Pieces far but still relevant
 
     int target_row, direction;
-    std::string player_to_check;
+    std::string player_to_check = player;
 if (!wrt_self){
     if (player == "circle") player_to_check = "square";
     else player_to_check = "circle";
@@ -348,7 +348,7 @@ if (player_to_check == "circle"){
         val[target_row][col] = max(val[target_row][col], w1);
         in_score_area++;
         if(board[target_row][col].at("side") == "stone" && board[target_row][col].at("owner") == player_to_check) {
-            score += 400; // Extra bonus for stone in scoring area
+            score += 1e3; // Extra bonus for stone in scoring area
         }
     }
     // for(int col = 4; col <= 7; col++) {

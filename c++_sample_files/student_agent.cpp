@@ -44,7 +44,7 @@ namespace py = pybind11;
 // ---- Student Agent ----
 class StudentAgent {
 public:
-    explicit StudentAgent(std::string side) : side(std::move(side)) {}
+    explicit StudentAgent(std::string side) : side(std::move(side)), repetition_checker(side) {}
 
     Move choose(const std::vector<std::vector<std::map<std::string, std::string>>>& board, 
                 int row, int col, const std::vector<int>& score_cols, 
@@ -67,9 +67,9 @@ public:
         
         Move selected;
         if (algorithm == "minimax") {
-            // Use Minimax with Alpha-Beta Pruning (depth 3)
+            // Use Minimax with Alpha-Beta Pruning and repetition checking
             const int MINIMAX_DEPTH = 2;
-            selected = run_minimax(current_state, MINIMAX_DEPTH);
+            selected = run_minimax_with_repetition_check(current_state, MINIMAX_DEPTH, repetition_checker);
         } else {
             // Use MCTS (default)
             int base_iterations = 200;
@@ -78,19 +78,29 @@ public:
             if (current_player_time < 5.0)  max_iterations = base_iterations / 4;
             if (current_player_time < 2.0)  max_iterations = base_iterations / 10;
             selected = run_mcts(current_state, max_iterations);
+            
+            // For MCTS, we still need to handle repetition checking manually
+            if (repetition_checker.would_repeat_after(current_state, selected)) {
+                auto legal = current_state.get_legal_moves();
+                // Try to find a non-repeating move
+                for (const auto& move : legal) {
+                    if (!repetition_checker.would_repeat_after(current_state, move)) {
+                        selected = move;
+                        break;
+                    }
+                }
+                // If all moves repeat, just use a random one
+                if (repetition_checker.would_repeat_after(current_state, selected)) {
+                    static std::random_device rd;
+                    static std::mt19937 gen(rd());
+                    std::uniform_int_distribution<> dis(0, legal.size() - 1);
+                    selected = legal[dis(gen)];
+                }
+            }
+            
+            // Record the resulting state key for MCTS
+            repetition_checker.record_resulting_key(current_state, selected);
         }
-
-        // If the proposed move would repeat a recent state, try to pick a non-repeating alternative
-        // if (would_repeat_after(current_state, selected)) {
-        //     auto legal = current_state.get_legal_moves();
-        //     static std::random_device rd;
-        //     static std::mt19937 gen(rd());
-        //     std::uniform_int_distribution<> dis(0, legal.size() - 1);
-        //     selected = legal[dis(gen)];
-        // }
-
-        // Record the resulting state key into rolling history (max 5)
-        // record_resulting_key(current_state, selected);
         
         // Calculate and display elapsed time
         auto end_time = std::chrono::high_resolution_clock::now();
@@ -104,87 +114,7 @@ public:
 
 private:
     std::string side;
-    std::deque<std::string> recent_keys; // last 5 player-only position keys
-
-    static std::string make_state_key(const std::vector<std::vector<std::map<std::string, std::string>>>& board,
-                                      const std::string& player_to_move,
-                                      int rows, int cols) {
-        std::string key;
-        // Rough reserve: player+sep + per-cell ~5 chars + row seps
-        key.reserve(player_to_move.size() + 1 + rows * cols * 5 + rows + 1);
-        key += player_to_move;
-        key.push_back('#');
-        for (int y = 0; y < rows; ++y) {
-            for (int x = 0; x < cols; ++x) {
-                const auto& cell = board[y][x];
-                if (cell.empty()) {
-                    key.push_back('.');
-                } else {
-                    char owner = (cell.at("owner") == "circle") ? 'c' : 's';
-                    if (cell.at("side") == "river") {
-                        char ori = (cell.at("orientation") == "horizontal") ? 'h' : 'v';
-                        key.push_back(owner);
-                        key.push_back('r');
-                        key.push_back(ori);
-                    } else {
-                        key.push_back(owner);
-                        key.push_back('t');
-                        key.push_back('-');
-                    }
-                }
-                key.push_back('|');
-            }
-            key.push_back('/');
-        }
-        return key;
-    }
-
-    // Create a key based only on the current player's pieces for repetition detection
-    std::string make_player_only_key(const std::vector<std::vector<std::map<std::string, std::string>>>& board,
-                                     int rows, int cols) const {
-        std::string key;
-        // Reserve space for board representation
-        key.reserve(rows * cols * 5 + rows + 1);
-        for (int y = 0; y < rows; ++y) {
-            for (int x = 0; x < cols; ++x) {
-                const auto& cell = board[y][x];
-                if (cell.empty() || cell.at("owner") != side) {
-                    // Empty cell or opponent's piece - treat as empty for our purposes
-                    key.push_back('.');
-                } else {
-                    // Our piece
-                    if (cell.at("side") == "river") {
-                        char ori = (cell.at("orientation") == "horizontal") ? 'h' : 'v';
-                        key.push_back('r');
-                        key.push_back(ori);
-                    } else {
-                        key.push_back('s'); // stone
-                    }
-                }
-                key.push_back('|');
-            }
-            key.push_back('/');
-        }
-        return key;
-    }
-
-    bool would_repeat_after(const GameState& state, const Move& move) const {
-        GameState sim = state.copy();
-        sim.apply_move(move);
-        std::string key = make_player_only_key(sim.board, sim.rows, sim.cols);
-        for (const auto& k : recent_keys) {
-            if (k == key) return true;
-        }
-        return false;
-    }
-
-    void record_resulting_key(const GameState& state, const Move& move) {
-        GameState sim = state.copy();
-        sim.apply_move(move);
-        std::string key = make_player_only_key(sim.board, sim.rows, sim.cols);
-        recent_keys.push_back(key);
-        while (recent_keys.size() > 5) recent_keys.pop_front();
-    }
+    RepetitionChecker repetition_checker;
 };
 
 // ---- PyBind11 bindings ----

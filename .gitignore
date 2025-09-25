@@ -6,3 +6,7 @@
 *.pyc
 *.pyc
 *.pyc
+/.venv
+.venv/bin/activate
+*.csh
+/.venv
