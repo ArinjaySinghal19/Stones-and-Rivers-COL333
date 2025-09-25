@@ -249,7 +249,7 @@ int Heuristics::pieces_in_scoring_h(const GameState& state, const std::string& p
     const auto& score_cols = state.score_cols;
 
     int score = 0;
-    const int w1 = 100;  // Pieces in exact scoring row/cols
+    const int w1 = 1e4;  // Pieces in exact scoring row/cols
     const int w2 = 10;   // Pieces very close to scoring area
     const int w3 = 1;   // Pieces moderately close
     const int w4 = 1;   // Pieces somewhat close
@@ -269,14 +269,65 @@ int Heuristics::pieces_in_scoring_h(const GameState& state, const std::string& p
     }
 
     std::map<int, std::map<int, int>> val;
-    
+    int in_score_area = 0;
+    std::vector <int> virgin_cols;
     for (int col = 4; col <= 7; col++) {
-        if (board[target_row][col].empty()) continue;
+        if (board[target_row][col].empty()) {
+            virgin_cols.push_back(col);
+            continue;
+        }
         val[target_row][col] = max(val[target_row][col], w1);
+        in_score_area++;
         if(board[target_row][col].at("side") == "stone" && board[target_row][col].at("owner") == player_to_check) {
             score += 500; // Extra bonus for stone in scoring area
         }
     }
+    // for(int col = 4; col <= 7; col++) {
+    //     if(board[target_row][col].empty()) {
+    //         if(!board[target_row+1][col].empty() && board[target_row+1][col].at("owner") == player_to_check) {
+    //             score += 300*in_score_area;
+    //         }
+    //         if(!board[target_row-1][col].empty() && board[target_row-1][col].at("owner") == player_to_check) {
+    //             score += 300*in_score_area;
+    //         }
+    //     }
+    // }
+    // if(board[target_row][4].empty()) {
+    //     if(!board[target_row][3].empty() && board[target_row][3].at("owner") == player_to_check) {
+    //         score += 300*in_score_area;
+    //     }
+    // }
+    // if(board[target_row][7].empty()) {
+    //     if(!board[target_row][8].empty() && board[target_row][8].at("owner") == player_to_check) {
+    //         score += 300*in_score_area;
+    //     }
+    // }
+
+    for(int col = 1; col <= 10; col++) {
+        for(int row = target_row - 2; row <= target_row + 2; row++) {
+            if(row < 0 || row >= rows) continue;
+            if(board[row][col].empty()) continue;
+            if(board[row][col].at("owner") != player_to_check) continue;
+            if(row==target_row && col>=4 && col<=7) continue;
+            for(int vc: virgin_cols){
+                int man_dist = abs(vc - col) + abs(target_row - row);
+                if(man_dist == 1){
+                    score += 300*in_score_area;
+                }
+                if(man_dist == 2){
+                    score += 100*in_score_area;
+                }
+                if(man_dist == 3){
+                    score += 50*in_score_area;
+                }
+            }
+            
+        }
+    }
+    
+    
+
+
     
     for (int col = 3; col <= 8; col++) {
         for (int r = 0; r <= 1; r++) {
@@ -757,32 +808,34 @@ double Heuristics::evaluate_position(const GameState& state, const std::string& 
     double final_score = 0.0;
 
     // // self: attack
-    // final_score += weights_.vertical_push * vertical_push_h(state, player, true);
-    // final_score += weights_.connectedness_self * connectedness_h(state, player, true, true);
-    // final_score += weights_.connectedness_all * connectedness_h(state, player, false, true);
+    final_score += weights_.vertical_push * vertical_push_h(state, player, true);
+    final_score += weights_.connectedness_self * connectedness_h(state, player, true, true);
+    final_score += weights_.connectedness_all * connectedness_h(state, player, false, true);
     final_score += weights_.pieces_in_scoring_attack * pieces_in_scoring_h(state, player, true, true);
-    final_score += weights_.manhattan_distance * manhattan_distance_h(state, player, true);
+    // final_score += weights_.manhattan_distance * manhattan_distance_h(state, player, true);
     // std::cout << "md: " << manhattan_distance_h(state, player, true) << std::endl;
-    // final_score += weights_.possible_moves_self * possible_moves_h(state, player, true);
+    final_score += weights_.possible_moves_self * possible_moves_h(state, player, true);
     // final_score += weights_.stones_reaching_self * stones_reaching_riv_h(state, player, true, true);
-    // final_score += weights_.horizontal_attack_self * horizontal_attack(state, player, true);
-    // final_score += weights_.inactive_self * inactive_pieces(state, player, true);
+    final_score += weights_.horizontal_attack_self * horizontal_attack(state, player, true);
+    final_score += weights_.inactive_self * inactive_pieces(state, player, true);
 
     // // self: defense
-    // final_score += weights_.pieces_blocking_vertical_self * pieces_blocking_vertical_h(state, player, true);
-    // final_score += weights_.horizontal_base_self * horizontal_base_rivers(state, player, true);
-    // final_score += weights_.horizontal_negative_self * horizontal_negative(state, player, true);
+    final_score += weights_.pieces_blocking_vertical_self * pieces_blocking_vertical_h(state, player, true);
+    final_score += weights_.horizontal_base_self * horizontal_base_rivers(state, player, true);
+    final_score += weights_.horizontal_negative_self * horizontal_negative(state, player, true);
 
     // // opponent related
     final_score += weights_.pieces_in_scoring_defense * pieces_in_scoring_h(state, player, false, true);
-    // std::string opponent = get_opponent(player);
-    // final_score += weights_.possible_moves_opp * possible_moves_h(state, opponent, false);
-    // final_score += weights_.pieces_blocking_vertical_opp * pieces_blocking_vertical_h(state, opponent, false);
-    // final_score += weights_.horizontal_base_opp * horizontal_base_rivers(state, opponent, false);
-    // final_score += weights_.horizontal_attack_opp * horizontal_attack(state, opponent, false);
-    // final_score += weights_.inactive_opp * inactive_pieces(state, opponent, false);
+    std::string opponent = get_opponent(player);
+    final_score += weights_.possible_moves_opp * possible_moves_h(state, opponent, false);
+    final_score += weights_.pieces_blocking_vertical_opp * pieces_blocking_vertical_h(state, opponent, false);
+    final_score += weights_.horizontal_base_opp * horizontal_base_rivers(state, opponent, false);
+    final_score += weights_.horizontal_attack_opp * horizontal_attack(state, opponent, false);
+    final_score += weights_.inactive_opp * inactive_pieces(state, opponent, false);
+    final_score += weights_.connectedness_self_opp * connectedness_h(state, opponent, true, true);
+    final_score += weights_.connectedness_all_opp * connectedness_h(state, opponent, false, true);
 
-    std::cout << final_score << std::endl;
+    // std::cout << final_score << std::endl;
 
     return final_score;
 }

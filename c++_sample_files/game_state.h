@@ -36,7 +36,6 @@ struct GameState {
     void apply_move(const Move& move);
     std::vector<Move> get_legal_moves() const;
     bool is_terminal() const;
-    double evaluate(const std::string& player) const;
 };
 
 // ---- Helper functions ----

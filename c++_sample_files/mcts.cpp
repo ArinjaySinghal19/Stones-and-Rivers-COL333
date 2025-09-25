@@ -4,6 +4,7 @@
 #include <cmath>
 #include <algorithm>
 #include <limits>
+#include "heuristics.h"
 
 // ---- MCTS Implementation ----
 double MCTSNode::ucb1_value(double exploration_param) const {
@@ -100,7 +101,7 @@ double MCTSNode::simulate() {
     }
     
     // Evaluate the final state from the perspective of the original player
-    return Heuristics::evaluate_position(sim_state,original_player);
+    return Heuristics::evaluate_position(sim_state, original_player);
 }
 
 void MCTSNode::backpropagate(double result) {
