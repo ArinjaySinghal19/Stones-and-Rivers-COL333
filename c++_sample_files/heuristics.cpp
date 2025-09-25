@@ -24,7 +24,7 @@ void Heuristics::adjust_weights(const GameState& state, const std::string& playe
     weights_.vertical_push += lr * delta * vertical_push_h(state, player, true);
     weights_.connectedness_self += lr * delta * connectedness_h(state, player, true, true);
     weights_.connectedness_all += lr * delta * connectedness_h(state, player, false, true);
-    weights_.pieces_in_scoring_attack += lr * delta * pieces_in_scoring_h(state, player, true, true);
+    weights_.pieces_in_scoring_attack += lr * delta * pieces_in_scoring_h(state, player, true);
     weights_.manhattan_distance += lr * delta * manhattan_distance_h(state, player, true);
     weights_.possible_moves_self += lr * delta * possible_moves_h(state, player, true);
     weights_.stones_reaching_self += lr * delta * stones_reaching_riv_h(state, player, true, true);
@@ -37,7 +37,7 @@ void Heuristics::adjust_weights(const GameState& state, const std::string& playe
     weights_.horizontal_negative_self += lr * delta * horizontal_negative(state, player, true);
 
     // opponent related
-    weights_.pieces_in_scoring_defense += lr * delta * pieces_in_scoring_h(state, player, false, true);
+    weights_.pieces_in_scoring_defense += lr * delta * pieces_in_scoring_h(state, player, true);
     std::string opponent = get_opponent(player);
     weights_.possible_moves_opp += lr * delta * possible_moves_h(state, opponent, false);
     weights_.pieces_blocking_vertical_opp += lr * delta * pieces_blocking_vertical_h(state, opponent, false);
@@ -928,7 +928,7 @@ double Heuristics::evaluate_position(const GameState& state, const std::string& 
     final_score += weights_.vertical_push * vertical_push_h(state, player, true);
     final_score += weights_.connectedness_self * connectedness_h(state, player, true, true);
     final_score += weights_.connectedness_all * connectedness_h(state, player, false, true);
-    final_score += weights_.pieces_in_scoring_attack * pieces_in_scoring_h(state, player, true, true);
+    final_score += weights_.pieces_in_scoring_attack * pieces_in_scoring_h(state, player, true);
     // final_score += weights_.manhattan_distance * manhattan_distance_h(state, player, true);
     // std::cout << "md: " << manhattan_distance_h(state, player, true) << std::endl;
     final_score += weights_.possible_moves_self * possible_moves_h(state, player, true);
@@ -942,7 +942,7 @@ double Heuristics::evaluate_position(const GameState& state, const std::string& 
     final_score += weights_.horizontal_negative_self * horizontal_negative(state, player, true);
     
     // // opponent related
-    final_score += weights_.pieces_in_scoring_defense * pieces_in_scoring_h(state, player, false, true);
+    final_score += weights_.pieces_in_scoring_defense * pieces_in_scoring_h(state, player, false);
     std::string opponent = get_opponent(player);
     final_score += weights_.possible_moves_opp * possible_moves_h(state, opponent, false);
     final_score += weights_.pieces_blocking_vertical_opp * pieces_blocking_vertical_h(state, opponent, false);
@@ -965,7 +965,7 @@ void Heuristics::debug_heuristic(const GameState& state, const std::string& play
     std::cout << "Vertical Push Heuristic: " << vertical_push_h(state, player, true) << std::endl;
     std::cout << "Connectedness Heuristic (self): " << connectedness_h(state, player, true, true) << std::endl;
     std::cout << "Connectedness Heuristic (all): " << connectedness_h(state, player, false, true) << std::endl;
-    std::cout << "Pieces in Scoring Area Heuristic (attack): " << pieces_in_scoring_h(state, player, true, true) << std::endl;
+    std::cout << "Pieces in Scoring Area Heuristic (attack): " << pieces_in_scoring_h(state, player, true) << std::endl;
     std::cout << "Possible Moves Heuristic: " << possible_moves_h(state, player, true) << std::endl;
     std::cout << "Stones Reaching River Heuristic (self): " << stones_reaching_riv_h(state, player, true, true) << std::endl;
     std::cout << "Pieces Blocking Vertical Rivers Heuristic: " << pieces_blocking_vertical_h(state, player, true) << std::endl;
@@ -978,7 +978,7 @@ void Heuristics::debug_heuristic(const GameState& state, const std::string& play
 
     std::string opponent = get_opponent(player);
     std::cout << "--- Opponent (" << opponent << ") Heuristics ---" << std::endl;
-    std::cout << "Pieces in Scoring Area Heuristic (defense): " << pieces_in_scoring_h(state, player, false, true) << std::endl;
+    std::cout << "Pieces in Scoring Area Heuristic (defense): " << pieces_in_scoring_h(state, player, false) << std::endl;
     std::cout << "Possible Moves Heuristic: " << possible_moves_h(state, opponent, false) << std::endl;
     std::cout << "Pieces Blocking Vertical Rivers Heuristic: " << pieces_blocking_vertical_h(state, opponent, false) << std::endl;
     std::cout << "Horizontal Base Rivers Heuristic: " << horizontal_base_rivers(state, opponent, false) << std::endl;

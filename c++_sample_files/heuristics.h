@@ -13,7 +13,7 @@ public:
         double vertical_push = 10.0; //normal
         double connectedness_self = 10.0; //normal
         double connectedness_all = 10.0;
-        double pieces_in_scoring_attack = 35.0;
+        double pieces_in_scoring_attack = 40.0;
         double manhattan_distance = 5.0;
         double possible_moves_self = 7.0;
         double stones_reaching_self = 10.0;
@@ -44,7 +44,7 @@ public:
     // Custom game-specific heuristics
     static int vertical_push_h(const GameState& state, const std::string& player, bool wrt_self = true);
     static int connectedness_h(const GameState& state, const std::string& player, bool self, bool wrt_self = true);
-    static int pieces_in_scoring_h(const GameState& state, const std::string& player, bool attack, bool wrt_self = true);
+    static int pieces_in_scoring_h(const GameState& state, const std::string& player, bool wrt_self);
     static int possible_moves_h(const GameState& state, const std::string& player, bool wrt_self = true);
     static int stones_reaching_riv_h(const GameState& state, const std::string& player, bool self, bool wrt_self = true);
     static int pieces_blocking_vertical_h(const GameState& state, const std::string& player, bool wrt_self = true);
