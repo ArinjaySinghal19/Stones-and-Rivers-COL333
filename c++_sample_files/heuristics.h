@@ -11,26 +11,26 @@ class Heuristics {
 public:
     struct Weights {
         double vertical_push = 10.0; //normal
-        double connectedness_self = 20.0; //normal
+        double connectedness_self = 10.0; //normal
         double connectedness_all = 10.0;
-        double pieces_in_scoring_attack = 4.0;
+        double pieces_in_scoring_attack = 35.0;
         double manhattan_distance = 5.0;
         double possible_moves_self = 7.0;
         double stones_reaching_self = 10.0;
-        double horizontal_attack_self = 50.0;
-        double inactive_self = 100.0;
+        double horizontal_attack_self = 10.0;
+        double inactive_self = 50.0;
 
         double pieces_blocking_vertical_self = 150.0;
-        double horizontal_base_self = 35.0;
+        double horizontal_base_self = 10.0;
         double horizontal_negative_self = 20.0;
 
-        double pieces_in_scoring_defense = 4.0; // opponent scoring threat
+        double pieces_in_scoring_defense = 40.0; // opponent scoring threat
         double possible_moves_opp = 7.0;
         double pieces_blocking_vertical_opp = 150.0;
-        double horizontal_base_opp = 35.0;
-        double horizontal_attack_opp = 50.0;
-        double inactive_opp = 100.0;
-        double connectedness_self_opp = 20.0;
+        double horizontal_base_opp = 10.0;
+        double horizontal_attack_opp = 10.0;
+        double inactive_opp = 50.0;
+        double connectedness_self_opp  =  10.0;
         double connectedness_all_opp = 10.0;
 
     };

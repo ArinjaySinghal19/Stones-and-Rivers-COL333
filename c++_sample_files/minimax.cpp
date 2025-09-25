@@ -1,6 +1,8 @@
 #include "minimax.h"
 #include "heuristics.h"
 #include <algorithm>
+#include <random>
+#include <iostream>
 
 /**
  * Function to order moves based on heuristic evaluation for better alpha-beta pruning.
@@ -54,7 +56,7 @@ std::vector<Move> order_moves_by_heuristic(const GameState& state, const std::ve
 }
 
 // Configuration for move ordering optimization
-static const bool ENABLE_MOVE_ORDERING = false;
+static const bool ENABLE_MOVE_ORDERING = true;
 
 // ---- Minimax with Alpha-Beta Pruning ----
 MinimaxResult minimax_alpha_beta(const GameState& state, int depth, double alpha, double beta, 
@@ -77,6 +79,7 @@ MinimaxResult minimax_alpha_beta(const GameState& state, int depth, double alpha
         moves_to_explore = order_moves_by_heuristic(state, legal_moves, original_player, maximizing_player);
     }
     else{
+        std::shuffle(legal_moves.begin(), legal_moves.end(), std::mt19937{std::random_device{}()});
         moves_to_explore = legal_moves;
     }
 
@@ -133,7 +136,6 @@ Move run_minimax(const GameState& initial_state, int max_depth) {
 
     // Compute initial evaluation for dynamic weight update
     double initial_eval = Heuristics::evaluate_position(initial_state, current_player);
-
     MinimaxResult result = minimax_alpha_beta(initial_state, MINIMAX_DEPTH,
                                             -std::numeric_limits<double>::infinity(),
                                             std::numeric_limits<double>::infinity(),
@@ -142,7 +144,13 @@ Move run_minimax(const GameState& initial_state, int max_depth) {
     double delta = result.value - initial_eval;
     if(delta > 1000) delta = 1000;
     if(delta < -1000) delta = -1000;
-    // Heuristics::adjust_weights(initial_state, current_player, delta);
-    
+    // Heuristics::adjust_weights(initial_state, current_player, delta)
+
+    GameState after_move_state = initial_state.copy();
+    after_move_state.apply_move(result.best_move);
+    double post_move_eval = Heuristics::evaluate_position(after_move_state, current_player);
+    Heuristics heuristics;
+    heuristics.debug_heuristic(after_move_state, current_player);
+    std::cout << "initial eval: " << initial_eval << ", post-move eval: " << post_move_eval << ", predicted: " << result.value << ", delta: " << delta << std::endl;
     return result.best_move;
 }
