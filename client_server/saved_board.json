@@ -44,79 +44,75 @@
     ],
     [
       null,
-      null,
-      null,
-      {
-        "owner": "square",
-        "side": "stone",
-        "orientation": "horizontal"
-      },
-      {
-        "owner": "square",
-        "side": "stone",
-        "orientation": "horizontal"
-      },
-      {
-        "owner": "square",
-        "side": "stone",
-        "orientation": "horizontal"
-      },
-      {
-        "owner": "square",
-        "side": "stone",
-        "orientation": "horizontal"
-      },
-      {
-        "owner": "square",
-        "side": "stone",
-        "orientation": "horizontal"
-      },
-      null,
-      {
-        "owner": "square",
-        "side": "stone",
-        "orientation": "horizontal"
-      },
-      null,
-      null
-    ],
-    [
-      null,
-      null,
-      null,
-      {
-        "owner": "square",
-        "side": "stone",
-        "orientation": "horizontal"
-      },
-      {
-        "owner": "square",
-        "side": "stone",
-        "orientation": "horizontal"
-      },
-      {
-        "owner": "square",
-        "side": "stone",
-        "orientation": "horizontal"
-      },
-      {
-        "owner": "square",
-        "side": "stone",
-        "orientation": "horizontal"
-      },
-      null,
       {
         "owner": "square",
         "side": "river",
+        "orientation": "vertical"
+      },
+      null,
+      null,
+      null,
+      {
+        "owner": "square",
+        "side": "stone",
+        "orientation": null
+      },
+      {
+        "owner": "square",
+        "side": "stone",
         "orientation": "horizontal"
       },
+      {
+        "owner": "square",
+        "side": "stone",
+        "orientation": "horizontal"
+      },
+      {
+        "owner": "square",
+        "side": "river",
+        "orientation": "vertical"
+      },
+      null,
+      null,
+      null
+    ],
+    [
+      null,
       null,
       null,
       {
         "owner": "square",
         "side": "stone",
         "orientation": "horizontal"
-      }
+      },
+      {
+        "owner": "square",
+        "side": "stone",
+        "orientation": "horizontal"
+      },
+      {
+        "owner": "square",
+        "side": "stone",
+        "orientation": "horizontal"
+      },
+      {
+        "owner": "square",
+        "side": "stone",
+        "orientation": "horizontal"
+      },
+      {
+        "owner": "square",
+        "side": "stone",
+        "orientation": "horizontal"
+      },
+      {
+        "owner": "square",
+        "side": "stone",
+        "orientation": "horizontal"
+      },
+      null,
+      null,
+      null
     ],
     [
       null,
@@ -163,54 +159,54 @@
     [
       null,
       null,
-      {
-        "owner": "circle",
-        "side": "stone",
-        "orientation": "horizontal"
-      },
       null,
       {
         "owner": "circle",
         "side": "stone",
         "orientation": "horizontal"
       },
-      {
-        "owner": "circle",
-        "side": "stone",
-        "orientation": "horizontal"
-      },
-      {
-        "owner": "circle",
-        "side": "stone",
-        "orientation": "horizontal"
-      },
-      {
-        "owner": "circle",
-        "side": "stone",
-        "orientation": "horizontal"
-      },
-      {
-        "owner": "circle",
-        "side": "stone",
-        "orientation": "horizontal"
-      },
-      null,
-      null,
-      null
-    ],
-    [
-      null,
-      null,
-      null,
       {
         "owner": "circle",
         "side": "river",
         "orientation": "vertical"
       },
-      null,
       {
         "owner": "circle",
         "side": "stone",
+        "orientation": "horizontal"
+      },
+      {
+        "owner": "circle",
+        "side": "river",
+        "orientation": "vertical"
+      },
+      {
+        "owner": "circle",
+        "side": "river",
+        "orientation": "vertical"
+      },
+      {
+        "owner": "circle",
+        "side": "stone",
+        "orientation": "horizontal"
+      },
+      null,
+      null,
+      null
+    ],
+    [
+      null,
+      null,
+      null,
+      null,
+      {
+        "owner": "circle",
+        "side": "river",
+        "orientation": "horizontal"
+      },
+      {
+        "owner": "circle",
+        "side": "river",
         "orientation": "horizontal"
       },
       {
@@ -232,7 +228,11 @@
       null,
       null,
       null,
-      null,
+      {
+        "owner": "circle",
+        "side": "stone",
+        "orientation": "horizontal"
+      },
       null,
       null,
       null,
@@ -251,7 +251,7 @@
       null,
       null,
       {
-        "owner": "circle",
+        "owner": "square",
         "side": "stone",
         "orientation": "horizontal"
       },

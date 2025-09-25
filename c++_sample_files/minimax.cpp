@@ -191,9 +191,9 @@ bool RepetitionChecker::would_repeat_after(const GameState& state, const Move& m
     sim.apply_move(move);
     std::string key = make_player_only_key(sim.board, sim.rows, sim.cols);
     for (const auto& k : recent_keys) {
-        if (k == key) return true;
+        if (k != key) return false;
     }
-    return false;
+    return true;
 }
 
 void RepetitionChecker::record_resulting_key(const GameState& state, const Move& move) {
@@ -201,7 +201,7 @@ void RepetitionChecker::record_resulting_key(const GameState& state, const Move&
     sim.apply_move(move);
     std::string key = make_player_only_key(sim.board, sim.rows, sim.cols);
     recent_keys.push_back(key);
-    while (recent_keys.size() > 5) recent_keys.pop_front();
+    while (recent_keys.size() > 2) recent_keys.pop_front();
 }
 
 Move run_minimax_with_repetition_check(const GameState& initial_state, int max_depth, 
