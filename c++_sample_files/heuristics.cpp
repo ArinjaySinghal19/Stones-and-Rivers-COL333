@@ -832,6 +832,8 @@ double Heuristics::evaluate_position(const GameState& state, const std::string& 
     final_score += weights_.horizontal_base_opp * horizontal_base_rivers(state, opponent, false);
     final_score += weights_.horizontal_attack_opp * horizontal_attack(state, opponent, false);
     final_score += weights_.inactive_opp * inactive_pieces(state, opponent, false);
+    final_score += weights_.connectedness_self_opp * connectedness_h(state, opponent, true, true);
+    final_score += weights_.connectedness_all_opp * connectedness_h(state, opponent, false, true);
 
     // std::cout << final_score << std::endl;
 

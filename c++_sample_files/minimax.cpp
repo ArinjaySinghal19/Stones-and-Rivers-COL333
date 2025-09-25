@@ -88,7 +88,7 @@ MinimaxResult minimax_alpha_beta(const GameState& state, int depth, double alpha
             GameState child_state = state.copy();
             child_state.apply_move(minimax_move);
             MinimaxResult result = minimax_alpha_beta(child_state, depth - 1, alpha, beta, false, original_player);
-            if (result.value >= max_eval) {
+            if (result.value > max_eval) {
                 max_eval = result.value;
                 best_move = minimax_move;
             }
@@ -107,7 +107,7 @@ MinimaxResult minimax_alpha_beta(const GameState& state, int depth, double alpha
             GameState child_state = state.copy();
             child_state.apply_move(minimax_move);
             MinimaxResult result = minimax_alpha_beta(child_state, depth - 1, alpha, beta, true, original_player);
-            if (result.value <= min_eval) {
+            if (result.value < min_eval) {
                 min_eval = result.value;
                 best_move = minimax_move;
             }
