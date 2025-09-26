@@ -179,70 +179,18 @@ void record_resulting_key(const GameState& state, const Move& move, const std::s
     while (recent_keys.size() > 2) recent_keys.pop_front();
 }
 
-Move flip_topmost_piece(const GameState& state, const std::string& side) {
-    // Find the topmost piece of the given side and flip it
-    if(side=="circle"){
-    for (int y = 0; y < state.rows; ++y) {
-        for (int x = 0; x < state.cols; ++x) {
-            const auto& cell = state.board[y][x];
-            if (!cell.empty() && cell.at("owner") == side) {
-                if (cell.at("side") == "stone") {
-                    // Flip stone to river (default horizontal)
-                    return {"flip", {x, y}, {x, y}, {}, "horizontal"};
-                } else if (cell.at("side") == "river") {
-                    // Flip river orientation
-                    return {"flip", {x,y}, {x,y}, {}, ""};
-                }
-            }
-        }
-    }
-}
-    if(side=="square"){
-    for (int y = state.rows-1; y >= 0; --y) {
-        for (int x = state.cols-1; x >= 0; --x) {
-            const auto& cell = state.board[y][x];
-            if (!cell.empty() && cell.at("owner") == side) {
-                if (cell.at("side") == "stone") {
-                    // Flip stone to river (default horizontal)
-                    return {"flip", {x, y}, {x, y}, {}, "horizontal"};
-                } else if (cell.at("side") == "river") {
-                    // Flip river orientation
-                    return {"flip", {x,y}, {x,y}, {}, ""};
-                }
-            }
-        }
-    }
-}
-    // If no piece found, return a dummy move
-    return {"move", {0,0}, {0,0}, {}, ""};
-}
-
 Move run_minimax_with_repetition_check(const GameState& initial_state, int max_depth, 
-                                      const std::string& side, std::deque<std::string>& recent_keys, float time_remaining) {
+                                      const std::string& side, std::deque<std::string>& recent_keys) {
     const int MINIMAX_DEPTH = max_depth;
     std::string current_player = initial_state.current_player;
     // Compute initial evaluation for dynamic weight update
     double initial_eval = Heuristics::evaluate_position(initial_state, current_player);
-
-    bool return_first_legal_move = false;
-    if (time_remaining <= 2) {
-        Move flip_move = flip_topmost_piece(initial_state, side);
-        if(flip_move.action != "flip"){
-            return_first_legal_move = true;
-        }
-        return flip_move;
-    }
     
     // Get all legal moves and order them by heuristic
     std::vector<Move> legal_moves = initial_state.get_legal_moves();
     if (legal_moves.empty()) {
         // No legal moves available, return a dummy move
         return {"move", {0,0}, {0,0}, {}, ""};
-    }
-
-    // If we decided to return the first legal move, do it
-    if (return_first_legal_move) {
-        return legal_moves[0];
     }
 
     // Order moves by heuristic evaluation for better selection (best moves first)

@@ -40,11 +40,52 @@ namespace py = pybind11;
 =========================================================
 */
 
+Move flip_topmost_piece(const GameState& state, const std::string& side) {
+    // Find the topmost piece of the given side and flip it
+    if(side=="circle"){
+    for (int y = 0; y < state.rows; ++y) {
+        for (int x = 0; x < state.cols; ++x) {
+            const auto& cell = state.board[y][x];
+            if (!cell.empty() && cell.at("owner") == side) {
+                if (cell.at("side") == "stone") {
+                    // Flip stone to river (default horizontal)
+                    return {"flip", {x, y}, {x, y}, {}, "horizontal"};
+                } else if (cell.at("side") == "river") {
+                    // Flip river orientation
+                    return {"rotate", {x,y}, {x,y}, {}, ""};
+                }
+            }
+        }
+    }
+}
+    if(side=="square"){
+    for (int y = state.rows-1; y >= 0; --y) {
+        for (int x = state.cols-1; x >= 0; --x) {
+            const auto& cell = state.board[y][x];
+            if (!cell.empty() && cell.at("owner") == side) {
+                if (cell.at("side") == "stone") {
+                    // Flip stone to river (default horizontal)
+                    return {"flip", {x, y}, {x, y}, {}, "horizontal"};
+                } else if (cell.at("side") == "river") {
+                    // Flip river orientation
+                    return {"rotate", {x,y}, {x,y}, {}, ""};
+                }
+            }
+        }
+    }
+}
+    // If no piece found, return a dummy move
+    return {"move", {0,0}, {0,0}, {}, ""};
+}
+
 // ---- Student Agent ----
 class StudentAgent {
 public:
     explicit StudentAgent(std::string side) : side(std::move(side)) {}
-    int num_moves = 0;
+    bool end_time = false;
+    int end_piece_row = -1;
+    int end_piece_col = -1;
+    bool flipped_to_river = false;
     Move choose(const std::vector<std::vector<std::map<std::string, std::string>>>& board, 
                 int row, int col, const std::vector<int>& score_cols, 
                 float current_player_time, float opponent_time) {
@@ -57,15 +98,41 @@ public:
         // Create game state
         GameState current_state(board, side, rows, cols, score_cols);
         Move selected;
+
+        if (current_player_time < 1) end_time=true;
+        if(end_time && flipped_to_river){
+            selected = {"rotate", {end_piece_col, end_piece_row}, {end_piece_col, end_piece_row}, {}, ""};
+            auto end_clock_time = std::chrono::high_resolution_clock::now();
+            auto duration = std::chrono::duration_cast<std::chrono::microseconds>(end_clock_time - start_time);
+            double elapsed_seconds = duration.count();
+            // std::cout << "Elapsed time (microseconds): " << elapsed_seconds << std::endl;
+            return selected;
+        }
+
+        if(end_time && !flipped_to_river){
+            selected = flip_topmost_piece(current_state, side);
+            if(selected.action == "flip"){
+                flipped_to_river = true;
+                end_piece_row = selected.from[1];
+                end_piece_col = selected.from[0];
+                return selected;
+            }
+        }
+
+
+
+
         // Use Minimax with Alpha-Beta Pruning and repetition checking
         const int MINIMAX_DEPTH = 2;
-        selected = run_minimax_with_repetition_check(current_state, MINIMAX_DEPTH, side, recent_keys, current_player_time);
+        selected = run_minimax_with_repetition_check(current_state, MINIMAX_DEPTH, side, recent_keys);
         
         
         // Calculate and display elapsed time
-        auto end_time = std::chrono::high_resolution_clock::now();
-        auto duration = std::chrono::duration_cast<std::chrono::microseconds>(end_time - start_time);
+        auto end_clock_time = std::chrono::high_resolution_clock::now();
+        auto duration = std::chrono::duration_cast<std::chrono::microseconds>(end_clock_time - start_time);
         double elapsed_seconds = duration.count();
+
+        // std::cout << "Elapsed time (microseconds): " << elapsed_seconds << std::endl;
         
         return selected;
     }

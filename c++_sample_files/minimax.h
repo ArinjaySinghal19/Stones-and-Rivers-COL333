@@ -31,6 +31,6 @@ void record_resulting_key(const GameState& state, const Move& move, const std::s
 Move flip_topmost_piece(const GameState& state, const std::string& side);
 
 Move run_minimax_with_repetition_check(const GameState& initial_state, int max_depth, 
-                                      const std::string& side, std::deque<std::string>& recent_keys, float time_remaining);
+                                      const std::string& side, std::deque<std::string>& recent_keys);
 
 #endif // MINIMAX_H
