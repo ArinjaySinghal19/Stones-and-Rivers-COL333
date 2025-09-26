@@ -127,35 +127,9 @@ MinimaxResult minimax_alpha_beta(const GameState& state, int depth, double alpha
     }
 }
 
-Move run_minimax(const GameState& initial_state, int max_depth) {
-    const int MINIMAX_DEPTH = max_depth;
-    std::string current_player = initial_state.current_player;
-
-
-    // Compute initial evaluation for dynamic weight update
-    double initial_eval = Heuristics::evaluate_position(initial_state, current_player);
-    MinimaxResult result = minimax_alpha_beta(initial_state, MINIMAX_DEPTH,
-                                            -std::numeric_limits<double>::infinity(),
-                                            std::numeric_limits<double>::infinity(),
-                                            true, current_player);
-    // Update heuristic weights using the delta between result and initial eval
-    double delta = result.value - initial_eval;
-    if(delta > 1000) delta = 1000;
-    if(delta < -1000) delta = -1000;
-    // Heuristics::adjust_weights(initial_state, current_player, delta)
-
-    GameState after_move_state = initial_state.copy();
-    after_move_state.apply_move(result.best_move);
-    double post_move_eval = Heuristics::evaluate_position(after_move_state, current_player);
-    Heuristics heuristics;
-    heuristics.debug_heuristic(after_move_state, current_player);
-    std::cout << "initial eval: " << initial_eval << ", post-move eval: " << post_move_eval << ", predicted: " << result.value << ", delta: " << delta << std::endl;
-    return result.best_move;
-}
-
 // ---- Repetition Detection Implementation ----
-std::string RepetitionChecker::make_player_only_key(const std::vector<std::vector<std::map<std::string, std::string>>>& board,
-                                                   int rows, int cols) const {
+std::string make_player_only_key(const std::vector<std::vector<std::map<std::string, std::string>>>& board,
+                                 int rows, int cols, const std::string& side) {
     std::string key;
     // Reserve space for board representation
     key.reserve(rows * cols * 5 + rows + 1);
@@ -182,34 +156,101 @@ std::string RepetitionChecker::make_player_only_key(const std::vector<std::vecto
     return key;
 }
 
-bool RepetitionChecker::would_repeat_after(const GameState& state, const Move& move) const {
+bool would_repeat_after(const GameState& state, const Move& move, const std::string& side, 
+                       const std::deque<std::string>& recent_keys) {
+    // Only consider it a repetition if we have at least 2 keys and they are the same
+    if (recent_keys.size() < 2) {
+        std::cout << "Not enough history to detect repetition." << std::endl;
+        return false;  // Not enough history to detect repetition
+    }
+    
+    // Check if the last 2 keys are the same (indicating a 2-move cycle)
+    if (recent_keys[recent_keys.size() - 1] != recent_keys[recent_keys.size() - 2]) {
+        std::cout << "Last two keys are different, no repetition." << std::endl;
+        return false;  // Last 2 keys are different, no repetition pattern
+    }
+    
+    // We have a potential repetition pattern (last 2 keys are same)
+    // Now check if this move would continue the repetition cycle
     GameState sim = state.copy();
     sim.apply_move(move);
-    std::string key = make_player_only_key(sim.board, sim.rows, sim.cols);
+    std::string key = make_player_only_key(sim.board, sim.rows, sim.cols, side);
+    
+    // Check if this new key matches any of the recent keys (continuing the cycle)
     for (const auto& k : recent_keys) {
-        if (k != key) return false;
+        if (k == key) return true;  // Found a match - this would continue the repetition
     }
-    return true;
+    std::cout << "No matching key found, no repetition." << std::endl;
+    return false;  // This move would break the repetition cycle
 }
 
-void RepetitionChecker::record_resulting_key(const GameState& state, const Move& move) {
+void record_resulting_key(const GameState& state, const Move& move, const std::string& side,
+                         std::deque<std::string>& recent_keys) {
     GameState sim = state.copy();
     sim.apply_move(move);
-    std::string key = make_player_only_key(sim.board, sim.rows, sim.cols);
+    std::string key = make_player_only_key(sim.board, sim.rows, sim.cols, side);
     recent_keys.push_back(key);
     while (recent_keys.size() > 2) recent_keys.pop_front();
 }
 
+Move flip_topmost_piece(const GameState& state, const std::string& side) {
+    // Find the topmost piece of the given side and flip it
+    std::cout << "Attempting to flip topmost piece for side: " << side << std::endl;
+    if(side=="circle"){
+    for (int y = 0; y < state.rows; ++y) {
+        for (int x = 0; x < state.cols; ++x) {
+            const auto& cell = state.board[y][x];
+            if (!cell.empty() && cell.at("owner") == side) {
+                if (cell.at("side") == "stone") {
+                    // Flip stone to river (default horizontal)
+                    return {"flip", {x, y}, {x, y}, {}, "horizontal"};
+                } else if (cell.at("side") == "river") {
+                    // Flip river orientation
+                    return {"flip", {x,y}, {x,y}, {}, ""};
+                }
+            }
+        }
+    }
+}
+    if(side=="square"){
+    for (int y = state.rows-1; y >= 0; --y) {
+        for (int x = state.cols-1; x >= 0; --x) {
+            const auto& cell = state.board[y][x];
+            if (!cell.empty() && cell.at("owner") == side) {
+                if (cell.at("side") == "stone") {
+                    // Flip stone to river (default horizontal)
+                    return {"flip", {x, y}, {x, y}, {}, "horizontal"};
+                } else if (cell.at("side") == "river") {
+                    // Flip river orientation
+                    return {"flip", {x,y}, {x,y}, {}, ""};
+                }
+            }
+        }
+    }
+}
+    // If no piece found, return a dummy move
+    std::cout << "No piece found to flip, returning dummy move." << std::endl;
+    return {"move", {0,0}, {0,0}, {}, ""};
+}
+
 Move run_minimax_with_repetition_check(const GameState& initial_state, int max_depth, 
-                                      RepetitionChecker& checker) {
+                                      const std::string& side, std::deque<std::string>& recent_keys, float time_remaining) {
     const int MINIMAX_DEPTH = max_depth;
     std::string current_player = initial_state.current_player;
-
     // Compute initial evaluation for dynamic weight update
     double initial_eval = Heuristics::evaluate_position(initial_state, current_player);
     
     // Get all legal moves and order them by heuristic
     std::vector<Move> legal_moves = initial_state.get_legal_moves();
+    if (time_remaining <= 3.5) {
+        Move flip_move = flip_topmost_piece(initial_state, side);
+        if(flip_move.action != "flip" && !legal_moves.empty()){
+            std::cout << "Time low, but no piece to flip, choosing best legal move." << std::endl;
+            return legal_moves[0];
+        }
+        std::cout << "Time low, flipping topmost piece." << std::endl;
+        return flip_move;
+    }
     if (legal_moves.empty()) {
         // No legal moves available, return a dummy move
         return {"move", {0,0}, {0,0}, {}, ""};
@@ -217,7 +258,6 @@ Move run_minimax_with_repetition_check(const GameState& initial_state, int max_d
 
     // Order moves by heuristic evaluation for better selection (best moves first)
     std::vector<Move> ordered_moves = order_moves_by_heuristic(initial_state, legal_moves, current_player, true);
-
     // Find the best non-repeating move from the ordered list
     Move selected = ordered_moves[0]; // Default to best move
     bool found_non_repeating = false;
@@ -229,22 +269,29 @@ Move run_minimax_with_repetition_check(const GameState& initial_state, int max_d
                                             true, current_player);
 
 
-    if(checker.would_repeat_after(initial_state, selected)){
+    if(would_repeat_after(initial_state, selected, side, recent_keys)){
+        std::cout << "Best move would repeat, searching for alternatives..." << std::endl;
+        std::cout << "Best move: " << selected.action << " from (" << selected.from[0] << "," << selected.from[1] 
+                  << ") to (" << selected.to[0] << "," << selected.to[1] << ")" << std::endl;
         for(const Move& move : ordered_moves){
-            if(!checker.would_repeat_after(initial_state, move)){
+            if(!would_repeat_after(initial_state, move, side, recent_keys)){
                 selected = move;
                 found_non_repeating = true;
+                std::cout << "Selected non-repeating move instead." << std::endl;
+                std::cout << "Non-repeating move: " << selected.action << " from (" << selected.from[0] << "," << selected.from[1] 
+                          << ") to (" << selected.to[0] << "," << selected.to[1] << ")" << std::endl;
                 break;
             }
         }
         // If all moves repeat, just use the best one
         if(!found_non_repeating){
+            std::cout << "All moves would repeat, using the best move anyway." << std::endl;
             selected = ordered_moves[0];
         }
     }
 
     // Record the resulting state key into rolling history (max 5)
-    checker.record_resulting_key(initial_state, selected);
+    record_resulting_key(initial_state, selected, side, recent_keys);
 
     // Update heuristic weights using the delta between result and initial eval
     double delta = result.value - initial_eval;
@@ -255,7 +302,7 @@ Move run_minimax_with_repetition_check(const GameState& initial_state, int max_d
     after_move_state.apply_move(selected);
     double post_move_eval = Heuristics::evaluate_position(after_move_state, current_player);
     Heuristics heuristics;
-    heuristics.debug_heuristic(after_move_state, current_player);
+    // heuristics.debug_heuristic(after_move_state, current_player);
     std::cout << "initial eval: " << initial_eval << ", post-move eval: " << post_move_eval << ", predicted: " << result.value << ", delta: " << delta << std::endl;
     
     return selected;

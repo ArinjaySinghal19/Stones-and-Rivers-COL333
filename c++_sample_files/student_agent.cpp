@@ -43,7 +43,7 @@ namespace py = pybind11;
 // ---- Student Agent ----
 class StudentAgent {
 public:
-    explicit StudentAgent(std::string side) : side(std::move(side)), repetition_checker(side) {}
+    explicit StudentAgent(std::string side) : side(std::move(side)) {}
 
     Move choose(const std::vector<std::vector<std::map<std::string, std::string>>>& board, 
                 int row, int col, const std::vector<int>& score_cols, 
@@ -56,26 +56,25 @@ public:
 
         // Create game state
         GameState current_state(board, side, rows, cols, score_cols);
-        
         Move selected;
         // Use Minimax with Alpha-Beta Pruning and repetition checking
         const int MINIMAX_DEPTH = 2;
-        selected = run_minimax_with_repetition_check(current_state, MINIMAX_DEPTH, repetition_checker);
+        selected = run_minimax_with_repetition_check(current_state, MINIMAX_DEPTH, side, recent_keys, current_player_time);
         
         
         // Calculate and display elapsed time
         auto end_time = std::chrono::high_resolution_clock::now();
-        auto duration = std::chrono::duration_cast<std::chrono::milliseconds>(end_time - start_time);
+        auto duration = std::chrono::duration_cast<std::chrono::microseconds>(end_time - start_time);
         double elapsed_seconds = duration.count();
 
-        std::cout << "Move returned in " << elapsed_seconds << " milliseconds" << std::endl;
+        std::cout << "Move returned in " << elapsed_seconds << " microseconds" << std::endl;
 
         return selected;
     }
 
 private:
     std::string side;
-    RepetitionChecker repetition_checker;
+    std::deque<std::string> recent_keys; // Rolling history of recent position keys
 };
 
 // ---- PyBind11 bindings ----

@@ -120,14 +120,14 @@ run: test
 	@echo "🎮 Starting Stones and Rivers Game (no GUI)..."
 	@echo "=========================="
 	@echo "Mode: aivai | Circle: student_cpp | Square: student_cpp"
-	@cd $(CLIENT_DIR) && PYTHONPATH=$(CPP_DIR):$$PYTHONPATH $(PYTHON) gameEngine.py --mode aivai --circle student_cpp --square student_cpp --nogui
+	@cd $(CLIENT_DIR) && PYTHONPATH=$(CPP_DIR):$$PYTHONPATH $(PYTHON) gameEngine.py --mode aivai --circle student_cpp --square student_cpp --nogui 
 
 # Run the game with GUI
 run-gui: test
 	@echo "🎮 Starting Stones and Rivers Game (with GUI)..."
 	@echo "==============================================="
 	@echo "Mode: aivai | Circle: student_cpp | Square: student_cpp"
-	@cd $(CLIENT_DIR) && PYTHONPATH=$(CPP_DIR):$$PYTHONPATH $(PYTHON) gameEngine.py --mode aivai --circle student_cpp --square student_cpp
+	@cd $(CLIENT_DIR) && PYTHONPATH=$(CPP_DIR):$$PYTHONPATH $(PYTHON) gameEngine.py --mode aivai --circle student_cpp --square student_cpp --time 0.067
 
 # Run the game with GUI (Human vs AI)
 run-gui-human: test
