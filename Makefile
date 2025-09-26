@@ -146,7 +146,7 @@ run-random: test
 	@echo "🎮 Starting Stones and Rivers Game (with GUI - Random vs Random)..."
 	@echo "============================================================="
 	@echo "Mode: aivai | Circle: student_cpp | Square: random"
-	@cd $(CLIENT_DIR) && PYTHONPATH=$(CPP_DIR):$$PYTHONPATH $(PYTHON) gameEngine.py --mode aivai --circle student_cpp --square random --time 0.067
+	@cd $(CLIENT_DIR) && PYTHONPATH=$(CPP_DIR):$$PYTHONPATH $(PYTHON) gameEngine.py --mode aivai --circle student_cpp --square random
 
 # Clean build artifacts but keep virtual environment
 clean:
