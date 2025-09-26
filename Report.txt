@@ -1,4 +1,4 @@
-Even though I/we have taken help from the following students and LLMs in terms of discussing ideas and coding practices, all my/our code is written by me/us.
+Even though we have taken help from the following students and LLMs in terms of discussing ideas and coding practices, all our code is written by us.
 Amber Agarwal
 Anoop Singh
 Reeshabh Rajesh Kotecha
