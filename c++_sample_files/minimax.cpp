@@ -6,17 +6,6 @@
 #include <deque>
 #include <string>
 
-/**
- * Function to order moves based on heuristic evaluation for better alpha-beta pruning.
- * This optimization improves search efficiency by examining promising moves first,
- * leading to more frequent cutoffs and faster tree traversal.
- * 
- * @param state Current game state
- * @param moves List of legal moves to order
- * @param original_player The player for whom we're optimizing (root player)
- * @param maximizing_player Whether current level is maximizing or minimizing
- * @return Vector of moves sorted by their heuristic evaluation
- */
 std::vector<Move> order_moves_by_heuristic(const GameState& state, const std::vector<Move>& moves, 
                                          const std::string& original_player, bool maximizing_player) {
     std::vector<MinimaxResult> move_evaluations;
