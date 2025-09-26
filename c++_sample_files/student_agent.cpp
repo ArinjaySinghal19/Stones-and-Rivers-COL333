@@ -44,7 +44,7 @@ namespace py = pybind11;
 class StudentAgent {
 public:
     explicit StudentAgent(std::string side) : side(std::move(side)) {}
-
+    int num_moves = 0;
     Move choose(const std::vector<std::vector<std::map<std::string, std::string>>>& board, 
                 int row, int col, const std::vector<int>& score_cols, 
                 float current_player_time, float opponent_time) {
@@ -66,9 +66,7 @@ public:
         auto end_time = std::chrono::high_resolution_clock::now();
         auto duration = std::chrono::duration_cast<std::chrono::microseconds>(end_time - start_time);
         double elapsed_seconds = duration.count();
-
-        std::cout << "Move returned in " << elapsed_seconds << " microseconds" << std::endl;
-
+        
         return selected;
     }
 
