@@ -286,17 +286,12 @@ std::vector<Move> GameState::get_legal_moves() const {
 
             std::string side_type = cell.at("side");
 
-            // Check if piece is in scoring area
-            bool in_scoring_area = is_my_score_cell(x, y, current_player, rows, cols, score_cols);
-
             // ---- MOVES (including river flow) ----
-            // Only allow moves if piece is NOT in scoring area
-            // if (!in_scoring_area) {
-                auto valid_targets = compute_valid_targets(board, x, y, current_player, rows, cols, score_cols);
-                
-                // Add regular moves and river flow moves
-                for (const auto& target : valid_targets.moves) {
-                    moves.push_back({"move", {x,y}, {target.first, target.second}, {}, ""});
+            auto valid_targets = compute_valid_targets(board, x, y, current_player, rows, cols, score_cols);
+
+            // Add regular moves and river flow moves
+            for (const auto& target : valid_targets.moves) {
+                moves.push_back({"move", {x,y}, {target.first, target.second}, {}, ""});
                 }
 
                 // ---- PUSHES (including river flow pushes) ----
@@ -310,8 +305,7 @@ std::vector<Move> GameState::get_legal_moves() const {
 
             // ---- FLIP ----
             if (side_type == "stone") {
-                // Only allow flipping stone to river if NOT in scoring area
-                // if (!in_scoring_area) {
+
                     // Check if flipping to river would be safe (not flowing into opponent score)
                     for (const std::string& orientation : {"horizontal", "vertical"}) {
                         // Simulate the flip and check resulting flow
@@ -334,7 +328,6 @@ std::vector<Move> GameState::get_legal_moves() const {
                             moves.push_back({"flip", {x,y}, {x,y}, {}, orientation});
                         }
                     }
-                // }
             } else if (side_type == "river") {
                 // Always allow flipping river to stone (including in scoring area)
                 moves.push_back({"flip", {x,y}, {x,y}, {}, ""});

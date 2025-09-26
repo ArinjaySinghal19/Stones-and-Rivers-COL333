@@ -131,10 +131,6 @@ Move run_minimax(const GameState& initial_state, int max_depth) {
     const int MINIMAX_DEPTH = max_depth;
     std::string current_player = initial_state.current_player;
 
-    // Heuristics heuristics;
-    // heuristics.debug_heuristic(initial_state, current_player);
-
-    
 
     // Compute initial evaluation for dynamic weight update
     double initial_eval = Heuristics::evaluate_position(initial_state, current_player);

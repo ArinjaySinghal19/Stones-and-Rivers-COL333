@@ -749,8 +749,6 @@ def run_gui(mode:str, circle_strategy:str, square_strategy:str, load_file:Option
         if circle_strategy!="random": players={"circle":"ai","square":"human"}
         else: players={"circle":"human","square":"ai"}
     
-    print(f"Players: {players}")
-    
     # instantiate agents (they only receive board)
     
     agent_circle = get_agent("circle", circle_strategy)
@@ -758,8 +756,6 @@ def run_gui(mode:str, circle_strategy:str, square_strategy:str, load_file:Option
     agents = {}
     if players["circle"]=="ai": agents["circle"] = agent_circle
     if players["square"]=="ai": agents["square"] = agent_square
-    
-    print(f"agents: {agents}")
 
     timers = {"circle": time_per_player, "square": time_per_player}
 

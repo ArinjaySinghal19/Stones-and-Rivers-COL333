@@ -2,7 +2,6 @@
 #include <pybind11/stl.h>
 #include "game_state.h"
 #include "minimax.h"
-#include "mcts.h"
 #include "heuristics.h"
 #include <iostream>
 #include <deque>
@@ -52,55 +51,17 @@ public:
         // Start timing
         auto start_time = std::chrono::high_resolution_clock::now();
         
-        const std::string algorithm = "minimax"; // "mcts" or "minimax"
         int rows = board.size();
         int cols = board[0].size();
 
-
-
         // Create game state
         GameState current_state(board, side, rows, cols, score_cols);
-
-        // Heuristics heuristics;
-        // heuristics.debug_heuristic(current_state, side);
-        // std::cout << "hello" << std::endl;
         
         Move selected;
-        if (algorithm == "minimax") {
-            // Use Minimax with Alpha-Beta Pruning and repetition checking
-            const int MINIMAX_DEPTH = 2;
-            selected = run_minimax_with_repetition_check(current_state, MINIMAX_DEPTH, repetition_checker);
-        } else {
-            // Use MCTS (default)
-            int base_iterations = 200;
-            int max_iterations = base_iterations;
-            if (current_player_time < 10.0) max_iterations = base_iterations / 2;
-            if (current_player_time < 5.0)  max_iterations = base_iterations / 4;
-            if (current_player_time < 2.0)  max_iterations = base_iterations / 10;
-            selected = run_mcts(current_state, max_iterations);
-            
-            // For MCTS, we still need to handle repetition checking manually
-            if (repetition_checker.would_repeat_after(current_state, selected)) {
-                auto legal = current_state.get_legal_moves();
-                // Try to find a non-repeating move
-                for (const auto& move : legal) {
-                    if (!repetition_checker.would_repeat_after(current_state, move)) {
-                        selected = move;
-                        break;
-                    }
-                }
-                // If all moves repeat, just use a random one
-                if (repetition_checker.would_repeat_after(current_state, selected)) {
-                    static std::random_device rd;
-                    static std::mt19937 gen(rd());
-                    std::uniform_int_distribution<> dis(0, legal.size() - 1);
-                    selected = legal[dis(gen)];
-                }
-            }
-            
-            // Record the resulting state key for MCTS
-            repetition_checker.record_resulting_key(current_state, selected);
-        }
+        // Use Minimax with Alpha-Beta Pruning and repetition checking
+        const int MINIMAX_DEPTH = 2;
+        selected = run_minimax_with_repetition_check(current_state, MINIMAX_DEPTH, repetition_checker);
+        
         
         // Calculate and display elapsed time
         auto end_time = std::chrono::high_resolution_clock::now();

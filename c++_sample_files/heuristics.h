@@ -46,14 +46,12 @@ public:
     static int connectedness_h(const GameState& state, const std::string& player, bool self, bool wrt_self = true);
     static int pieces_in_scoring_h(const GameState& state, const std::string& player, bool wrt_self);
     static int possible_moves_h(const GameState& state, const std::string& player, bool wrt_self = true);
-    static int stones_reaching_riv_h(const GameState& state, const std::string& player, bool self, bool wrt_self = true);
     static int pieces_blocking_vertical_h(const GameState& state, const std::string& player, bool wrt_self = true);
     static int vertical_river_on_top_peri_h(const GameState& state, const std::string& player, bool wrt_self = true);
     static int horizontal_base_rivers(const GameState& state, const std::string& player, bool wrt_self = true);
     static int horizontal_negative(const GameState& state, const std::string& player, bool wrt_self = true);
     static int horizontal_attack(const GameState& state, const std::string& player, bool wrt_self = true);
     static int inactive_pieces(const GameState& state, const std::string& player, bool wrt_self = true);
-    static int manhattan_distance_h(const GameState& state, const std::string& player, bool wrt_self = true);
     static int terminal_result(const GameState& state, const std::string& player, bool wrt_self = true);
     void debug_heuristic(const GameState& state, const std::string& player);
     
