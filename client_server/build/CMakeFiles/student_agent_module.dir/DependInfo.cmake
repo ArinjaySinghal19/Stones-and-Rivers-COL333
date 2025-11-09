@@ -8,10 +8,10 @@ set(CMAKE_DEPENDS_LANGUAGES
 
 # The set of dependency files which are needed:
 set(CMAKE_DEPENDS_DEPENDENCY_FILES
-  "/Users/arinjaysinghal/Desktop/COL333_A5/c++_sample_files/game_state.cpp" "CMakeFiles/student_agent_module.dir/game_state.cpp.o" "gcc" "CMakeFiles/student_agent_module.dir/game_state.cpp.o.d"
-  "/Users/arinjaysinghal/Desktop/COL333_A5/c++_sample_files/heuristics.cpp" "CMakeFiles/student_agent_module.dir/heuristics.cpp.o" "gcc" "CMakeFiles/student_agent_module.dir/heuristics.cpp.o.d"
-  "/Users/arinjaysinghal/Desktop/COL333_A5/c++_sample_files/minimax.cpp" "CMakeFiles/student_agent_module.dir/minimax.cpp.o" "gcc" "CMakeFiles/student_agent_module.dir/minimax.cpp.o.d"
-  "/Users/arinjaysinghal/Desktop/COL333_A5/c++_sample_files/student_agent.cpp" "CMakeFiles/student_agent_module.dir/student_agent.cpp.o" "gcc" "CMakeFiles/student_agent_module.dir/student_agent.cpp.o.d"
+  "/Users/arinjaysinghal/Desktop/Stones-and-Rivers-COL333/c++_sample_files/game_state.cpp" "CMakeFiles/student_agent_module.dir/game_state.cpp.o" "gcc" "CMakeFiles/student_agent_module.dir/game_state.cpp.o.d"
+  "/Users/arinjaysinghal/Desktop/Stones-and-Rivers-COL333/c++_sample_files/heuristics.cpp" "CMakeFiles/student_agent_module.dir/heuristics.cpp.o" "gcc" "CMakeFiles/student_agent_module.dir/heuristics.cpp.o.d"
+  "/Users/arinjaysinghal/Desktop/Stones-and-Rivers-COL333/c++_sample_files/minimax.cpp" "CMakeFiles/student_agent_module.dir/minimax.cpp.o" "gcc" "CMakeFiles/student_agent_module.dir/minimax.cpp.o.d"
+  "/Users/arinjaysinghal/Desktop/Stones-and-Rivers-COL333/c++_sample_files/student_agent.cpp" "CMakeFiles/student_agent_module.dir/student_agent.cpp.o" "gcc" "CMakeFiles/student_agent_module.dir/student_agent.cpp.o.d"
   )
 
 # Targets to which this target links which contain Fortran sources.

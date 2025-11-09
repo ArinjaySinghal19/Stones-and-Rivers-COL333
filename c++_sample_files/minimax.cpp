@@ -192,6 +192,7 @@ Move run_minimax_with_repetition_check(const GameState& initial_state, int max_d
         // No legal moves available, return a dummy move
         return {"move", {0,0}, {0,0}, {}, ""};
     }
+    
 
     // Order moves by heuristic evaluation for better selection (best moves first)
     std::vector<Move> ordered_moves = order_moves_by_heuristic(initial_state, legal_moves, current_player, true);
@@ -232,7 +233,13 @@ Move run_minimax_with_repetition_check(const GameState& initial_state, int max_d
     after_move_state.apply_move(selected);
     double post_move_eval = Heuristics::evaluate_position(after_move_state, current_player);
     Heuristics heuristics;
-    // heuristics.debug_heuristic(after_move_state, current_player);
+    heuristics.debug_heuristic(after_move_state, current_player);
+
+    const auto& cell = after_move_state.board[9][6];
+    std::cout << "Cell (6,9) status in after move state:\n";
+    for (const auto& [key, value] : cell) {
+        std::cout << "  " << key << ": " << value << "\n";
+    }
     
     return selected;
 }

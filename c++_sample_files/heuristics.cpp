@@ -493,6 +493,7 @@ int Heuristics::horizontal_base_rivers(const GameState& state, const std::string
                 if (!cell.empty() && cell.find("owner") != cell.end() && cell.at("owner") == player &&
                     cell.find("side") != cell.end() && cell.at("side") == "river" && 
                     cell.find("orientation") != cell.end() && cell.at("orientation") == "horizontal") {
+                    // std::cout << "Found horizontal river at (" << x << ", " << r << ")\n";
                     count++;
                 }
             }

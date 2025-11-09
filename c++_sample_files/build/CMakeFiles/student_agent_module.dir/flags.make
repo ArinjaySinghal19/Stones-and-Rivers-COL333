@@ -4,7 +4,7 @@
 # compile CXX with /usr/bin/g++
 CXX_DEFINES = -Dstudent_agent_module_EXPORTS
 
-CXX_INCLUDES = -isystem /Users/arinjaysinghal/Desktop/COL333_A5/.venv/lib/python3.13/site-packages/pybind11/include -isystem /Users/arinjaysinghal/miniconda3/include/python3.13
+CXX_INCLUDES = -isystem /Users/arinjaysinghal/Desktop/Stones-and-Rivers-COL333/.venv/lib/python3.13/site-packages/pybind11/include -isystem /opt/homebrew/opt/python@3.13/Frameworks/Python.framework/Versions/3.13/include/python3.13
 
 CXX_FLAGSarm64 = -O3 -DNDEBUG -std=gnu++17 -arch arm64 -fPIC -fvisibility=hidden -flto
 

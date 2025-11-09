@@ -246,39 +246,92 @@ class BaseAgent(ABC):
 class StudentAgent(BaseAgent):
     """
     Student Agent Implementation
-    
-    TODO: Implement your AI agent for the River and Stones game.
-    The goal is to get 4 of your stones into the opponent's scoring area.
-    
-    You have access to these utility functions:
-    - generate_all_moves(): Get all legal moves for current player
-    - basic_evaluate_board(): Basic position evaluation 
-    - simulate_move(): Test moves on board copy
-    - count_stones_in_scoring_area(): Count stones in scoring positions
+
+    This agent can use either:
+    1. AlphaZero trained neural network (if available)
+    2. Fallback to random/heuristic play
+
+    To use AlphaZero:
+    - Train a model using: cd alphazero && python train.py --board-size small
+    - The agent will automatically detect and use the trained model
     """
-    
+
     def __init__(self, player: str):
         super().__init__(player)
-        # TODO: Add any initialization you need
-    
+
+        # Try to load AlphaZero agent
+        self.use_alphazero = False
+        self.alphazero_agent = None
+
+        try:
+            import os
+            import sys
+
+            # Add alphazero directory to path
+            current_dir = os.path.dirname(os.path.abspath(__file__))
+            alphazero_dir = os.path.join(current_dir, '..', 'alphazero')
+            alphazero_dir = os.path.abspath(alphazero_dir)
+
+            if alphazero_dir not in sys.path:
+                sys.path.insert(0, alphazero_dir)
+
+            from alphazero_agent import create_alphazero_student_agent
+
+            # Determine board size (default to small)
+            # In a real match, this would be determined from game state
+            board_size = os.environ.get('BOARD_SIZE', 'small')
+
+            self.alphazero_agent = create_alphazero_student_agent(player, board_size)
+            self.use_alphazero = True
+            print(f"✓ AlphaZero agent loaded for {player}")
+
+        except Exception as e:
+            print(f"AlphaZero not available, using fallback: {e}")
+            self.use_alphazero = False
+
     def choose(self, board: List[List[Any]], rows: int, cols: int, score_cols: List[int], current_player_time: float, opponent_time: float) -> Optional[Dict[str, Any]]:
         """
         Choose the best move for the current board state.
-        
+
         Args:
             board: 2D list representing the game board
-            rows, cols: Board dimensions  
+            rows, cols: Board dimensions
             score_cols: Column indices for scoring areas
-            
+            current_player_time: Remaining time for current player
+            opponent_time: Remaining time for opponent
+
         Returns:
             Dictionary representing your chosen move
         """
+        # Use AlphaZero if available
+        if self.use_alphazero and self.alphazero_agent:
+            try:
+                move = self.alphazero_agent.choose(board, rows, cols, score_cols,
+                                                   current_player_time, opponent_time)
+                if move:
+                    return move
+            except Exception as e:
+                print(f"AlphaZero error: {e}, falling back to random")
+
+        # Fallback: random move selection
         moves = generate_all_moves(board, self.player, rows, cols, score_cols)
-        
+
         if not moves:
             return None
-        
-        # TODO: Replace random selection with your AI algorithm
+
+        # Simple heuristic: prefer moves that get stones into scoring area
+        scoring_moves = []
+        for move in moves:
+            if move.get('action') == 'move':
+                to_pos = move.get('to', [])
+                if len(to_pos) == 2:
+                    x, y = to_pos
+                    if is_own_score_cell(x, y, self.player, rows, cols, score_cols):
+                        scoring_moves.append(move)
+
+        if scoring_moves:
+            return random.choice(scoring_moves)
+
         return random.choice(moves)
 
 # ==================== TESTING HELPERS ====================

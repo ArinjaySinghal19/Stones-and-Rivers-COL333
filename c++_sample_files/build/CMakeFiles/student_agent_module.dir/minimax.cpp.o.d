@@ -1,7 +1,7 @@
 CMakeFiles/student_agent_module.dir/minimax.cpp.o: \
-  /Users/arinjaysinghal/Desktop/COL333_A5/c++_sample_files/minimax.cpp \
-  /Users/arinjaysinghal/Desktop/COL333_A5/c++_sample_files/minimax.h \
-  /Users/arinjaysinghal/Desktop/COL333_A5/c++_sample_files/game_state.h \
+  /Users/arinjaysinghal/Desktop/Stones-and-Rivers-COL333/c++_sample_files/minimax.cpp \
+  /Users/arinjaysinghal/Desktop/Stones-and-Rivers-COL333/c++_sample_files/minimax.h \
+  /Users/arinjaysinghal/Desktop/Stones-and-Rivers-COL333/c++_sample_files/game_state.h \
   /Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk/usr/include/c++/v1/vector \
   /Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk/usr/include/c++/v1/__algorithm/copy.h \
   /Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk/usr/include/c++/v1/__algorithm/copy_move_common.h \
@@ -785,7 +785,7 @@ CMakeFiles/student_agent_module.dir/minimax.cpp.o: \
   /Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk/usr/include/c++/v1/set \
   /Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk/usr/include/c++/v1/deque \
   /Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk/usr/include/c++/v1/__fwd/deque.h \
-  /Users/arinjaysinghal/Desktop/COL333_A5/c++_sample_files/heuristics.h \
+  /Users/arinjaysinghal/Desktop/Stones-and-Rivers-COL333/c++_sample_files/heuristics.h \
   /Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk/usr/include/c++/v1/random \
   /Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk/usr/include/c++/v1/__random/bernoulli_distribution.h \
   /Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk/usr/include/c++/v1/__random/uniform_real_distribution.h \

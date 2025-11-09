@@ -71,7 +71,7 @@ Required:
 python bot_client.py circle 8080 --strategy random
 
 # Student strategy
-python bot_client.py square 8080 --strategy student
+python bot_client.py square 8080 --strategy student_cpp
 ```
 
 ## Troubleshooting

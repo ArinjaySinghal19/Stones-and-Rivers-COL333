@@ -1,6 +1,6 @@
 CMakeFiles/student_agent_module.dir/game_state.cpp.o: \
-  /Users/arinjaysinghal/Desktop/COL333_A5/c++_sample_files/game_state.cpp \
-  /Users/arinjaysinghal/Desktop/COL333_A5/c++_sample_files/game_state.h \
+  /Users/arinjaysinghal/Desktop/Stones-and-Rivers-COL333/c++_sample_files/game_state.cpp \
+  /Users/arinjaysinghal/Desktop/Stones-and-Rivers-COL333/c++_sample_files/game_state.h \
   /Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk/usr/include/c++/v1/vector \
   /Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk/usr/include/c++/v1/__algorithm/copy.h \
   /Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk/usr/include/c++/v1/__algorithm/copy_move_common.h \

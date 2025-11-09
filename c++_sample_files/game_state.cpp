@@ -231,7 +231,58 @@ void GameState::apply_move(const Move& move) {
         int fx = move.from[0], fy = move.from[1];
         int tx = move.to[0], ty = move.to[1];
         
-        if (in_bounds(fx, fy, rows, cols) && in_bounds(tx, ty, rows, cols)) {
+        // Validate bounds
+        if (!in_bounds(fx, fy, rows, cols) || !in_bounds(tx, ty, rows, cols)) {
+            return;
+        }
+        
+        // Validate piece ownership
+        if (board[fy][fx].empty() || board[fy][fx].at("owner") != current_player) {
+            return;
+        }
+        
+        // Check if destination is opponent's score cell
+        if (is_opponent_score_cell(tx, ty, current_player, rows, cols, score_cols)) {
+            return;
+        }
+        
+        // If destination is empty, simple move
+        if (board[ty][tx].empty()) {
+            board[ty][tx] = board[fy][fx];
+            board[fy][fx].clear();
+        }
+        // If destination is occupied, this should be a push with pushed_to
+        else {
+            // Check if pushed_to is provided
+            if (move.pushed_to.empty()) {
+                return; // Invalid: destination occupied but no pushed_to
+            }
+            
+            int ptx = move.pushed_to[0], pty = move.pushed_to[1];
+            int dx = tx - fx, dy = ty - fy;
+            
+            // Validate pushed_to is in correct direction
+            if (ptx != tx + dx || pty != ty + dy) {
+                return;
+            }
+            
+            // Validate pushed_to bounds
+            if (!in_bounds(ptx, pty, rows, cols)) {
+                return;
+            }
+            
+            // Check if pushed_to is opponent's score cell
+            if (is_opponent_score_cell(ptx, pty, current_player, rows, cols, score_cols)) {
+                return;
+            }
+            
+            // Validate pushed_to is empty
+            if (!board[pty][ptx].empty()) {
+                return;
+            }
+            
+            // Apply move with push
+            board[pty][ptx] = board[ty][tx];
             board[ty][tx] = board[fy][fx];
             board[fy][fx].clear();
         }
@@ -241,31 +292,153 @@ void GameState::apply_move(const Move& move) {
         int tx = move.to[0], ty = move.to[1];
         int px = move.pushed_to[0], py = move.pushed_to[1];
         
-        if (in_bounds(fx, fy, rows, cols) && in_bounds(tx, ty, rows, cols) && 
-            in_bounds(px, py, rows, cols)) {
-            board[py][px] = board[ty][tx];  // Move pushed piece
-            board[ty][tx] = board[fy][fx];  // Move pushing piece
-            board[fy][fx].clear();
+        // Validate bounds
+        if (!in_bounds(fx, fy, rows, cols) || !in_bounds(tx, ty, rows, cols) || 
+            !in_bounds(px, py, rows, cols)) {
+            return;
+        }
+        
+        // Validate piece ownership
+        if (board[fy][fx].empty() || board[fy][fx].at("owner") != current_player) {
+            return;
+        }
+        
+        // Get pushed player
+        std::string pushed_player = board[ty][tx].empty() ? "" : board[ty][tx].at("owner");
+        
+        // Check if either position is opponent's score cell
+        if (is_opponent_score_cell(tx, ty, current_player, rows, cols, score_cols) ||
+            (!pushed_player.empty() && is_opponent_score_cell(px, py, pushed_player, rows, cols, score_cols))) {
+            return;
+        }
+        
+        // Validate target is occupied
+        if (board[ty][tx].empty()) {
+            return;
+        }
+        
+        // Validate pushed_to is empty
+        if (!board[py][px].empty()) {
+            return;
+        }
+        
+        // Rivers cannot push rivers
+        if (board[fy][fx].at("side") == "river" && board[ty][tx].at("side") == "river") {
+            return;
+        }
+        
+        // Validate push is legal using compute_valid_targets
+        auto valid_targets = compute_valid_targets(board, fx, fy, current_player, rows, cols, score_cols);
+        bool valid_push = false;
+        for (const auto& push_pair : valid_targets.pushes) {
+            if (push_pair.first == std::make_pair(tx, ty) && push_pair.second == std::make_pair(px, py)) {
+                valid_push = true;
+                break;
+            }
+        }
+        
+        if (!valid_push) {
+            return;
+        }
+        
+        // Apply the push
+        board[py][px] = board[ty][tx];  // Enemy goes to pushed_to
+        board[ty][tx] = board[fy][fx];  // Mover goes into enemy's cell
+        board[fy][fx].clear();           // Origin cleared
+        
+        // If mover is a river, flip it to stone
+        if (board[ty][tx].at("side") == "river") {
+            board[ty][tx]["side"] = "stone";
+            board[ty][tx].erase("orientation");
         }
     }
     else if (move.action == "flip") {
         int fx = move.from[0], fy = move.from[1];
-        if (in_bounds(fx, fy, rows, cols) && !board[fy][fx].empty()) {
-            if (board[fy][fx].at("side") == "stone") {
-                board[fy][fx]["side"] = "river";
-                board[fy][fx]["orientation"] = move.orientation;
-            } else {
-                board[fy][fx]["side"] = "stone";
+        
+        // Validate bounds
+        if (!in_bounds(fx, fy, rows, cols)) {
+            return;
+        }
+        
+        // Validate piece exists and belongs to current player
+        if (board[fy][fx].empty() || board[fy][fx].at("owner") != current_player) {
+            return;
+        }
+        
+        if (board[fy][fx].at("side") == "stone") {
+            // Flipping stone to river requires orientation
+            if (move.orientation.empty() || 
+                (move.orientation != "horizontal" && move.orientation != "vertical")) {
+                return;
             }
+            
+            // Temporarily flip to check if river flow would reach opponent score
+            std::string old_side = board[fy][fx].at("side");
+            board[fy][fx]["side"] = "river";
+            board[fy][fx]["orientation"] = move.orientation;
+            
+            auto flow = get_river_flow_destinations(board, fx, fy, fx, fy, current_player, rows, cols, score_cols);
+            
+            // Check if any flow destination is opponent's score cell
+            bool invalid_flow = false;
+            for (const auto& dest : flow) {
+                if (is_opponent_score_cell(dest.first, dest.second, current_player, rows, cols, score_cols)) {
+                    invalid_flow = true;
+                    break;
+                }
+            }
+            
+            // Revert if invalid
+            if (invalid_flow) {
+                board[fy][fx]["side"] = old_side;
+                board[fy][fx].erase("orientation");
+                return;
+            }
+            // Otherwise flip is already applied
+        } else {
+            // Flipping river to stone
+            board[fy][fx]["side"] = "stone";
+            board[fy][fx].erase("orientation");
         }
     }
     else if (move.action == "rotate") {
         int fx = move.from[0], fy = move.from[1];
-        if (in_bounds(fx, fy, rows, cols) && !board[fy][fx].empty()) {
-            if (board[fy][fx].at("side") == "river") {
-                std::string current = board[fy][fx].at("orientation");
-                board[fy][fx]["orientation"] = (current == "horizontal") ? "vertical" : "horizontal";
+        
+        // Validate bounds
+        if (!in_bounds(fx, fy, rows, cols)) {
+            return;
+        }
+        
+        // Validate piece exists and belongs to current player
+        if (board[fy][fx].empty() || board[fy][fx].at("owner") != current_player) {
+            return;
+        }
+        
+        // Only rivers can be rotated
+        if (board[fy][fx].at("side") != "river") {
+            return;
+        }
+        
+        // Perform rotation
+        std::string current_ori = board[fy][fx].at("orientation");
+        std::string new_ori = (current_ori == "horizontal") ? "vertical" : "horizontal";
+        board[fy][fx]["orientation"] = new_ori;
+        
+        // Check if rotation causes flow into opponent score
+        auto flow = get_river_flow_destinations(board, fx, fy, fx, fy, current_player, rows, cols, score_cols);
+        
+        bool invalid_flow = false;
+        for (const auto& dest : flow) {
+            if (is_opponent_score_cell(dest.first, dest.second, current_player, rows, cols, score_cols)) {
+                invalid_flow = true;
+                break;
             }
+        }
+        
+        // Revert rotation if invalid
+        if (invalid_flow) {
+            board[fy][fx]["orientation"] = current_ori;
+            return;
         }
     }
     
