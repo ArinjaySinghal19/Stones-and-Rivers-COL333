@@ -45,14 +45,13 @@ int Heuristics::max(int a, int b) {
     return (a > b) ? a : b;
 }
 
-int Heuristics::vertical_push_h(const GameState& state, const std::string& player, bool wrt_self) {
+double Heuristics::vertical_push_h(const GameState& state, const std::string& player, bool wrt_self) {
     const auto& board = state.board;
     int rows = state.rows;
     int cols = state.cols;
     const auto& score_cols = state.score_cols;
 
-    int score = 0;
-    const int COLUMN_WEIGHT = 1;
+    double score = 0;
     std::vector<double> col_weight(12);
     
     for (int i = 2; i <= 3; i++) {
@@ -70,7 +69,7 @@ int Heuristics::vertical_push_h(const GameState& state, const std::string& playe
 
     std::string opponent = get_opponent(player);
     int push_direction = (player == "circle") ? -1 : 1;
-    std::vector<std::vector<int>> reach(rows, std::vector<int>(cols, 0));
+    std::vector<std::vector<double>> reach(rows, std::vector<double>(cols, 0));
 
 
     for (int y = 0; y < rows; ++y) {
@@ -89,14 +88,14 @@ int Heuristics::vertical_push_h(const GameState& state, const std::string& playe
                     const auto& next_cell = board[ny][x];
                     
                     if (next_cell.empty()) {
-                        reach[y][x] = col_weight[x];
+                        reach[ny][x] = col_weight[x];
                         continue;
                     }
                     else if (next_cell.find("owner") != next_cell.end() && next_cell.at("owner") == opponent) {
                         break;
                     }
                     else {
-                        reach[y][x] = col_weight[x];
+                        reach[ny][x] = col_weight[x];
                         continue;
                     }
                 }
@@ -603,7 +602,7 @@ int Heuristics::horizontal_attack(const GameState& state, const std::string& pla
                                 (board[r][curr_col].at("side") == "river" && 
                                  board[r][curr_col].at("orientation") == "horizontal") || 
                                 (board[r][curr_col].at("owner") == player)))) {
-                            if (curr_col >= 4 && curr_col <= 7) break;
+                            if (curr_col < 4 && curr_col > 7) break;
                             num_possible += mul;
                             curr_col++;
                         }
@@ -613,7 +612,7 @@ int Heuristics::horizontal_attack(const GameState& state, const std::string& pla
                                 (board[r][curr_col].at("side") == "river" && 
                                  board[r][curr_col].at("orientation") == "horizontal") || 
                                 (board[r][curr_col].at("owner") == player)))) {
-                            if (curr_col >= 4 && curr_col <= 7) break;
+                            if (curr_col < 4 && curr_col > 7) break;
                             num_possible += mul;
                             curr_col--;
                         }
@@ -731,26 +730,25 @@ double Heuristics::evaluate_position(const GameState& state, const std::string& 
 void Heuristics::debug_heuristic(const GameState& state, const std::string& player) {
     std::cout << "----- Debug Heuristic -----" << std::endl;
     std::cout << "Debugging Heuristic Components for player: " << player << std::endl;
-    std::cout << "Vertical Push Heuristic: " << vertical_push_h(state, player, true) << std::endl;
-    std::cout << "Connectedness Heuristic (self): " << connectedness_h(state, player, true, true) << std::endl;
-    std::cout << "Connectedness Heuristic (all): " << connectedness_h(state, player, false, true) << std::endl;
-    std::cout << "Pieces in Scoring Area Heuristic (attack): " << pieces_in_scoring_h(state, player, true) << std::endl;
-    std::cout << "Possible Moves Heuristic: " << possible_moves_h(state, player, true) << std::endl;
-    std::cout << "Pieces Blocking Vertical Rivers Heuristic: " << pieces_blocking_vertical_h(state, player, true) << std::endl;
-    std::cout << "Vertical River on Top Perimeter Heuristic: " << vertical_river_on_top_peri_h(state, player, true) << std::endl;
-    std::cout << "Horizontal Base Rivers Heuristic: " << horizontal_base_rivers(state, player, true) << std::endl;
-    std::cout << "Horizontal Negative Heuristic: " << horizontal_negative(state, player, true) << std::endl;
-    std::cout << "Horizontal Attack Heuristic: " << horizontal_attack(state, player, true) << std::endl;
-    std::cout << "Inactive Pieces Heuristic: " << inactive_pieces(state, player, true) << std::endl;
+    std::cout << "Vertical Push Heuristic: " << vertical_push_h(state, player, true) << " weighted: " << weights_.vertical_push * vertical_push_h(state, player, true) << std::endl;
+    std::cout << "Connectedness Heuristic (self): " << connectedness_h(state, player, true, true) << " weighted: " << weights_.connectedness_self * connectedness_h(state, player, true, true) << std::endl;
+    std::cout << "Connectedness Heuristic (all): " << connectedness_h(state, player, false, true) << " weighted: " << weights_.connectedness_all * connectedness_h(state, player, false, true) << std::endl;
+    std::cout << "Pieces in Scoring Area Heuristic (attack): " << pieces_in_scoring_h(state, player, true) << " weighted: " << weights_.pieces_in_scoring_attack * pieces_in_scoring_h(state, player, true) << std::endl;
+    std::cout << "Possible Moves Heuristic: " << possible_moves_h(state, player, true) << " weighted: " << weights_.possible_moves_self * possible_moves_h(state, player, true) << std::endl;
+    std::cout << "Pieces Blocking Vertical Rivers Heuristic: " << pieces_blocking_vertical_h(state, player, true) << " weighted: " << weights_.pieces_blocking_vertical_self * pieces_blocking_vertical_h(state, player, true) << std::endl;
+    std::cout << "Horizontal Base Rivers Heuristic: " << horizontal_base_rivers(state, player, true) << " weighted: " << weights_.horizontal_base_self * horizontal_base_rivers(state, player, true) << std::endl;
+    std::cout << "Horizontal Negative Heuristic: " << horizontal_negative(state, player, true) << " weighted: " << weights_.horizontal_negative_self * horizontal_negative(state, player, true) << std::endl;
+    std::cout << "Horizontal Attack Heuristic: " << horizontal_attack(state, player, true) << " weighted: " << weights_.horizontal_attack_self * horizontal_attack(state, player, true) << std::endl;
+    std::cout << "Inactive Pieces Heuristic: " << inactive_pieces(state, player, true) << " weighted: " << weights_.inactive_self * inactive_pieces(state, player, true) << std::endl;
 
     std::string opponent = get_opponent(player);
     std::cout << "--- Opponent (" << opponent << ") Heuristics ---" << std::endl;
-    std::cout << "Pieces in Scoring Area Heuristic (defense): " << pieces_in_scoring_h(state, player, false) << std::endl;
-    std::cout << "Possible Moves Heuristic: " << possible_moves_h(state, opponent, false) << std::endl;
-    std::cout << "Pieces Blocking Vertical Rivers Heuristic: " << pieces_blocking_vertical_h(state, opponent, false) << std::endl;
-    std::cout << "Horizontal Base Rivers Heuristic: " << horizontal_base_rivers(state, opponent, false) << std::endl;
-    std::cout << "Horizontal Attack Heuristic: " << horizontal_attack(state, opponent, false) << std::endl;
-    std::cout << "Inactive Pieces Heuristic: " << inactive_pieces(state, opponent, false) << std::endl;
+    std::cout << "Pieces in Scoring Area Heuristic (defense): " << pieces_in_scoring_h(state, player, false) << " weighted: " << weights_.pieces_in_scoring_defense * pieces_in_scoring_h(state, player, false) << std::endl;
+    std::cout << "Possible Moves Heuristic: " << possible_moves_h(state, opponent, false) << " weighted: " << weights_.possible_moves_opp * possible_moves_h(state, opponent, false) << std::endl;
+    std::cout << "Pieces Blocking Vertical Rivers Heuristic: " << pieces_blocking_vertical_h(state, opponent, false) << " weighted: " << weights_.pieces_blocking_vertical_opp * pieces_blocking_vertical_h(state, opponent, false) << std::endl;
+    std::cout << "Horizontal Base Rivers Heuristic: " << horizontal_base_rivers(state, opponent, false) << " weighted: " << weights_.horizontal_base_opp * horizontal_base_rivers(state, opponent, false) << std::endl;
+    std::cout << "Horizontal Attack Heuristic: " << horizontal_attack(state, opponent, false) << " weighted: " << weights_.horizontal_attack_opp * horizontal_attack(state, opponent, false) << std::endl;
+    std::cout << "Inactive Pieces Heuristic: " << inactive_pieces(state, opponent, false) << " weighted: " << weights_.inactive_opp * inactive_pieces(state, opponent, false) << std::endl;
     std::cout << "---------------------------" << std::endl;
 
 }

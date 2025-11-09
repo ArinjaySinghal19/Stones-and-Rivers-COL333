@@ -42,7 +42,7 @@ public:
     static void adjust_weights(const GameState& state, const std::string& player, double delta);
     
     // Custom game-specific heuristics
-    static int vertical_push_h(const GameState& state, const std::string& player, bool wrt_self = true);
+    static double vertical_push_h(const GameState& state, const std::string& player, bool wrt_self = true);
     static int connectedness_h(const GameState& state, const std::string& player, bool self, bool wrt_self = true);
     static int pieces_in_scoring_h(const GameState& state, const std::string& player, bool wrt_self);
     static int possible_moves_h(const GameState& state, const std::string& player, bool wrt_self = true);

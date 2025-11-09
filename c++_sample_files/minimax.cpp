@@ -92,7 +92,7 @@ MinimaxResult minimax_alpha_beta(const GameState& state, int depth, double alpha
                 break; // Alpha-beta pruning
             }
         }
-
+        std::cout << "Depth " << depth << " Max Eval: " << max_eval << " Best Move: " << best_move.action << " from (" << best_move.from[0] << "," << best_move.from[1] << ") to (" << best_move.to[0] << "," << best_move.to[1] << ")\n";
         return MinimaxResult(max_eval, best_move);
     } else {
         double min_eval = std::numeric_limits<double>::infinity();
@@ -111,7 +111,7 @@ MinimaxResult minimax_alpha_beta(const GameState& state, int depth, double alpha
                 break; // Alpha-beta pruning
             }
         }
-
+        std::cout << "Depth " << depth << " Min Eval: " << min_eval << " Best Move: " << best_move.action << " from (" << best_move.from[0] << "," << best_move.from[1] << ") to (" << best_move.to[0] << "," << best_move.to[1] << ")\n";
         return MinimaxResult(min_eval, best_move);
     }
 }
@@ -205,6 +205,7 @@ Move run_minimax_with_repetition_check(const GameState& initial_state, int max_d
                                             -std::numeric_limits<double>::infinity(),
                                             std::numeric_limits<double>::infinity(),
                                             true, current_player);
+    selected = result.best_move;
 
 
     if(would_repeat_after(initial_state, selected, side, recent_keys)){
@@ -229,17 +230,12 @@ Move run_minimax_with_repetition_check(const GameState& initial_state, int max_d
     if(delta > 1000) delta = 1000;
     if(delta < -1000) delta = -1000;
 
+    std::cout << "Minimax selected move: " << selected.action << " from (" << selected.from[0] << "," << selected.from[1] << ") to (" << selected.to[0] << "," << selected.to[1] << ")\n";
+
     GameState after_move_state = initial_state.copy();
     after_move_state.apply_move(selected);
     double post_move_eval = Heuristics::evaluate_position(after_move_state, current_player);
     Heuristics heuristics;
     heuristics.debug_heuristic(after_move_state, current_player);
-
-    const auto& cell = after_move_state.board[9][6];
-    std::cout << "Cell (6,9) status in after move state:\n";
-    for (const auto& [key, value] : cell) {
-        std::cout << "  " << key << ": " << value << "\n";
-    }
-    
     return selected;
 }
