@@ -582,21 +582,18 @@ def get_agent(player: str, strategy: str) -> BaseAgent:
         Agent instance
     """
     strategy = strategy.lower()
-    print(f"Creating agent for player '{player}' with strategy '{strategy}'")
+    
     if strategy == "random":
         return RandomAgent(player)
     elif strategy == "student":
         return StudentAgent(player)
     elif strategy == "student_cpp":
-        print("Attempting to load C++ StudentAgent...")
         try:
             import student_agent_cpp as student_agent
             StudentAgentCpp = student_agent.StudentAgent
         except ImportError:
             StudentAgentCpp = None
-            print("C++ StudentAgent import failed.")
         if StudentAgentCpp:
-            print("C++ StudentAgent loaded successfully.")
             return StudentAgentCpp(player)
         else:
             print("C++ StudentAgent not available. Falling back to Python StudentAgent.")
