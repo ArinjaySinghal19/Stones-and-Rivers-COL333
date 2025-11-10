@@ -142,7 +142,7 @@ public:
 
 private:
     std::string side;
-    std::deque<std::string> recent_keys; // Rolling history of recent position keys
+    std::deque<Move> recent_keys; // Rolling history of recent moves
 };
 
 // ---- PyBind11 bindings ----
