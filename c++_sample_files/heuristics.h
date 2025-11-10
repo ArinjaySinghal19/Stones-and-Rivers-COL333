@@ -43,6 +43,9 @@ public:
     
     // Custom game-specific heuristics
     static double vertical_push_h(const GameState& state, const std::string& player, bool wrt_self = true);
+    // Incremental version: only recalculates affected columns
+    static double vertical_push_h_incremental(const GameState& state, const std::string& player,
+                                               const std::set<int>& affected_cols, bool wrt_self = true);
     static int connectedness_h(const GameState& state, const std::string& player, bool self, bool wrt_self = true);
     static int pieces_in_scoring_h(const GameState& state, const std::string& player, bool wrt_self);
     static int possible_moves_h(const GameState& state, const std::string& player, bool wrt_self = true);

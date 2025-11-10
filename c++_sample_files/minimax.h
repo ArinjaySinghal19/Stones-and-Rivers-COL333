@@ -15,22 +15,21 @@ struct MinimaxResult {
     MinimaxResult(double v, const Move& m) : value(v), best_move(m) {}
 };
 
-MinimaxResult minimax_alpha_beta(const GameState& state, int depth, double alpha, double beta, 
+// NOTE: Changed to non-const reference for in-place make_move/undo_move optimization
+MinimaxResult minimax_alpha_beta(GameState& state, int depth, double alpha, double beta,
                                 bool maximizing_player, const std::string& original_player);
 
 // ---- Repetition Detection Functions ----
-std::string make_player_only_key(const std::vector<std::vector<std::map<std::string, std::string>>>& board,
-                                 int rows, int cols, const std::string& side);
+bool moves_equal(const Move& m1, const Move& m2);
 
 bool would_repeat_after(const GameState& state, const Move& move, const std::string& side, 
-                       const std::deque<std::string>& recent_keys);
+                       const std::deque<Move>& recent_moves);
 
-void record_resulting_key(const GameState& state, const Move& move, const std::string& side,
-                         std::deque<std::string>& recent_keys);
+void record_move(const Move& move, std::deque<Move>& recent_moves);
 
 Move flip_topmost_piece(const GameState& state, const std::string& side);
 
 Move run_minimax_with_repetition_check(const GameState& initial_state, int max_depth, 
-                                      const std::string& side, std::deque<std::string>& recent_keys);
+                                      const std::string& side, std::deque<Move>& recent_moves);
 
 #endif // MINIMAX_H

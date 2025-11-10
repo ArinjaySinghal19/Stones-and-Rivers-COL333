@@ -45,13 +45,13 @@ bool is_my_score_cell(int x, int y, const std::string& player, int rows, int col
     }
 }
 
-bool check_win_state(const std::vector<std::vector<std::map<std::string, std::string>>>& board, 
+bool check_win_state(const std::vector<std::vector<std::map<std::string, std::string>>>& board,
                      int rows, int cols, const std::vector<int>& score_cols) {
     int WIN_COUNT = 4;
     int top = top_score_row();
     int bot = bottom_score_row(rows);
     int ccount = 0, scount = 0;
-    
+
     for (int x : score_cols) {
         if (x >= 0 && x < cols) {
             if (top >= 0 && top < rows) {
@@ -68,8 +68,47 @@ bool check_win_state(const std::vector<std::vector<std::map<std::string, std::st
             }
         }
     }
-    
+
     return (ccount >= WIN_COUNT || scount >= WIN_COUNT);
+}
+
+// ---- Encoding functions ----
+EncodedCell GameState::encode_cell(const std::map<std::string, std::string>& cell) {
+    if (cell.empty()) return 0;
+
+    const std::string& owner = cell.at("owner");
+    const std::string& side = cell.at("side");
+
+    if (owner == "square") {
+        if (side == "stone") return 3;
+        else if (side == "river") {
+            const std::string& orientation = cell.at("orientation");
+            return (orientation == "horizontal") ? 1 : 2;
+        }
+    } else if (owner == "circle") {
+        if (side == "stone") return 6;
+        else if (side == "river") {
+            const std::string& orientation = cell.at("orientation");
+            return (orientation == "horizontal") ? 4 : 5;
+        }
+    }
+    return 0;
+}
+
+void GameState::encode_board() {
+    encoded_board.resize(rows, std::vector<EncodedCell>(cols, 0));
+    for (int y = 0; y < rows; ++y) {
+        for (int x = 0; x < cols; ++x) {
+            encoded_board[y][x] = encode_cell(board[y][x]);
+        }
+    }
+}
+
+// Helper to update a single cell's encoding
+void update_cell_encoding(std::vector<std::vector<EncodedCell>>& encoded_board,
+                          const std::vector<std::vector<std::map<std::string, std::string>>>& board,
+                          int x, int y) {
+    encoded_board[y][x] = GameState::encode_cell(board[y][x]);
 }
 
 // River flow destination calculation (based on gameEngine.py implementation)
@@ -223,7 +262,9 @@ ValidTargets compute_valid_targets(
 
 // ---- Game State Implementation ----
 GameState GameState::copy() const {
-    return GameState(board, current_player, rows, cols, score_cols);
+    GameState copied(board, current_player, rows, cols, score_cols);
+    copied.encoded_board = encoded_board;  // Copy encoded board as well
+    return copied;
 }
 
 void GameState::apply_move(const Move& move) {
@@ -250,6 +291,9 @@ void GameState::apply_move(const Move& move) {
         if (board[ty][tx].empty()) {
             board[ty][tx] = board[fy][fx];
             board[fy][fx].clear();
+            // Update encoded board
+            update_cell_encoding(encoded_board, board, tx, ty);
+            update_cell_encoding(encoded_board, board, fx, fy);
         }
         // If destination is occupied, this should be a push with pushed_to
         else {
@@ -257,34 +301,38 @@ void GameState::apply_move(const Move& move) {
             if (move.pushed_to.empty()) {
                 return; // Invalid: destination occupied but no pushed_to
             }
-            
+
             int ptx = move.pushed_to[0], pty = move.pushed_to[1];
             int dx = tx - fx, dy = ty - fy;
-            
+
             // Validate pushed_to is in correct direction
             if (ptx != tx + dx || pty != ty + dy) {
                 return;
             }
-            
+
             // Validate pushed_to bounds
             if (!in_bounds(ptx, pty, rows, cols)) {
                 return;
             }
-            
+
             // Check if pushed_to is opponent's score cell
             if (is_opponent_score_cell(ptx, pty, current_player, rows, cols, score_cols)) {
                 return;
             }
-            
+
             // Validate pushed_to is empty
             if (!board[pty][ptx].empty()) {
                 return;
             }
-            
+
             // Apply move with push
             board[pty][ptx] = board[ty][tx];
             board[ty][tx] = board[fy][fx];
             board[fy][fx].clear();
+            // Update encoded board
+            update_cell_encoding(encoded_board, board, ptx, pty);
+            update_cell_encoding(encoded_board, board, tx, ty);
+            update_cell_encoding(encoded_board, board, fx, fy);
         }
     }
     else if (move.action == "push") {
@@ -345,12 +393,17 @@ void GameState::apply_move(const Move& move) {
         board[py][px] = board[ty][tx];  // Enemy goes to pushed_to
         board[ty][tx] = board[fy][fx];  // Mover goes into enemy's cell
         board[fy][fx].clear();           // Origin cleared
-        
+
         // If mover is a river, flip it to stone
         if (board[ty][tx].at("side") == "river") {
             board[ty][tx]["side"] = "stone";
             board[ty][tx].erase("orientation");
         }
+
+        // Update encoded board
+        update_cell_encoding(encoded_board, board, px, py);
+        update_cell_encoding(encoded_board, board, tx, ty);
+        update_cell_encoding(encoded_board, board, fx, fy);
     }
     else if (move.action == "flip") {
         int fx = move.from[0], fy = move.from[1];
@@ -395,10 +448,12 @@ void GameState::apply_move(const Move& move) {
                 return;
             }
             // Otherwise flip is already applied
+            update_cell_encoding(encoded_board, board, fx, fy);
         } else {
             // Flipping river to stone
             board[fy][fx]["side"] = "stone";
             board[fy][fx].erase("orientation");
+            update_cell_encoding(encoded_board, board, fx, fy);
         }
     }
     else if (move.action == "rotate") {
@@ -440,8 +495,10 @@ void GameState::apply_move(const Move& move) {
             board[fy][fx]["orientation"] = current_ori;
             return;
         }
+        // Update encoded board
+        update_cell_encoding(encoded_board, board, fx, fy);
     }
-    
+
     // Switch current player
     current_player = (current_player == "circle") ? "square" : "circle";
 }
@@ -542,4 +599,140 @@ std::vector<Move> GameState::get_legal_moves() const {
 
 bool GameState::is_terminal() const {
     return check_win_state(board, rows, cols, score_cols);
+}
+
+// ---- Make/Undo Move Implementation (for efficient minimax without copying) ----
+// IMPORTANT: These methods assume moves are legal (already validated by get_legal_moves)
+// They modify the board in-place and track undo information
+
+GameState::UndoInfo GameState::make_move(const Move& move) {
+    UndoInfo undo;
+    undo.valid = true;
+    undo.prev_player = current_player;
+
+    int fx = move.from[0], fy = move.from[1];
+    int tx = move.to[0], ty = move.to[1];
+
+    // Save state for undo
+    undo.from_cell = board[fy][fx];
+    undo.to_cell = board[ty][tx];
+    undo.from_encoded = encoded_board[fy][fx];
+    undo.to_encoded = encoded_board[ty][tx];
+
+    if (move.action == "move") {
+        // Simple move or move with inline push
+        if (board[ty][tx].empty()) {
+            // Simple move: from -> to, from becomes empty
+            board[ty][tx] = board[fy][fx];
+            board[fy][fx].clear();
+            encoded_board[ty][tx] = undo.from_encoded;
+            encoded_board[fy][fx] = 0;
+        } else {
+            // Move with push (pushed_to is provided)
+            int ptx = move.pushed_to[0], pty = move.pushed_to[1];
+            undo.pushed_cell = std::map<std::string, std::string>(); // empty
+            undo.pushed_encoded = 0;
+
+            // from -> to, to -> pushed_to, from becomes empty
+            board[pty][ptx] = board[ty][tx];
+            board[ty][tx] = board[fy][fx];
+            board[fy][fx].clear();
+
+            encoded_board[pty][ptx] = undo.to_encoded;
+            encoded_board[ty][tx] = undo.from_encoded;
+            encoded_board[fy][fx] = 0;
+        }
+    }
+    else if (move.action == "push") {
+        int px = move.pushed_to[0], py = move.pushed_to[1];
+        undo.pushed_cell = std::map<std::string, std::string>(); // empty
+        undo.pushed_encoded = 0;
+
+        bool was_river = (board[fy][fx].at("side") == "river");
+
+        // Apply push: from -> to, to -> pushed_to, from becomes empty
+        board[py][px] = board[ty][tx];
+        board[ty][tx] = board[fy][fx];
+        board[fy][fx].clear();
+
+        // If pusher is a river, flip it to stone
+        if (was_river) {
+            board[ty][tx]["side"] = "stone";
+            board[ty][tx].erase("orientation");
+        }
+
+        // Update encoded board
+        encoded_board[py][px] = undo.to_encoded;
+        encoded_board[ty][tx] = encode_cell(board[ty][tx]);
+        encoded_board[fy][fx] = 0;
+    }
+    else if (move.action == "flip") {
+        // Flip stone <-> river
+        if (board[fy][fx].at("side") == "stone") {
+            // Stone -> River with orientation
+            board[fy][fx]["side"] = "river";
+            board[fy][fx]["orientation"] = move.orientation;
+        } else {
+            // River -> Stone
+            board[fy][fx]["side"] = "stone";
+            board[fy][fx].erase("orientation");
+        }
+        encoded_board[fy][fx] = encode_cell(board[fy][fx]);
+    }
+    else if (move.action == "rotate") {
+        // Rotate river orientation
+        std::string current_ori = board[fy][fx].at("orientation");
+        std::string new_ori = (current_ori == "horizontal") ? "vertical" : "horizontal";
+        board[fy][fx]["orientation"] = new_ori;
+        encoded_board[fy][fx] = encode_cell(board[fy][fx]);
+    }
+
+    // Switch player
+    current_player = get_opponent(current_player);
+
+    return undo;
+}
+
+void GameState::undo_move(const Move& move, const UndoInfo& undo_info) {
+    if (!undo_info.valid) return;
+
+    int fx = move.from[0], fy = move.from[1];
+    int tx = move.to[0], ty = move.to[1];
+
+    // Restore player
+    current_player = undo_info.prev_player;
+
+    if (move.action == "move") {
+        if (move.pushed_to.empty()) {
+            // Simple move: restore from and to
+            board[fy][fx] = undo_info.from_cell;
+            board[ty][tx] = undo_info.to_cell;
+            encoded_board[fy][fx] = undo_info.from_encoded;
+            encoded_board[ty][tx] = undo_info.to_encoded;
+        } else {
+            // Move with push: restore from, to, and pushed_to
+            int ptx = move.pushed_to[0], pty = move.pushed_to[1];
+            board[fy][fx] = undo_info.from_cell;
+            board[ty][tx] = undo_info.to_cell;
+            board[pty][ptx].clear();
+            encoded_board[fy][fx] = undo_info.from_encoded;
+            encoded_board[ty][tx] = undo_info.to_encoded;
+            encoded_board[pty][ptx] = 0;
+        }
+    }
+    else if (move.action == "push") {
+        // Restore from, to, and pushed_to
+        int px = move.pushed_to[0], py = move.pushed_to[1];
+        board[fy][fx] = undo_info.from_cell;
+        board[ty][tx] = undo_info.to_cell;
+        board[py][px].clear();
+        encoded_board[fy][fx] = undo_info.from_encoded;
+        encoded_board[ty][tx] = undo_info.to_encoded;
+        encoded_board[py][px] = 0;
+    }
+    else if (move.action == "flip" || move.action == "rotate") {
+        // Restore the cell
+        board[fy][fx] = undo_info.from_cell;
+        encoded_board[fy][fx] = undo_info.from_encoded;
+    }
 }

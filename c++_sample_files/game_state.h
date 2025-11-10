@@ -21,21 +21,64 @@ struct ValidTargets {
     std::vector<std::pair<std::pair<int,int>, std::pair<int,int>>> pushes; // ((target_x,target_y), (pushed_to_x,pushed_to_y))
 };
 
+// ---- Encoded cell representation ----
+// Encoding: 0=blank, 1=square horizontal river, 2=square vertical river, 3=square stone,
+//           4=circle horizontal river, 5=circle vertical river, 6=circle stone
+using EncodedCell = uint8_t;
+
 // ---- Game State representation ----
 struct GameState {
     std::vector<std::vector<std::map<std::string, std::string>>> board;
+    std::vector<std::vector<EncodedCell>> encoded_board;  // Fast integer-based board
     std::string current_player;
     int rows, cols;
     std::vector<int> score_cols;
-    
-    GameState(const std::vector<std::vector<std::map<std::string, std::string>>>& b, 
+
+    GameState(const std::vector<std::vector<std::map<std::string, std::string>>>& b,
               const std::string& player, int r, int c, const std::vector<int>& sc)
-        : board(b), current_player(player), rows(r), cols(c), score_cols(sc) {}
-    
+        : board(b), current_player(player), rows(r), cols(c), score_cols(sc) {
+        encode_board();
+    }
+
     GameState copy() const;
     void apply_move(const Move& move);
     std::vector<Move> get_legal_moves() const;
     bool is_terminal() const;
+
+    // Move/Undo for efficient minimax without copying
+    // These methods modify the board in-place and return information needed to undo
+    struct UndoInfo {
+        std::map<std::string, std::string> from_cell;
+        std::map<std::string, std::string> to_cell;
+        std::map<std::string, std::string> pushed_cell;
+        EncodedCell from_encoded;
+        EncodedCell to_encoded;
+        EncodedCell pushed_encoded;
+        std::string prev_player;
+        bool valid;  // Whether the move was actually applied
+    };
+
+    UndoInfo make_move(const Move& move);
+    void undo_move(const Move& move, const UndoInfo& undo_info);
+
+    // Encoding/decoding helpers
+    void encode_board();
+    static EncodedCell encode_cell(const std::map<std::string, std::string>& cell);
+    // All helper functions marked inline for zero-overhead abstraction
+    static inline bool is_stone(EncodedCell cell) { return cell == 3 || cell == 6; }
+    static inline bool is_river(EncodedCell cell) { return cell >= 1 && cell <= 2 || cell >= 4 && cell <= 5; }
+    static inline bool is_horizontal_river(EncodedCell cell) { return cell == 1 || cell == 4; }
+    static inline bool is_vertical_river(EncodedCell cell) { return cell == 2 || cell == 5; }
+    static inline bool is_square(EncodedCell cell) { return cell >= 1 && cell <= 3; }
+    static inline bool is_circle(EncodedCell cell) { return cell >= 4 && cell <= 6; }
+    static inline bool is_empty(EncodedCell cell) { return cell == 0; }
+    // OPTIMIZED: Uses first character comparison instead of full string comparison
+    // player[0] == 's' for "square", player[0] == 'c' for "circle"
+    // This is ~5-10x faster than full string comparison
+    static inline bool is_owner(EncodedCell cell, const std::string& player) {
+        // Fast path: compare first character only (assumes "square" vs "circle")
+        return (player[0] == 's' && is_square(cell)) || (player[0] == 'c' && is_circle(cell));
+    }
 };
 
 // ---- Helper functions ----

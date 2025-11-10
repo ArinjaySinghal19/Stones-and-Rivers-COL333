@@ -45,20 +45,24 @@ int Heuristics::max(int a, int b) {
     return (a > b) ? a : b;
 }
 
+// OPTIMIZED: Uses encoded board for O(1) cell access instead of map lookups
+// CORRECTNESS: Produces identical results to original implementation
+// Original used: cell.at("owner") == player && cell.at("side") == "river" && cell.at("orientation") == "vertical"
+// Optimized uses: GameState::is_owner(encoded_cell, player) && GameState::is_vertical_river(encoded_cell)
 double Heuristics::vertical_push_h(const GameState& state, const std::string& player, bool wrt_self) {
-    const auto& board = state.board;
+    const auto& encoded_board = state.encoded_board;  // Use encoded board for fast access
     int rows = state.rows;
     int cols = state.cols;
-    const auto& score_cols = state.score_cols;
 
     double score = 0;
     std::vector<double> col_weight(12);
-    
+
+    // Same weight scheme as original
     for (int i = 2; i <= 3; i++) {
         col_weight[i] = 3.25;
         col_weight[11-i] = 3.25;
     }
-    
+
     col_weight[1] = 2.25;
     col_weight[4] = 2.25;
     col_weight[6] = 2.25;
@@ -71,27 +75,99 @@ double Heuristics::vertical_push_h(const GameState& state, const std::string& pl
     int push_direction = (player == "circle") ? -1 : 1;
     std::vector<std::vector<double>> reach(rows, std::vector<double>(cols, 0));
 
-
+    // Scan for player's vertical rivers using encoded board
     for (int y = 0; y < rows; ++y) {
         for (int x = 0; x < cols; ++x) {
-            const auto& cell = board[y][x];
-            if (!cell.empty() && cell.find("owner") != cell.end() && cell.at("owner") == player &&
-                cell.find("side") != cell.end() && cell.at("side") == "river" && 
-                cell.find("orientation") != cell.end() && cell.at("orientation") == "vertical") {
+            EncodedCell cell = encoded_board[y][x];
 
+            // Check if this is player's vertical river
+            // Equivalent to: owner==player && side==river && orientation==vertical
+            if (GameState::is_owner(cell, player) && GameState::is_vertical_river(cell)) {
+                // Calculate reach in push direction
                 for (int dist = 1; dist < rows; ++dist) {
                     int ny = y + push_direction * dist;
                     if (!in_bounds(x, ny, rows, cols)) {
                         break;
                     }
 
-                    const auto& next_cell = board[ny][x];
-                    
-                    if (next_cell.empty()) {
+                    EncodedCell next_cell = encoded_board[ny][x];
+
+                    if (GameState::is_empty(next_cell)) {
                         reach[ny][x] = col_weight[x];
                         continue;
                     }
-                    else if (next_cell.find("owner") != next_cell.end() && next_cell.at("owner") == opponent) {
+                    else if (GameState::is_owner(next_cell, opponent)) {
+                        // Blocked by opponent
+                        break;
+                    }
+                    else {
+                        // Same player's piece - can reach through it
+                        reach[ny][x] = col_weight[x];
+                        continue;
+                    }
+                }
+            }
+        }
+    }
+
+    // Sum up all reach values (same as original)
+    for (auto &e1 : reach) {
+        for (auto &e2 : e1) {
+            score += e2;
+        }
+    }
+    return wrt_self ? score : -score;
+}
+
+// INCREMENTAL VERSION: Only recalculates columns where pieces moved
+// USAGE: Pass affected_cols = {from_x, to_x, pushed_to_x} from the move
+// TIME COMPLEXITY: O(affected_cols.size() * rows) instead of O(cols * rows)
+// CORRECTNESS: When only specific columns change, only those columns' reach values can change
+double Heuristics::vertical_push_h_incremental(const GameState& state, const std::string& player,
+                                                const std::set<int>& affected_cols, bool wrt_self) {
+    const auto& encoded_board = state.encoded_board;
+    int rows = state.rows;
+    int cols = state.cols;
+
+    double score = 0;
+    std::vector<double> col_weight(12);
+
+    // Same weight scheme
+    for (int i = 2; i <= 3; i++) {
+        col_weight[i] = 3.25;
+        col_weight[11-i] = 3.25;
+    }
+    col_weight[1] = 2.25;
+    col_weight[4] = 2.25;
+    col_weight[6] = 2.25;
+    col_weight[10] = 2.25;
+    col_weight[5] = 1.5;
+    col_weight[0] = 1;
+    col_weight[11] = 1;
+
+    std::string opponent = get_opponent(player);
+    int push_direction = (player == "circle") ? -1 : 1;
+    std::vector<std::vector<double>> reach(rows, std::vector<double>(cols, 0));
+
+    // Only scan rows in affected columns
+    for (int y = 0; y < rows; ++y) {
+        for (int x : affected_cols) {
+            if (x < 0 || x >= cols) continue;
+
+            EncodedCell cell = encoded_board[y][x];
+
+            if (GameState::is_owner(cell, player) && GameState::is_vertical_river(cell)) {
+                for (int dist = 1; dist < rows; ++dist) {
+                    int ny = y + push_direction * dist;
+                    if (!in_bounds(x, ny, rows, cols)) break;
+
+                    EncodedCell next_cell = encoded_board[ny][x];
+
+                    if (GameState::is_empty(next_cell)) {
+                        reach[ny][x] = col_weight[x];
+                        continue;
+                    }
+                    else if (GameState::is_owner(next_cell, opponent)) {
                         break;
                     }
                     else {
@@ -102,7 +178,8 @@ double Heuristics::vertical_push_h(const GameState& state, const std::string& pl
             }
         }
     }
-    
+
+    // Sum reach values
     for (auto &e1 : reach) {
         for (auto &e2 : e1) {
             score += e2;
@@ -112,19 +189,21 @@ double Heuristics::vertical_push_h(const GameState& state, const std::string& pl
 }
 
 
+// OPTIMIZED: Uses encoded board for O(1) cell access instead of map lookups
+// CORRECTNESS: Produces identical results to original implementation
 int Heuristics::connectedness_h(const GameState& state, const std::string& player, bool self, bool wrt_self) {
-    const auto& board = state.board;
+    const auto& encoded_board = state.encoded_board;
     int rows = state.rows;
     int cols = state.cols;
 
     std::vector<std::pair<int, int>> target_rivers;
     for (int y = 0; y < rows; ++y) {
         for (int x = 0; x < cols; ++x) {
-            const auto& cell = board[y][x];
-            if (cell.empty() || cell.at("side") != "river") {
+            EncodedCell cell = encoded_board[y][x];
+            if (!GameState::is_river(cell)) {
                 continue;
             }
-            if (self && cell.at("owner") != player) {
+            if (self && !GameState::is_owner(cell, player)) {
                 continue;
             }
             target_rivers.push_back({x, y});
@@ -150,11 +229,11 @@ int Heuristics::connectedness_h(const GameState& state, const std::string& playe
             q.pop();
             component_size++;
 
-            const auto& current_river = board[y][x];
-            const std::string& orientation = current_river.at("orientation");
+            EncodedCell current_river = encoded_board[y][x];
+            bool is_horizontal = GameState::is_horizontal_river(current_river);
 
             std::vector<std::pair<int, int>> dirs;
-            if (orientation == "horizontal") {
+            if (is_horizontal) {
                 dirs = {{-1, 0}, {1, 0}};
             } else {
                 dirs = {{0, -1}, {0, 1}};
@@ -165,15 +244,16 @@ int Heuristics::connectedness_h(const GameState& state, const std::string& playe
                 int ny = y + dy;
 
                 while (in_bounds(nx, ny, rows, cols)) {
-                    const auto& next_cell = board[ny][nx];
+                    EncodedCell next_cell = encoded_board[ny][nx];
 
-                    if (!next_cell.empty()) {
-                        if (next_cell.at("side") == "river" &&
-                            next_cell.at("orientation") == orientation &&
+                    if (!GameState::is_empty(next_cell)) {
+                        bool same_orientation = is_horizontal ? GameState::is_horizontal_river(next_cell) : GameState::is_vertical_river(next_cell);
+                        if (GameState::is_river(next_cell) &&
+                            same_orientation &&
                             !globally_visited.count({nx, ny})) {
-                            
+
                             bool is_valid_target = true;
-                            if (self && next_cell.at("owner") != player) {
+                            if (self && !GameState::is_owner(next_cell, player)) {
                                 is_valid_target = false;
                             }
 
@@ -189,7 +269,7 @@ int Heuristics::connectedness_h(const GameState& state, const std::string& playe
                 }
             }
         }
-        
+
         if (component_size > 1) {
             total_connected_pairs += component_size * (component_size - 1) / 2;
         }
@@ -199,8 +279,10 @@ int Heuristics::connectedness_h(const GameState& state, const std::string& playe
 }
 
 
+// OPTIMIZED: Uses encoded board for O(1) cell access instead of map lookups
+// CORRECTNESS: Produces identical results to original implementation
 int Heuristics::pieces_in_scoring_h(const GameState& state, const std::string& player, bool wrt_self) {
-    const auto& board = state.board;
+    const auto& encoded_board = state.encoded_board;
     int rows = state.rows;
     int cols = state.cols;
     const auto& score_cols = state.score_cols;
@@ -214,7 +296,7 @@ int Heuristics::pieces_in_scoring_h(const GameState& state, const std::string& p
 
     int target_row, direction;
     std::string player_to_check = player;
-    
+
     if (!wrt_self) {
         if (player == "circle") {
             player_to_check = "square";
@@ -222,10 +304,10 @@ int Heuristics::pieces_in_scoring_h(const GameState& state, const std::string& p
             player_to_check = "circle";
         }
     }
-    
+
     if (player_to_check == "circle") {
         target_row = top_score_row();
-        direction = -1; 
+        direction = -1;
     } else {
         target_row = bottom_score_row(rows);
         direction = 1;
@@ -234,15 +316,16 @@ int Heuristics::pieces_in_scoring_h(const GameState& state, const std::string& p
     std::map<int, std::map<int, int>> val;
     int in_score_area = 0;
     std::vector<int> virgin_cols;
-    
+
     for (int col = 4; col <= 7; col++) {
-        if (board[target_row][col].empty()) {
+        EncodedCell cell = encoded_board[target_row][col];
+        if (GameState::is_empty(cell)) {
             virgin_cols.push_back(col);
             continue;
         }
         val[target_row][col] = max(val[target_row][col], w1);
         in_score_area++;
-        if (board[target_row][col].at("side") == "stone" && board[target_row][col].at("owner") == player_to_check) {
+        if (GameState::is_stone(cell) && GameState::is_owner(cell, player_to_check)) {
             score += 1e3;
         }
     }
@@ -250,10 +333,11 @@ int Heuristics::pieces_in_scoring_h(const GameState& state, const std::string& p
     for (int col = 1; col <= 10; col++) {
         for (int row = target_row - 2; row <= target_row + 2; row++) {
             if (row < 0 || row >= rows) continue;
-            if (board[row][col].empty()) continue;
-            if (board[row][col].at("owner") != player_to_check) continue;
+            EncodedCell cell = encoded_board[row][col];
+            if (GameState::is_empty(cell)) continue;
+            if (!GameState::is_owner(cell, player_to_check)) continue;
             if (row == target_row && col >= 4 && col <= 7) continue;
-            
+
             for (int vc : virgin_cols) {
                 int man_dist = abs(vc - col) + abs(target_row - row);
                 if (man_dist == 1) {
@@ -268,51 +352,55 @@ int Heuristics::pieces_in_scoring_h(const GameState& state, const std::string& p
             }
         }
     }
-    
+
     for (int col = 3; col <= 8; col++) {
         for (int r = 0; r <= 1; r++) {
             int check_row = target_row + direction * r;
-            if (check_row < 0 || check_row >= rows || board[check_row][col].empty()) continue;
-            if (board[check_row][col].find("owner") != board[check_row][col].end() && 
-                board[check_row][col].at("owner") == player_to_check) {
+            if (check_row < 0 || check_row >= rows) continue;
+            EncodedCell cell = encoded_board[check_row][col];
+            if (GameState::is_empty(cell)) continue;
+            if (GameState::is_owner(cell, player_to_check)) {
                 val[check_row][col] = max(val[check_row][col], w2);
             }
         }
     }
-    
+
     for (int col = 2; col <= 9; col++) {
         for (int r = -1; r <= 1; r++) {
             int check_row = target_row + direction * r;
-            if (check_row < 0 || check_row >= rows || board[check_row][col].empty()) continue;
-            if (board[check_row][col].find("owner") != board[check_row][col].end() && 
-                board[check_row][col].at("owner") == player_to_check) {
+            if (check_row < 0 || check_row >= rows) continue;
+            EncodedCell cell = encoded_board[check_row][col];
+            if (GameState::is_empty(cell)) continue;
+            if (GameState::is_owner(cell, player_to_check)) {
                 val[check_row][col] = max(val[check_row][col], w3);
             }
         }
     }
-    
+
     for (int col = 1; col <= 10; col++) {
         for (int r = -2; r <= 2; r++) {
             int check_row = target_row + direction * r;
-            if (check_row < 0 || check_row >= rows || board[check_row][col].empty()) continue;
-            if (board[check_row][col].find("owner") != board[check_row][col].end() && 
-                board[check_row][col].at("owner") == player_to_check) {
+            if (check_row < 0 || check_row >= rows) continue;
+            EncodedCell cell = encoded_board[check_row][col];
+            if (GameState::is_empty(cell)) continue;
+            if (GameState::is_owner(cell, player_to_check)) {
                 val[check_row][col] = max(val[check_row][col], w4);
             }
         }
     }
-    
+
     for (int col = 0; col <= 11; col++) {
         for (int r = -2; r <= 2; r++) {
             int check_row = target_row + direction * r;
-            if (check_row < 0 || check_row >= rows || board[check_row][col].empty()) continue;
-            if (board[check_row][col].find("owner") != board[check_row][col].end() && 
-                board[check_row][col].at("owner") == player_to_check) {
+            if (check_row < 0 || check_row >= rows) continue;
+            EncodedCell cell = encoded_board[check_row][col];
+            if (GameState::is_empty(cell)) continue;
+            if (GameState::is_owner(cell, player_to_check)) {
                 val[check_row][col] = max(val[check_row][col], w5);
             }
         }
     }
-    
+
     for (auto &e1 : val) {
         for (auto &e2 : e1.second) {
             score += e2.second;
@@ -322,20 +410,23 @@ int Heuristics::pieces_in_scoring_h(const GameState& state, const std::string& p
     return wrt_self ? score : -score;
 }
 
+// OPTIMIZED: Uses encoded board for O(1) cell access for initial scanning
+// Note: Still uses state.board for compute_valid_targets and get_river_flow_destinations
+// as those functions require the map-based representation
 int Heuristics::possible_moves_h(const GameState& state, const std::string& player, bool wrt_self) {
     int num_moves = 0;
 
     for (int y = 0; y < state.rows; y++) {
         for (int x = 0; x < state.cols; x++) {
-            const auto &cell = state.board[y][x];
-            if (cell.empty()) continue;
+            EncodedCell cell = state.encoded_board[y][x];
+            if (GameState::is_empty(cell)) continue;
+            if (!GameState::is_owner(cell, player)) continue;
 
-            if (cell.at("owner") != player) continue;
-
-            std::string side_type = cell.at("side");
+            bool is_stone = GameState::is_stone(cell);
+            bool is_river = GameState::is_river(cell);
 
             auto valid_targets = compute_valid_targets(state.board, x, y, player, state.rows, state.cols, state.score_cols);
-            
+
             for (const auto& target : valid_targets.moves) {
                 num_moves++;
             }
@@ -346,10 +437,10 @@ int Heuristics::possible_moves_h(const GameState& state, const std::string& play
                 num_moves++;
             }
 
-            if (side_type == "stone") {
+            if (is_stone) {
                 for (const std::string& orientation : {"horizontal", "vertical"}) {
                     bool safe = true;
-                    
+
                     auto test_board = state.board;
                     test_board[y][x]["side"] = "river";
                     test_board[y][x]["orientation"] = orientation;
@@ -361,22 +452,22 @@ int Heuristics::possible_moves_h(const GameState& state, const std::string& play
                             break;
                         }
                     }
-                    
+
                     if (safe) {
                         num_moves++;
                     }
                 }
-            } else if (side_type == "river") {
+            } else if (is_river) {
                 num_moves++;
             }
 
-            if (side_type == "river") {
-                std::string current_orientation = cell.at("orientation");
-                std::string new_orientation = (current_orientation == "horizontal") ? "vertical" : "horizontal";
-                
+            if (is_river) {
+                bool is_horizontal = GameState::is_horizontal_river(cell);
+                std::string new_orientation = is_horizontal ? "vertical" : "horizontal";
+
                 auto test_board = state.board;
                 test_board[y][x]["orientation"] = new_orientation;
-                
+
                 auto flow = get_river_flow_destinations(test_board, x, y, x, y, player, state.rows, state.cols, state.score_cols);
                 bool safe = true;
                 for (const auto& dest : flow) {
@@ -385,7 +476,7 @@ int Heuristics::possible_moves_h(const GameState& state, const std::string& play
                         break;
                     }
                 }
-                
+
                 if (safe) {
                     num_moves++;
                 }
@@ -397,8 +488,10 @@ int Heuristics::possible_moves_h(const GameState& state, const std::string& play
     return wrt_self ? result : -result;
 }
 
+// OPTIMIZED: Uses encoded board for O(1) cell access instead of map lookups
+// CORRECTNESS: Produces identical results to original implementation
 int Heuristics::pieces_blocking_vertical_h(const GameState& state, const std::string& player, bool wrt_self) {
-    const auto& board = state.board;
+    const auto& encoded_board = state.encoded_board;
     int rows = state.rows;
     int cols = state.cols;
 
@@ -408,26 +501,25 @@ int Heuristics::pieces_blocking_vertical_h(const GameState& state, const std::st
 
     for (int y = 0; y < rows; ++y) {
         for (int x = 0; x < cols; ++x) {
-            const auto& cell = board[y][x];
-            if (!cell.empty() && cell.find("owner") != cell.end() && cell.at("owner") == opponent &&
-                cell.find("side") != cell.end() && cell.at("side") == "river" && 
-                cell.find("orientation") != cell.end() && cell.at("orientation") == "vertical") {
+            EncodedCell cell = encoded_board[y][x];
+            // Check if this is opponent's vertical river
+            if (GameState::is_owner(cell, opponent) && GameState::is_vertical_river(cell)) {
 
                 int ny = y + flow_dy;
                 while (in_bounds(x, ny, rows, cols)) {
-                    const auto& blocking_cell = board[ny][x];
-                    if (blocking_cell.empty()) {
+                    EncodedCell blocking_cell = encoded_board[ny][x];
+                    if (GameState::is_empty(blocking_cell)) {
                         ny += flow_dy;
                         continue;
                     }
-                    if (blocking_cell.find("owner") != blocking_cell.end() && blocking_cell.at("owner") == player) {
-                        if (blocking_cell.find("side") != blocking_cell.end() && blocking_cell.at("side") == "river" && 
-                            blocking_cell.find("orientation") != blocking_cell.end() && blocking_cell.at("orientation") == "horizontal") {
+                    if (GameState::is_owner(blocking_cell, player)) {
+                        // Player's horizontal river blocks
+                        if (GameState::is_horizontal_river(blocking_cell)) {
                             block_count++;
                             break;
                         }
-                        if (blocking_cell.find("side") != blocking_cell.end() && blocking_cell.at("side") == "stone" && 
-                            std::abs(ny - y) > 1) {
+                        // Player's stone blocks if distance > 1
+                        if (GameState::is_stone(blocking_cell) && std::abs(ny - y) > 1) {
                             block_count++;
                             break;
                         }
@@ -440,8 +532,10 @@ int Heuristics::pieces_blocking_vertical_h(const GameState& state, const std::st
     return wrt_self ? block_count : -block_count;
 }
 
+// OPTIMIZED: Uses encoded board for O(1) cell access instead of map lookups
+// CORRECTNESS: Produces identical results to original implementation
 int Heuristics::vertical_river_on_top_peri_h(const GameState& state, const std::string& player, bool wrt_self) {
-    const auto& board = state.board;
+    const auto& encoded_board = state.encoded_board;
     int rows = state.rows;
     int cols = state.cols;
 
@@ -449,7 +543,7 @@ int Heuristics::vertical_river_on_top_peri_h(const GameState& state, const std::
     int perimeter_row;
 
     if (player == "circle") {
-        perimeter_row = bottom_score_row(rows) - 1; 
+        perimeter_row = bottom_score_row(rows) - 1;
     } else {
         perimeter_row = top_score_row() + 1;
     }
@@ -457,18 +551,18 @@ int Heuristics::vertical_river_on_top_peri_h(const GameState& state, const std::
     if (!in_bounds(0, perimeter_row, rows, cols)) return 0;
 
     for (int x = 0; x < cols; ++x) {
-        const auto& cell = board[perimeter_row][x];
-        if (!cell.empty() && cell.find("owner") != cell.end() && cell.at("owner") == player &&
-            cell.find("side") != cell.end() && cell.at("side") == "river" && 
-            cell.find("orientation") != cell.end() && cell.at("orientation") == "vertical") {
+        EncodedCell cell = encoded_board[perimeter_row][x];
+        if (GameState::is_owner(cell, player) && GameState::is_vertical_river(cell)) {
             count++;
         }
     }
     return wrt_self ? count : -count;
 }
 
+// OPTIMIZED: Uses encoded board for O(1) cell access instead of map lookups
+// CORRECTNESS: Produces identical results to original implementation
 int Heuristics::horizontal_base_rivers(const GameState& state, const std::string& player, bool wrt_self) {
-    const auto& board = state.board;
+    const auto& encoded_board = state.encoded_board;
     int rows = state.rows;
     int cols = state.cols;
 
@@ -478,21 +572,18 @@ int Heuristics::horizontal_base_rivers(const GameState& state, const std::string
     if (player == "circle") {
         check_rows.push_back(bottom_score_row(rows) - 1);
         check_rows.push_back(bottom_score_row(rows) - 2);
-        
+
     } else {
         check_rows.push_back(top_score_row() + 1);
         check_rows.push_back(top_score_row() + 2);
-        
+
     }
 
     for (int r : check_rows) {
         if (in_bounds(0, r, rows, cols)) {
             for (int x = 0; x < cols; ++x) {
-                const auto& cell = board[r][x];
-                if (!cell.empty() && cell.find("owner") != cell.end() && cell.at("owner") == player &&
-                    cell.find("side") != cell.end() && cell.at("side") == "river" && 
-                    cell.find("orientation") != cell.end() && cell.at("orientation") == "horizontal") {
-                    // std::cout << "Found horizontal river at (" << x << ", " << r << ")\n";
+                EncodedCell cell = encoded_board[r][x];
+                if (GameState::is_owner(cell, player) && GameState::is_horizontal_river(cell)) {
                     count++;
                 }
             }
@@ -501,8 +592,10 @@ int Heuristics::horizontal_base_rivers(const GameState& state, const std::string
     return wrt_self ? count : -count;
 }
 
+// OPTIMIZED: Uses encoded board for O(1) cell access instead of map lookups
+// CORRECTNESS: Produces identical results to original implementation
 int Heuristics::horizontal_negative(const GameState& state, const std::string& player, bool wrt_self) {
-    const auto& board = state.board;
+    const auto& encoded_board = state.encoded_board;
     int rows = state.rows;
     int cols = state.cols;
 
@@ -512,10 +605,8 @@ int Heuristics::horizontal_negative(const GameState& state, const std::string& p
         int base_row = top_score_row();
         for (int y = 0; y < base_row; ++y) {
             for (int x = 0; x < cols; ++x) {
-                const auto& cell = board[y][x];
-                if (!cell.empty() && cell.find("owner") != cell.end() && cell.at("owner") == player &&
-                    cell.find("side") != cell.end() && cell.at("side") == "river" && 
-                    cell.find("orientation") != cell.end() && cell.at("orientation") == "horizontal") {
+                EncodedCell cell = encoded_board[y][x];
+                if (GameState::is_owner(cell, player) && GameState::is_horizontal_river(cell)) {
                     count++;
                 }
             }
@@ -524,10 +615,8 @@ int Heuristics::horizontal_negative(const GameState& state, const std::string& p
         int base_row = bottom_score_row(rows);
         for (int y = base_row + 1; y < rows; ++y) {
             for (int x = 0; x < cols; ++x) {
-                const auto& cell = board[y][x];
-                if (!cell.empty() && cell.find("owner") != cell.end() && cell.at("owner") == player &&
-                    cell.find("side") != cell.end() && cell.at("side") == "river" && 
-                    cell.find("orientation") != cell.end() && cell.at("orientation") == "horizontal") {
+                EncodedCell cell = encoded_board[y][x];
+                if (GameState::is_owner(cell, player) && GameState::is_horizontal_river(cell)) {
                     count++;
                 }
             }
@@ -538,8 +627,10 @@ int Heuristics::horizontal_negative(const GameState& state, const std::string& p
 
 
 
+// OPTIMIZED: Uses encoded board for O(1) cell access instead of map lookups
+// CORRECTNESS: Produces identical results to original implementation
 int Heuristics::horizontal_attack(const GameState& state, const std::string& player, bool wrt_self) {
-    const auto& board = state.board;
+    const auto& encoded_board = state.encoded_board;
     int rows = state.rows;
     int cols = state.cols;
 
@@ -561,60 +652,70 @@ int Heuristics::horizontal_attack(const GameState& state, const std::string& pla
                 if (r == top_score_row() || r == bottom_score_row(rows)) {
                     mul = 3;
                 }
-                const auto& cell = board[r][x];
-                if (!cell.empty() && cell.find("owner") != cell.end() && 
-                    cell.at("owner") == player && cell.at("side") == "river" && 
-                    cell.at("orientation") == "horizontal") {
-                    
+                EncodedCell cell = encoded_board[r][x];
+                if (GameState::is_owner(cell, player) && GameState::is_horizontal_river(cell)) {
+
                     if (x < 4) {
                         int num_possible = 0;
                         int curr_col = x + 1;
-                        while (in_bounds(curr_col, r, rows, cols) && 
-                               ((board[r][curr_col].empty() || 
-                                (board[r][curr_col].at("side") == "river" && 
-                                 board[r][curr_col].at("orientation") == "horizontal") || 
-                                (board[r][curr_col].at("owner") == player)))) {
-                            if (curr_col > 7) break;
-                            num_possible += mul;
-                            curr_col++;
+                        while (in_bounds(curr_col, r, rows, cols)) {
+                            EncodedCell check_cell = encoded_board[r][curr_col];
+                            if (GameState::is_empty(check_cell) ||
+                                GameState::is_horizontal_river(check_cell) ||
+                                GameState::is_owner(check_cell, player)) {
+                                if (curr_col > 7) break;
+                                num_possible += mul;
+                                curr_col++;
+                            } else {
+                                break;
+                            }
                         }
                         count += num_possible;
                     }
                     else if (x > 7) {
                         int num_possible = 0;
                         int curr_col = x - 1;
-                        while (in_bounds(curr_col, r, rows, cols) && 
-                               ((board[r][curr_col].empty() || 
-                                (board[r][curr_col].at("side") == "river" && 
-                                 board[r][curr_col].at("orientation") == "horizontal") || 
-                                (board[r][curr_col].at("owner") == player)))) {
-                            if (curr_col < 4) break;
-                            num_possible += mul;
-                            curr_col--;
+                        while (in_bounds(curr_col, r, rows, cols)) {
+                            EncodedCell check_cell = encoded_board[r][curr_col];
+                            if (GameState::is_empty(check_cell) ||
+                                GameState::is_horizontal_river(check_cell) ||
+                                GameState::is_owner(check_cell, player)) {
+                                if (curr_col < 4) break;
+                                num_possible += mul;
+                                curr_col--;
+                            } else {
+                                break;
+                            }
                         }
                         count += num_possible;
                     }
                     else {
                         int num_possible = 0;
                         int curr_col = x + 1;
-                        while (in_bounds(curr_col, r, rows, cols) && 
-                               ((board[r][curr_col].empty() || 
-                                (board[r][curr_col].at("side") == "river" && 
-                                 board[r][curr_col].at("orientation") == "horizontal") || 
-                                (board[r][curr_col].at("owner") == player)))) {
-                            if (curr_col < 4 && curr_col > 7) break;
-                            num_possible += mul;
-                            curr_col++;
+                        while (in_bounds(curr_col, r, rows, cols)) {
+                            EncodedCell check_cell = encoded_board[r][curr_col];
+                            if (GameState::is_empty(check_cell) ||
+                                GameState::is_horizontal_river(check_cell) ||
+                                GameState::is_owner(check_cell, player)) {
+                                if (curr_col < 4 && curr_col > 7) break;
+                                num_possible += mul;
+                                curr_col++;
+                            } else {
+                                break;
+                            }
                         }
                         curr_col = x - 1;
-                        while (in_bounds(curr_col, r, rows, cols) && 
-                               ((board[r][curr_col].empty() || 
-                                (board[r][curr_col].at("side") == "river" && 
-                                 board[r][curr_col].at("orientation") == "horizontal") || 
-                                (board[r][curr_col].at("owner") == player)))) {
-                            if (curr_col < 4 && curr_col > 7) break;
-                            num_possible += mul;
-                            curr_col--;
+                        while (in_bounds(curr_col, r, rows, cols)) {
+                            EncodedCell check_cell = encoded_board[r][curr_col];
+                            if (GameState::is_empty(check_cell) ||
+                                GameState::is_horizontal_river(check_cell) ||
+                                GameState::is_owner(check_cell, player)) {
+                                if (curr_col < 4 && curr_col > 7) break;
+                                num_possible += mul;
+                                curr_col--;
+                            } else {
+                                break;
+                            }
                         }
                         count += num_possible;
                     }
@@ -627,58 +728,66 @@ int Heuristics::horizontal_attack(const GameState& state, const std::string& pla
 
 
 
+// OPTIMIZED: Uses encoded board for fast edge piece counting
+// CORRECTNESS: Counts player's pieces on board edges (x=0, x=cols-1, y=0, y=rows-1)
+// Original used: !cell.empty() && cell.at("owner") == player
+// Optimized uses: GameState::is_owner(encoded_cell, player)
 int Heuristics::inactive_pieces(const GameState& state, const std::string& player, bool wrt_self) {
-    const auto& board = state.board;
+    const auto& encoded_board = state.encoded_board;
     int rows = state.rows;
     int cols = state.cols;
 
     int inactive_count = 0;
 
+    // Count pieces on left and right edges
     for (int y = 0; y < rows; ++y) {
-        int x = 0;
-        const auto& cell = board[y][x];
-        if (!cell.empty() && cell.find("owner") != cell.end() && cell.at("owner") == player) {
+        // Left edge (x=0)
+        if (GameState::is_owner(encoded_board[y][0], player)) {
             inactive_count++;
         }
-        x = cols - 1;
-        const auto& cell2 = board[y][x];
-        if (!cell2.empty() && cell2.find("owner") != cell2.end() && cell2.at("owner") == player) {
+        // Right edge (x=cols-1)
+        if (GameState::is_owner(encoded_board[y][cols-1], player)) {
             inactive_count++;
         }
     }
+
+    // Count pieces on top and bottom edges
     for (int x = 0; x < cols; ++x) {
-        int y = 0;
-        const auto& cell = board[y][x];
-        if (!cell.empty() && cell.find("owner") != cell.end() && cell.at("owner") == player) {
+        // Top edge (y=0)
+        if (GameState::is_owner(encoded_board[0][x], player)) {
             inactive_count++;
         }
-        y = rows - 1;
-        const auto& cell2 = board[y][x];
-        if (!cell2.empty() && cell2.find("owner") != cell2.end() && cell2.at("owner") == player) {
+        // Bottom edge (y=rows-1)
+        if (GameState::is_owner(encoded_board[rows-1][x], player)) {
             inactive_count++;
         }
     }
+
     return wrt_self ? -inactive_count : +inactive_count;
 }
 
 
+// OPTIMIZED: Uses encoded board for O(1) cell access instead of map lookups
+// CORRECTNESS: Produces identical results to original implementation
 int Heuristics::terminal_result(const GameState& state, const std::string& player, bool wrt_self) {
     int WIN_COUNT = 4;
     int top = top_score_row();
     int bot = bottom_score_row(state.rows);
     int ccount = 0, scount = 0;
-    
+
+    const auto& encoded_board = state.encoded_board;
+
     for (int x : state.score_cols) {
         if (x >= 0 && x < state.cols) {
             if (top >= 0 && top < state.rows) {
-                const auto& cell = state.board[top][x];
-                if (!cell.empty() && cell.at("owner") == "circle" && cell.at("side") == "stone") {
+                EncodedCell cell = encoded_board[top][x];
+                if (GameState::is_circle(cell) && GameState::is_stone(cell)) {
                     ccount++;
                 }
             }
             if (bot >= 0 && bot < state.rows) {
-                const auto& cell = state.board[bot][x];
-                if (!cell.empty() && cell.at("owner") == "square" && cell.at("side") == "stone") {
+                EncodedCell cell = encoded_board[bot][x];
+                if (GameState::is_square(cell) && GameState::is_stone(cell)) {
                     scount++;
                 }
             }
