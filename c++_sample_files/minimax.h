@@ -2,6 +2,7 @@
 #define MINIMAX_H
 
 #include "game_state.h"
+#include "transposition_table.h"
 #include <limits>
 #include <deque>
 #include <string>
@@ -16,11 +17,15 @@ struct MinimaxResult {
 };
 
 // NOTE: Changed to non-const reference for in-place make_move/undo_move optimization
+// Added TranspositionTable* parameter for caching (nullptr = no caching)
+// Added allow_tt_cutoff parameter to prevent returning from TT at root (need actual move)
 MinimaxResult minimax_alpha_beta(GameState& state, int depth, double alpha, double beta,
-                                bool maximizing_player, const std::string& original_player);
+                                bool maximizing_player, const std::string& original_player,
+                                TranspositionTable* tt = nullptr, bool allow_tt_cutoff = true);
 
 // Beam search: evaluates all moves at depth 2, takes top N, searches those to depth 3
-MinimaxResult minimax_beam_search(GameState& state, const std::string& original_player, int beam_width = 5);
+MinimaxResult minimax_beam_search(GameState& state, const std::string& original_player, 
+                                 int beam_width = 5, TranspositionTable* tt = nullptr);
 
 // ---- Repetition Detection Functions ----
 bool moves_equal(const Move& m1, const Move& m2);
@@ -33,6 +38,7 @@ void record_move(const Move& move, std::deque<Move>& recent_moves);
 Move flip_topmost_piece(const GameState& state, const std::string& side);
 
 Move run_minimax_with_repetition_check(const GameState& initial_state, int max_depth, 
-                                      const std::string& side, std::deque<Move>& recent_moves);
+                                      const std::string& side, std::deque<Move>& recent_moves,
+                                      TranspositionTable* tt = nullptr);
 
 #endif // MINIMAX_H

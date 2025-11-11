@@ -35,18 +35,44 @@ std::vector<Move> order_moves_by_heuristic(GameState& state, const std::vector<M
 }
 
 // Minimax with alpha-beta pruning - uses make_move/undo_move for efficiency
+// NOW WITH TRANSPOSITION TABLE SUPPORT
 MinimaxResult minimax_alpha_beta(GameState& state, int depth, double alpha, double beta,
-                                 bool maximizing_player, const std::string& original_player) {
+                                 bool maximizing_player, const std::string& original_player,
+                                 TranspositionTable* tt, bool allow_tt_cutoff) {
+    // ===== TRANSPOSITION TABLE PROBE =====
+    // Check if we've already evaluated this position at sufficient depth
+    // BUT: Don't return cached result at root level (we need the actual best move!)
+    if (tt != nullptr && allow_tt_cutoff) {
+        double cached_value;
+        if (tt->probe(state, depth, alpha, beta, cached_value)) {
+            // Cache hit! Return cached value without further search
+            // NOTE: We don't have the move, but that's OK for non-root nodes
+            return MinimaxResult(cached_value, {"move", {0,0}, {0,0}, {}, ""});
+        }
+    }
+    
     // Base case: terminal state or depth limit reached
     if (depth == 0 || state.is_terminal()) {
-        return MinimaxResult(Heuristics::evaluate_position(state, original_player),
-                           {"move", {0,0}, {0,0}, {}, ""});
+        double eval = Heuristics::evaluate_position(state, original_player);
+        
+        // Store leaf evaluation in TT (exact value)
+        if (tt != nullptr) {
+            tt->store(state, depth, eval, EntryType::EXACT);
+        }
+        
+        return MinimaxResult(eval, {"move", {0,0}, {0,0}, {}, ""});
     }
 
     std::vector<Move> legal_moves = state.get_legal_moves();
     if (legal_moves.empty()) {
-        return MinimaxResult(Heuristics::evaluate_position(state, original_player), 
-                           {"move", {0,0}, {0,0}, {}, ""});
+        double eval = Heuristics::evaluate_position(state, original_player);
+        
+        // Store terminal position evaluation
+        if (tt != nullptr) {
+            tt->store(state, depth, eval, EntryType::EXACT);
+        }
+        
+        return MinimaxResult(eval, {"move", {0,0}, {0,0}, {}, ""});
     }
 
     // Order moves for better pruning, or shuffle if depth is shallow
@@ -60,11 +86,15 @@ MinimaxResult minimax_alpha_beta(GameState& state, int depth, double alpha, doub
     Move best_move = moves_to_explore.back();
     double best_value = maximizing_player ? -std::numeric_limits<double>::infinity() 
                                           : std::numeric_limits<double>::infinity();
+    double original_alpha = alpha;  // Save for TT entry type determination
 
     for (const Move& move : moves_to_explore) {
         GameState::UndoInfo undo = state.make_move(move);
+        
+        // Recursive call with TT parameter passed through
+        // allow_tt_cutoff=true for all recursive calls (only root is false)
         MinimaxResult result = minimax_alpha_beta(state, depth - 1, alpha, beta, 
-                                                  !maximizing_player, original_player);
+                                                  !maximizing_player, original_player, tt, true);
         state.undo_move(move, undo);
 
         if (maximizing_player) {
@@ -81,7 +111,29 @@ MinimaxResult minimax_alpha_beta(GameState& state, int depth, double alpha, doub
             beta = std::min(beta, result.value);
         }
 
-        if (beta <= alpha) break; // Prune
+        if (beta <= alpha) break; // Alpha-beta pruning
+    }
+
+    // ===== TRANSPOSITION TABLE STORE =====
+    // Store this position's evaluation for future use
+    if (tt != nullptr) {
+        EntryType entry_type;
+        
+        if (best_value <= original_alpha) {
+            // Failed low - we didn't improve alpha
+            // This is an upper bound (actual value <= best_value)
+            entry_type = EntryType::UPPER_BOUND;
+        } else if (best_value >= beta) {
+            // Failed high - we caused a beta cutoff
+            // This is a lower bound (actual value >= best_value)
+            entry_type = EntryType::LOWER_BOUND;
+        } else {
+            // Value is within [alpha, beta] window
+            // This is an exact value
+            entry_type = EntryType::EXACT;
+        }
+        
+        tt->store(state, depth, best_value, entry_type);
     }
 
     return MinimaxResult(best_value, best_move);
@@ -98,9 +150,7 @@ bool would_repeat_after(const GameState& state, const Move& move, const std::str
                         const std::deque<Move>& recent_moves) {
     if (recent_moves.size() < 2) return false;
     
-    // Detect 2-move cycle: [A, B, A, B] -> next move A would repeat
-    // const Move& m4 = recent_moves[recent_moves.size() - 4];
-    // const Move& m3 = recent_moves[recent_moves.size() - 3];
+    // Detect 2-move cycle: [A, B] -> next move A would repeat
     const Move& m2 = recent_moves[recent_moves.size() - 2];
     const Move& m1 = recent_moves[recent_moves.size() - 1];
     return moves_equal(m2, move) || moves_equal(m1, move);
@@ -112,7 +162,8 @@ void record_move(const Move& move, std::deque<Move>& recent_moves) {
 }
 
 Move run_minimax_with_repetition_check(const GameState& initial_state, int max_depth,
-                                       const std::string& side, std::deque<Move>& recent_moves) {
+                                       const std::string& side, std::deque<Move>& recent_moves,
+                                       TranspositionTable* tt) {
     std::vector<Move> legal_moves = initial_state.get_legal_moves();
     if (legal_moves.empty()) {
         return {"move", {0,0}, {0,0}, {}, ""};
@@ -122,12 +173,15 @@ Move run_minimax_with_repetition_check(const GameState& initial_state, int max_d
     std::cout << "Doing Minimax for player: " << side << " at depth " << max_depth << "\n";
     GameState working_state = initial_state.copy();
 
-    // Use standard alpha-beta minimax with the specified depth
+    // Use standard alpha-beta minimax with the specified depth and TT
+    // IMPORTANT: allow_tt_cutoff=false at root to ensure we get actual best move
     MinimaxResult result = minimax_alpha_beta(working_state, max_depth,
                                               -std::numeric_limits<double>::infinity(),
                                               std::numeric_limits<double>::infinity(),
                                               true,  // maximizing player
-                                              initial_state.current_player);
+                                              initial_state.current_player,
+                                              tt,    // Pass TT to minimax
+                                              false); // DON'T allow TT cutoff at root!
     Move selected = result.best_move;
 
     // Check for repetition and find alternative if needed

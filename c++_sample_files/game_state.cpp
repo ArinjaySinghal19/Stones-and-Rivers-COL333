@@ -875,7 +875,10 @@ static int get_weighted_scoring_value(int x, int y, const std::string& player, i
     return 0;
 }
 
-
+// ========== HEURISTIC CACHE FUNCTIONS - COMMENTED OUT (NOT USED) ==========
+// These functions were prepared for incremental heuristic optimization but are
+// not currently used by any heuristic functions. Commenting out to remove overhead.
+/*
 void GameState::initialize_heuristic_cache() {
     if (heuristic_cache.initialized) return;
 
@@ -1061,115 +1064,5 @@ void GameState::update_heuristic_cache_for_move(const Move& move, const UndoInfo
         heuristic_cache.square_vertical_push_total += square_val;
     }
 }
-
-void GameState::revert_heuristic_cache_for_undo(const Move& move, const UndoInfo& undo_info) {
-    if (!heuristic_cache.initialized) return;
-
-    // Lambda to revert a cell change
-    auto revert_cell = [this](int x, int y, EncodedCell current_cell, EncodedCell original_cell) {
-        // Remove current cell contributions
-        if (!is_empty(current_cell)) {
-            bool is_circ = is_circle(current_cell);
-            std::string owner = is_circ ? "circle" : "square";
-            
-            if (is_horizontal_river(current_cell)) {
-                if (is_in_base_rows(y, owner, rows)) {
-                    if (is_circ) heuristic_cache.circle_base_horizontal_count--;
-                    else heuristic_cache.square_base_horizontal_count--;
-                }
-                if (is_in_negative_area(y, owner, rows)) {
-                    if (is_circ) heuristic_cache.circle_negative_horizontal_count--;
-                    else heuristic_cache.square_negative_horizontal_count--;
-                }
-            }
-            
-            if (is_stone(current_cell) && is_edge(x, cols)) {
-                if (is_circ) heuristic_cache.circle_edge_stone_count--;
-                else heuristic_cache.square_edge_stone_count--;
-            }
-            
-            int curr_weight = get_weighted_scoring_value(x, y, owner, rows);
-            if (curr_weight > 0) {
-                if (is_circ) {
-                    heuristic_cache.circle_scoring_weighted_total -= heuristic_cache.circle_scoring_weighted[y][x];
-                    heuristic_cache.circle_scoring_weighted[y].erase(x);
-                } else {
-                    heuristic_cache.square_scoring_weighted_total -= heuristic_cache.square_scoring_weighted[y][x];
-                    heuristic_cache.square_scoring_weighted[y].erase(x);
-                }
-            }
-        }
-
-        // Restore original cell contributions
-        if (!is_empty(original_cell)) {
-            bool is_circ = is_circle(original_cell);
-            std::string owner = is_circ ? "circle" : "square";
-            
-            if (is_horizontal_river(original_cell)) {
-                if (is_in_base_rows(y, owner, rows)) {
-                    if (is_circ) heuristic_cache.circle_base_horizontal_count++;
-                    else heuristic_cache.square_base_horizontal_count++;
-                }
-                if (is_in_negative_area(y, owner, rows)) {
-                    if (is_circ) heuristic_cache.circle_negative_horizontal_count++;
-                    else heuristic_cache.square_negative_horizontal_count++;
-                }
-            }
-            
-            if (is_stone(original_cell) && is_edge(x, cols)) {
-                if (is_circ) heuristic_cache.circle_edge_stone_count++;
-                else heuristic_cache.square_edge_stone_count++;
-            }
-            
-            int orig_weight = get_weighted_scoring_value(x, y, owner, rows);
-            if (orig_weight > 0) {
-                if (is_circ) {
-                    heuristic_cache.circle_scoring_weighted[y][x] = orig_weight;
-                    heuristic_cache.circle_scoring_weighted_total += orig_weight;
-                } else {
-                    heuristic_cache.square_scoring_weighted[y][x] = orig_weight;
-                    heuristic_cache.square_scoring_weighted_total += orig_weight;
-                }
-            }
-        }
-    };
-
-    int fx = move.from[0], fy = move.from[1];
-    int tx = move.to[0], ty = move.to[1];
-    std::set<int> affected_cols;
-
-    // Revert cells based on move type
-    if (move.action == "move" || move.action == "push") {
-        revert_cell(fx, fy, encoded_board[fy][fx], undo_info.from_encoded);
-        revert_cell(tx, ty, encoded_board[ty][tx], undo_info.to_encoded);
-        affected_cols.insert(fx);
-        affected_cols.insert(tx);
-        
-        if (!move.pushed_to.empty()) {
-            int px = move.pushed_to[0], py = move.pushed_to[1];
-            revert_cell(px, py, encoded_board[py][px], undo_info.pushed_encoded);
-            affected_cols.insert(px);
-        }
-    } else if (move.action == "flip" || move.action == "rotate") {
-        revert_cell(fx, fy, encoded_board[fy][fx], undo_info.from_encoded);
-        affected_cols.insert(fx);
-    }
-
-    // Recompute vertical push for affected columns
-    for (int col : affected_cols) {
-        // Subtract current value
-        heuristic_cache.circle_vertical_push_total -= heuristic_cache.circle_vertical_push_per_col[col];
-        heuristic_cache.square_vertical_push_total -= heuristic_cache.square_vertical_push_per_col[col];
-        
-        // Recompute column
-        double circle_val = compute_column_vertical_push(*this, col, "circle");
-        double square_val = compute_column_vertical_push(*this, col, "square");
-        
-        heuristic_cache.circle_vertical_push_per_col[col] = circle_val;
-        heuristic_cache.square_vertical_push_per_col[col] = square_val;
-        
-        // Add recomputed value
-        heuristic_cache.circle_vertical_push_total += circle_val;
-        heuristic_cache.square_vertical_push_total += square_val;
-    }
-}
+*/
+// ========== END OF COMMENTED OUT HEURISTIC CACHE ==========

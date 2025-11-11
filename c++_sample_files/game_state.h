@@ -27,6 +27,9 @@ struct ValidTargets {
 using EncodedCell = uint8_t;
 
 // ---- Incremental Heuristic Cache ----
+// COMMENTED OUT: Not currently used by heuristics, just overhead
+// Prepared for future optimization but not yet implemented
+/*
 struct HeuristicCache {
     // Simple O(1) counters - these can be updated incrementally
     int circle_base_horizontal_count = 0;      // horizontal_base_rivers
@@ -51,6 +54,7 @@ struct HeuristicCache {
 
     bool initialized = false;
 };
+*/
 
 // ---- Game State representation ----
 struct GameState {
@@ -60,7 +64,7 @@ struct GameState {
     int rows, cols;
     std::vector<int> score_cols;
 
-    HeuristicCache heuristic_cache;  // Incremental heuristic values
+    // HeuristicCache heuristic_cache;  // COMMENTED OUT: Not used, just overhead
 
     GameState(const std::vector<std::vector<std::map<std::string, std::string>>>& b,
               const std::string& player, int r, int c, const std::vector<int>& sc)
@@ -86,10 +90,10 @@ struct GameState {
     std::vector<Move> get_legal_moves() const;
     bool is_terminal() const;
 
-    // Incremental heuristic cache management
-    void initialize_heuristic_cache();
-    void update_heuristic_cache_for_move(const Move& move, const GameState::UndoInfo& undo_info);
-    void revert_heuristic_cache_for_undo(const Move& move, const GameState::UndoInfo& undo_info);
+    // Incremental heuristic cache management - COMMENTED OUT (not used)
+    // void initialize_heuristic_cache();
+    // void update_heuristic_cache_for_move(const Move& move, const GameState::UndoInfo& undo_info);
+    // void revert_heuristic_cache_for_undo(const Move& move, const GameState::UndoInfo& undo_info);
 
     UndoInfo make_move(const Move& move);
     void undo_move(const Move& move, const GameState::UndoInfo& undo_info);

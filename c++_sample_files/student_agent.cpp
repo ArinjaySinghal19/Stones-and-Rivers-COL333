@@ -3,6 +3,7 @@
 #include "game_state.h"
 #include "minimax.h"
 #include "heuristics.h"
+#include "transposition_table.h"
 #include <iostream>
 #include <deque>
 #include <string>
@@ -81,7 +82,25 @@ Move flip_topmost_piece(const GameState& state, const std::string& side) {
 // ---- Student Agent ----
 class StudentAgent {
 public:
-    explicit StudentAgent(std::string side) : side(std::move(side)) {}
+    explicit StudentAgent(std::string side) : side(std::move(side)) {
+        // Initialize transposition table (64 MB default)
+        // Persistent across moves for the entire game
+        tt = new TranspositionTable(64);
+        std::cout << "Student Agent (" << side << ") created with Transposition Table enabled" << std::endl;
+    }
+    
+    ~StudentAgent() {
+        // Print TT statistics on destruction
+        auto stats = tt->get_stats();
+        std::cout << "\n=== Transposition Table Statistics ===" << std::endl;
+        std::cout << "Hits: " << stats.hits << std::endl;
+        std::cout << "Misses: " << stats.misses << std::endl;
+        std::cout << "Stores: " << stats.stores << std::endl;
+        std::cout << "Collisions: " << stats.collisions << std::endl;
+        std::cout << "Hit Rate: " << (stats.hit_rate() * 100.0) << "%" << std::endl;
+        delete tt;
+    }
+    
     bool end_time = false;
     int end_piece_row = -1;
     int end_piece_col = -1;
@@ -106,6 +125,7 @@ public:
             auto duration = std::chrono::duration_cast<std::chrono::microseconds>(end_clock_time - start_time);
             double elapsed_seconds = duration.count();
             // std::cout << "Elapsed time (microseconds): " << elapsed_seconds << std::endl;
+            std::cout << "End time rotation move selected." << std::endl;
             return selected;
         }
 
@@ -115,6 +135,7 @@ public:
                 flipped_to_river = true;
                 end_piece_row = selected.from[1];
                 end_piece_col = selected.from[0];
+                std::cout << "End time flip move selected." << std::endl;
                 return selected;
             }
         }
@@ -122,13 +143,19 @@ public:
 
 
         auto minimax_start = std::chrono::high_resolution_clock::now();
-        // Use Minimax with Alpha-Beta Pruning and repetition checking
+        // Use Minimax with Alpha-Beta Pruning, repetition checking, and Transposition Table
         const int MINIMAX_DEPTH = 4;
-        selected = run_minimax_with_repetition_check(current_state, MINIMAX_DEPTH, side, recent_keys);
+        selected = run_minimax_with_repetition_check(current_state, MINIMAX_DEPTH, side, recent_keys, tt);
         auto minimax_end = std::chrono::high_resolution_clock::now();
         auto minimax_duration = std::chrono::duration_cast<std::chrono::microseconds>(minimax_end - minimax_start);
         std::cout << "Move returned in " << minimax_duration.count() / 1e6 << " seconds." << std::endl;
         
+        // Print TT stats periodically
+        auto stats = tt->get_stats();
+        if (stats.hits + stats.misses > 0) {
+            std::cout << "TT Hit Rate: " << (stats.hit_rate() * 100.0) << "% (" 
+                      << stats.hits << " hits, " << stats.misses << " misses)" << std::endl;
+        }
         
         // Calculate and display elapsed time
         auto end_clock_time = std::chrono::high_resolution_clock::now();
@@ -143,6 +170,7 @@ public:
 private:
     std::string side;
     std::deque<Move> recent_keys; // Rolling history of recent moves
+    TranspositionTable* tt;  // Transposition table for caching positions
 };
 
 // ---- PyBind11 bindings ----
