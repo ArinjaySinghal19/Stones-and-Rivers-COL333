@@ -123,7 +123,7 @@ public:
 
         auto minimax_start = std::chrono::high_resolution_clock::now();
         // Use Minimax with Alpha-Beta Pruning and repetition checking
-        const int MINIMAX_DEPTH = 5;
+        const int MINIMAX_DEPTH = 4;
         selected = run_minimax_with_repetition_check(current_state, MINIMAX_DEPTH, side, recent_keys);
         auto minimax_end = std::chrono::high_resolution_clock::now();
         auto minimax_duration = std::chrono::duration_cast<std::chrono::microseconds>(minimax_end - minimax_start);
