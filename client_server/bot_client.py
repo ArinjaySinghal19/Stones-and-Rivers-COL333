@@ -105,12 +105,22 @@ class BotClient:
             logger.error(f"Error getting game state: {e}")
             return None
     
-    def make_move(self, move: Dict[str, Any]) -> bool:
-        """Send move to server"""
+    def make_move(self, move: Dict[str, Any], thinking_time: float = None) -> bool:
+        """Send move to server
+        
+        Args:
+            move: The move to make
+            thinking_time: Optional - actual time spent thinking (in seconds)
+                          If provided, only this time will be deducted from clock
+        """
         try:
+            payload = {"move": move}
+            if thinking_time is not None:
+                payload["thinking_time"] = thinking_time
+                
             response = requests.post(
                 f"{self.server_url}/bot/move/{self.player}",
-                json={"move": move},
+                json=payload,
                 timeout=30
             )
             
@@ -188,8 +198,9 @@ class BotClient:
                 # Convert board format for agent
                 converted_board = self.convert_board_format(game_state["board"])
                 
-                # Get move from agent
-                start_time = time.time()
+                # Get move from agent and measure thinking time
+                # Use server timestamp if available, otherwise use current time
+                start_time = game_state.get("timestamp", time.time())
                 move = self.agent.choose(
                     converted_board,
                     game_state["rows"],
@@ -207,8 +218,8 @@ class BotClient:
                 
                 logger.info(f"Agent chose move (thinking time: {thinking_time:.2f}s): {move}")
                 
-                # Send move to server
-                if self.make_move(move):
+                # Send move to server WITH thinking time for accurate time tracking
+                if self.make_move(move, thinking_time):
                     logger.info("Move sent successfully")
                 else:
                     logger.error("Failed to send move")
@@ -248,7 +259,6 @@ def main():
         logger.warning(f"Warning: {args.player} player typically uses port {expected_port}, but using {args.port}")
     
     # Create and run bot
-    print(args.strategy)
     bot = BotClient(args.player, server_url, args.strategy)
     
     print(f"""
