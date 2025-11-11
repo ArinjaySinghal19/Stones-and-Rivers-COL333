@@ -12,16 +12,23 @@
 struct MinimaxResult {
     double value;
     Move best_move;
+    std::vector<Move> principal_variation;  // Sequence of expected moves
     
     MinimaxResult(double v, const Move& m) : value(v), best_move(m) {}
+    MinimaxResult(double v, const Move& m, const std::vector<Move>& pv) 
+        : value(v), best_move(m), principal_variation(pv) {}
 };
 
 // NOTE: Changed to non-const reference for in-place make_move/undo_move optimization
 // Added TranspositionTable* parameter for caching (nullptr = no caching)
 // Added allow_tt_cutoff parameter to prevent returning from TT at root (need actual move)
+// Forward declaration for default parameter
+extern Move g_empty_move;
+
 MinimaxResult minimax_alpha_beta(GameState& state, int depth, double alpha, double beta,
                                 bool maximizing_player, const std::string& original_player,
-                                TranspositionTable* tt = nullptr, bool allow_tt_cutoff = true);
+                                TranspositionTable* tt = nullptr, bool allow_tt_cutoff = true,
+                                Move& move_to_ignore = g_empty_move);
 
 // Beam search: evaluates all moves at depth 2, takes top N, searches those to depth 3
 MinimaxResult minimax_beam_search(GameState& state, const std::string& original_player, 

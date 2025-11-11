@@ -9,6 +9,24 @@
 // ---- Heuristic Function Types ----
 class Heuristics {
 public:
+    struct HeuristicsInfo {
+        double vertical_push_value = 0.0;
+        double pieces_in_scoring_attack_value = 0.0;
+        double horizontal_attack_self_value = 0.0;
+        double inactive_self_value = 0.0;
+        double pieces_blocking_vertical_self_value = 0.0;
+        double horizontal_base_self_value = 0.0;
+        double horizontal_negative_self_value = 0.0;
+        
+        double pieces_in_scoring_defense_value = 0.0;
+        double pieces_blocking_vertical_opp_value = 0.0;
+        double horizontal_base_opp_value = 0.0;
+        double horizontal_attack_opp_value = 0.0;
+        double inactive_opp_value = 0.0;
+        
+        double total_score = 0.0;
+    };
+
     struct Weights {
         double vertical_push = 10.0;
         double pieces_in_scoring_attack = 40.0;
@@ -26,7 +44,7 @@ public:
     };
 
     // Main heuristic evaluation function
-    static double evaluate_position(const GameState& state, const std::string& player);
+    static HeuristicsInfo evaluate_position(const GameState& state, const std::string& player);
     static const Weights& get_weights();
     static void set_weights(const Weights& new_weights);
     

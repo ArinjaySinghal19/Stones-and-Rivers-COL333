@@ -13,6 +13,15 @@ struct Move {
     std::vector<int> to;
     std::vector<int> pushed_to;
     std::string orientation;
+    
+    // Equality operator for comparison
+    bool operator==(const Move& other) const {
+        return action == other.action && 
+               from == other.from && 
+               to == other.to && 
+               pushed_to == other.pushed_to && 
+               orientation == other.orientation;
+    }
 };
 
 // ---- Valid Targets struct ----

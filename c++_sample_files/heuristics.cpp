@@ -501,29 +501,57 @@ int Heuristics::terminal_result(const GameState& state, const std::string& playe
 }
 
 // Main evaluation function
-double Heuristics::evaluate_position(const GameState& state, const std::string& player) {
-    if (state.is_terminal()) return terminal_result(state, player, true);
+Heuristics::HeuristicsInfo Heuristics::evaluate_position(const GameState& state, const std::string& player) {
+    HeuristicsInfo info;
+    if (state.is_terminal()){
+        info.total_score = terminal_result(state, player, true);
+        return info;
+    }
     
     double final_score = 0.0;
 
     // Self heuristics
-    final_score += weights_.vertical_push * vertical_push_h(state, player, true);
-    final_score += weights_.pieces_in_scoring_attack * (pieces_in_scoring_virgin_cols(state, player, true) + pieces_in_scoring_zonewise(state, player, true));
-    final_score += weights_.horizontal_attack_self * horizontal_attack(state, player, true);
-    final_score += weights_.inactive_self * inactive_pieces(state, player, true);
-    final_score += weights_.pieces_blocking_vertical_self * pieces_blocking_vertical_h(state, player, true);
-    final_score += weights_.horizontal_base_self * horizontal_base_rivers(state, player, true);
-    final_score += weights_.horizontal_negative_self * horizontal_negative(state, player, true);
+    info.vertical_push_value = weights_.vertical_push * vertical_push_h(state, player, true);
+    final_score += info.vertical_push_value;
+    
+    info.pieces_in_scoring_attack_value = weights_.pieces_in_scoring_attack * (pieces_in_scoring_virgin_cols(state, player, true) + pieces_in_scoring_zonewise(state, player, true));
+    final_score += info.pieces_in_scoring_attack_value;
+    
+    info.horizontal_attack_self_value = weights_.horizontal_attack_self * horizontal_attack(state, player, true);
+    final_score += info.horizontal_attack_self_value;
+    
+    info.inactive_self_value = weights_.inactive_self * inactive_pieces(state, player, true);
+    final_score += info.inactive_self_value;
+    
+    info.pieces_blocking_vertical_self_value = weights_.pieces_blocking_vertical_self * pieces_blocking_vertical_h(state, player, true);
+    final_score += info.pieces_blocking_vertical_self_value;
+    
+    info.horizontal_base_self_value = weights_.horizontal_base_self * horizontal_base_rivers(state, player, true);
+    final_score += info.horizontal_base_self_value;
+    
+    info.horizontal_negative_self_value = weights_.horizontal_negative_self * horizontal_negative(state, player, true);
+    final_score += info.horizontal_negative_self_value;
 
     // Opponent heuristics
     std::string opponent = get_opponent(player);
-    final_score += weights_.pieces_in_scoring_defense * (pieces_in_scoring_virgin_cols(state, player, false) + pieces_in_scoring_zonewise(state, player, false));
-    final_score += weights_.pieces_blocking_vertical_opp * pieces_blocking_vertical_h(state, opponent, false);
-    final_score += weights_.horizontal_base_opp * horizontal_base_rivers(state, opponent, false);
-    final_score += weights_.horizontal_attack_opp * horizontal_attack(state, opponent, false);
-    final_score += weights_.inactive_opp * inactive_pieces(state, opponent, false);
+    
+    info.pieces_in_scoring_defense_value = weights_.pieces_in_scoring_defense * (pieces_in_scoring_virgin_cols(state, player, false) + pieces_in_scoring_zonewise(state, player, false));
+    final_score += info.pieces_in_scoring_defense_value;
+    
+    info.pieces_blocking_vertical_opp_value = weights_.pieces_blocking_vertical_opp * pieces_blocking_vertical_h(state, opponent, false);
+    final_score += info.pieces_blocking_vertical_opp_value;
+    
+    info.horizontal_base_opp_value = weights_.horizontal_base_opp * horizontal_base_rivers(state, opponent, false);
+    final_score += info.horizontal_base_opp_value;
+    
+    info.horizontal_attack_opp_value = weights_.horizontal_attack_opp * horizontal_attack(state, opponent, false);
+    final_score += info.horizontal_attack_opp_value;
+    
+    info.inactive_opp_value = weights_.inactive_opp * inactive_pieces(state, opponent, false);
+    final_score += info.inactive_opp_value;
 
-    return final_score;
+    info.total_score = final_score;
+    return info;
 }
 
 void Heuristics::debug_heuristic(const GameState& state, const std::string& player) {
@@ -558,6 +586,8 @@ void Heuristics::debug_heuristic(const GameState& state, const std::string& play
               << " weighted: " << weights_.horizontal_attack_opp * horizontal_attack(state, opponent, false) << std::endl;
     std::cout << "Inactive Pieces: " << inactive_pieces(state, opponent, false)
               << " weighted: " << weights_.inactive_opp * inactive_pieces(state, opponent, false) << std::endl;
-    std::cout << "Total Evaluation: " << evaluate_position(state, player) << std::endl;
+    
+    HeuristicsInfo info = evaluate_position(state, player);
+    std::cout << "Total Evaluation: " << info.total_score << std::endl;
     std::cout << "---------------------------" << std::endl;
 }
