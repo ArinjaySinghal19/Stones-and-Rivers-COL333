@@ -19,6 +19,9 @@ struct MinimaxResult {
 MinimaxResult minimax_alpha_beta(GameState& state, int depth, double alpha, double beta,
                                 bool maximizing_player, const std::string& original_player);
 
+// Beam search: evaluates all moves at depth 2, takes top N, searches those to depth 3
+MinimaxResult minimax_beam_search(GameState& state, const std::string& original_player, int beam_width = 5);
+
 // ---- Repetition Detection Functions ----
 bool moves_equal(const Move& m1, const Move& m2);
 

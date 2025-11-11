@@ -26,6 +26,32 @@ struct ValidTargets {
 //           4=circle horizontal river, 5=circle vertical river, 6=circle stone
 using EncodedCell = uint8_t;
 
+// ---- Incremental Heuristic Cache ----
+struct HeuristicCache {
+    // Simple O(1) counters - these can be updated incrementally
+    int circle_base_horizontal_count = 0;      // horizontal_base_rivers
+    int square_base_horizontal_count = 0;
+    int circle_negative_horizontal_count = 0;  // horizontal_negative
+    int square_negative_horizontal_count = 0;
+    int circle_edge_stone_count = 0;           // inactive_pieces (stones on edges)
+    int square_edge_stone_count = 0;
+
+    // Vertical push - per-column sums (recompute affected columns on move)
+    std::vector<double> circle_vertical_push_per_col;  // Size = cols
+    std::vector<double> square_vertical_push_per_col;
+    double circle_vertical_push_total = 0.0;
+    double square_vertical_push_total = 0.0;
+
+    // Pieces in scoring - weighted region contributions (w1-w5)
+    // Manhattan distance part will be recomputed each time
+    std::map<int, std::map<int, int>> circle_scoring_weighted;  // Stores w1-w5 values
+    std::map<int, std::map<int, int>> square_scoring_weighted;
+    int circle_scoring_weighted_total = 0;
+    int square_scoring_weighted_total = 0;
+
+    bool initialized = false;
+};
+
 // ---- Game State representation ----
 struct GameState {
     std::vector<std::vector<std::map<std::string, std::string>>> board;
@@ -34,16 +60,13 @@ struct GameState {
     int rows, cols;
     std::vector<int> score_cols;
 
+    HeuristicCache heuristic_cache;  // Incremental heuristic values
+
     GameState(const std::vector<std::vector<std::map<std::string, std::string>>>& b,
               const std::string& player, int r, int c, const std::vector<int>& sc)
         : board(b), current_player(player), rows(r), cols(c), score_cols(sc) {
         encode_board();
     }
-
-    GameState copy() const;
-    void apply_move(const Move& move);
-    std::vector<Move> get_legal_moves() const;
-    bool is_terminal() const;
 
     // Move/Undo for efficient minimax without copying
     // These methods modify the board in-place and return information needed to undo
@@ -58,15 +81,25 @@ struct GameState {
         bool valid;  // Whether the move was actually applied
     };
 
+    GameState copy() const;
+    void apply_move(const Move& move);
+    std::vector<Move> get_legal_moves() const;
+    bool is_terminal() const;
+
+    // Incremental heuristic cache management
+    void initialize_heuristic_cache();
+    void update_heuristic_cache_for_move(const Move& move, const GameState::UndoInfo& undo_info);
+    void revert_heuristic_cache_for_undo(const Move& move, const GameState::UndoInfo& undo_info);
+
     UndoInfo make_move(const Move& move);
-    void undo_move(const Move& move, const UndoInfo& undo_info);
+    void undo_move(const Move& move, const GameState::UndoInfo& undo_info);
 
     // Encoding/decoding helpers
     void encode_board();
     static EncodedCell encode_cell(const std::map<std::string, std::string>& cell);
     // All helper functions marked inline for zero-overhead abstraction
     static inline bool is_stone(EncodedCell cell) { return cell == 3 || cell == 6; }
-    static inline bool is_river(EncodedCell cell) { return cell >= 1 && cell <= 2 || cell >= 4 && cell <= 5; }
+    static inline bool is_river(EncodedCell cell) { return (cell >= 1 && cell <= 2) || (cell >= 4 && cell <= 5); }
     static inline bool is_horizontal_river(EncodedCell cell) { return cell == 1 || cell == 4; }
     static inline bool is_vertical_river(EncodedCell cell) { return cell == 2 || cell == 5; }
     static inline bool is_square(EncodedCell cell) { return cell >= 1 && cell <= 3; }

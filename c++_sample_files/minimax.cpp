@@ -39,7 +39,7 @@ MinimaxResult minimax_alpha_beta(GameState& state, int depth, double alpha, doub
                                  bool maximizing_player, const std::string& original_player) {
     // Base case: terminal state or depth limit reached
     if (depth == 0 || state.is_terminal()) {
-        return MinimaxResult(Heuristics::evaluate_position(state, original_player), 
+        return MinimaxResult(Heuristics::evaluate_position(state, original_player),
                            {"move", {0,0}, {0,0}, {}, ""});
     }
 
@@ -87,6 +87,110 @@ MinimaxResult minimax_alpha_beta(GameState& state, int depth, double alpha, doub
     return MinimaxResult(best_value, best_move);
 }
 
+// Beam search minimax: searches all moves to depth 2, takes top N, then searches those to depth 3
+// Phase 1: NO pruning at root level (depth 0), but pruning within subtrees (depth 1+)
+// Phase 2: Pruning between the top N candidates
+MinimaxResult minimax_beam_search(GameState& state, const std::string& original_player, int beam_width) {
+    std::vector<Move> legal_moves = state.get_legal_moves();
+    if (legal_moves.empty()) {
+        return MinimaxResult(Heuristics::evaluate_position(state, original_player),
+                           {"move", {0,0}, {0,0}, {}, ""});
+    }
+
+    std::cout << "=== BEAM SEARCH: Phase 1 - Evaluating " << legal_moves.size()
+              << " moves at depth 2 ===" << std::endl;
+
+    // Phase 1: Evaluate ALL moves at depth 2 (no root-level pruning)
+    // But we DO use alpha-beta within each move's subtree for efficiency
+    std::vector<MinimaxResult> depth2_results;
+    depth2_results.reserve(legal_moves.size());
+
+    for (size_t i = 0; i < legal_moves.size(); ++i) {
+        const Move& move = legal_moves[i];
+
+        GameState::UndoInfo undo = state.make_move(move);
+
+        // Search to depth 2 (depth-1=1 in recursive call)
+        // Use alpha-beta WITHIN this subtree, but not between root moves
+        MinimaxResult result = minimax_alpha_beta(state, 1,  // remaining depth = 1
+                                                  -std::numeric_limits<double>::infinity(),
+                                                  std::numeric_limits<double>::infinity(),
+                                                  false,  // opponent's turn after our move
+                                                  original_player);
+
+        state.undo_move(move, undo);
+
+        depth2_results.emplace_back(result.value, move);
+
+        if ((i + 1) % 10 == 0 || (i + 1) == legal_moves.size()) {
+            std::cout << "  Evaluated " << (i + 1) << "/" << legal_moves.size() << " moves" << std::endl;
+        }
+    }
+
+    // Sort by value (best first - descending order)
+    std::sort(depth2_results.begin(), depth2_results.end(),
+              [](const MinimaxResult& a, const MinimaxResult& b) {
+                  return a.value > b.value;
+              });
+
+    // Take top N moves (beam_width)
+    int num_candidates = std::min(beam_width, static_cast<int>(depth2_results.size()));
+
+    std::cout << "\n=== BEAM SEARCH: Phase 2 - Exploring top " << num_candidates
+              << " moves at depth 3 ===" << std::endl;
+    std::cout << "Top " << num_candidates << " moves from Phase 1:" << std::endl;
+    for (int i = 0; i < num_candidates; ++i) {
+        std::cout << "  " << (i+1) << ". value=" << depth2_results[i].value << std::endl;
+    }
+
+    // Phase 2: Deep search on top N moves WITH alpha-beta pruning between candidates
+    double alpha = -std::numeric_limits<double>::infinity();
+    double beta = std::numeric_limits<double>::infinity();
+    double best_value = -std::numeric_limits<double>::infinity();
+    Move best_move = depth2_results[0].best_move;
+
+    for (int i = 0; i < num_candidates; ++i) {
+        const Move& move = depth2_results[i].best_move;
+        double depth2_value = depth2_results[i].value;
+
+        GameState::UndoInfo undo = state.make_move(move);
+
+        // Search to depth 3 (depth-1=2 in recursive call)
+        // Now we CAN use alpha-beta between candidates
+        MinimaxResult result = minimax_alpha_beta(state, 2,  // remaining depth = 2
+                                                  alpha, beta,
+                                                  false,  // opponent's turn
+                                                  original_player);
+
+        state.undo_move(move, undo);
+
+        std::cout << "  Candidate " << (i+1) << "/" << num_candidates
+                  << ": depth2=" << depth2_value
+                  << ", depth3=" << result.value << std::endl;
+
+        if (result.value > best_value) {
+            best_value = result.value;
+            best_move = move;
+        }
+
+        // Update alpha for pruning subsequent candidates
+        alpha = std::max(alpha, result.value);
+
+        // Beta cutoff: if this move is too good, opponent won't let us get here
+        // (In practice, beta stays at +inf at root, so this won't trigger)
+        if (beta <= alpha) {
+            std::cout << "  Beta cutoff! Skipping remaining "
+                      << (num_candidates - i - 1) << " candidates" << std::endl;
+            break;
+        }
+    }
+
+    std::cout << "\n=== BEAM SEARCH: Best move selected with value=" << best_value
+              << " ===" << std::endl;
+
+    return MinimaxResult(best_value, best_move);
+}
+
 // Repetition detection utilities
 bool moves_equal(const Move& m1, const Move& m2) {
     return m1.action == m2.action && 
@@ -120,12 +224,13 @@ Move run_minimax_with_repetition_check(const GameState& initial_state, int max_d
     }
 
     GameState working_state = initial_state.copy();
-    
-    // Run minimax to find best move
+
+    // Use standard alpha-beta minimax with the specified depth
     MinimaxResult result = minimax_alpha_beta(working_state, max_depth,
                                               -std::numeric_limits<double>::infinity(),
                                               std::numeric_limits<double>::infinity(),
-                                              true, initial_state.current_player);
+                                              true,  // maximizing player
+                                              initial_state.current_player);
     Move selected = result.best_move;
 
     // Check for repetition and find alternative if needed
@@ -156,10 +261,10 @@ Move run_minimax_with_repetition_check(const GameState& initial_state, int max_d
               << " from (" << selected.from[0] << "," << selected.from[1] 
               << ") to (" << selected.to[0] << "," << selected.to[1] << ")\n";
 
-    // Debug output
-    GameState after_state = initial_state.copy();
-    after_state.apply_move(selected);
-    Heuristics().debug_heuristic(after_state, initial_state.current_player);
+    // Optional: Debug output (comment out for production)
+    // GameState after_state = initial_state.copy();
+    // after_state.apply_move(selected);
+    // Heuristics().debug_heuristic(after_state, initial_state.current_player);
     
     return selected;
 }
