@@ -30,6 +30,8 @@ public:
         std::vector <double> v_push_square_vals;
         std::vector <int> pieces_blocking_v_circle;
         std::vector <int> pieces_blocking_v_square;
+        int inactive_circle_count = -1;
+        int inactive_square_count = -1;
     };
 
     struct Weights {
@@ -61,7 +63,7 @@ public:
     static int horizontal_base_rivers(const GameState& state, const std::string& player, bool wrt_self = true);
     static int horizontal_negative(const GameState& state, const std::string& player, bool wrt_self = true);
     static int horizontal_attack(const GameState& state, const std::string& player, bool wrt_self = true);
-    static int inactive_pieces(const GameState& state, const std::string& player, bool wrt_self = true);
+    static int inactive_pieces(const GameState& state, const std::string& player, bool wrt_self = true, bool use_parent = false, HeuristicsInfo* parent_info = nullptr, Move* last_move = nullptr, HeuristicsInfo* my_info = nullptr);
     static int terminal_result(const GameState& state, const std::string& player, bool wrt_self = true);
     static void debug_heuristic(HeuristicsInfo& info);
     

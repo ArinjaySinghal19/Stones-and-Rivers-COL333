@@ -731,12 +731,16 @@ int Heuristics::horizontal_attack(const GameState& state, const std::string& pla
     return wrt_self ? count : -count;
 }
 
-// Inactive pieces: pieces on board edges
-int Heuristics::inactive_pieces(const GameState& state, const std::string& player, bool wrt_self) {
+// Helper function to check if a position is on the board edge
+bool is_on_edge(int x, int y, int rows, int cols) {
+    return (x == 0 || x == cols - 1 || y == 0 || y == rows - 1);
+}
+
+// Helper function to compute inactive pieces count for a player
+int compute_inactive_count(const GameState& state, const std::string& player) {
     const auto& encoded_board = state.encoded_board;
     int rows = state.rows;
     int cols = state.cols;
-
     int inactive_count = 0;
 
     // Count pieces on left and right edges
@@ -759,7 +763,110 @@ int Heuristics::inactive_pieces(const GameState& state, const std::string& playe
         }
     }
 
-    return wrt_self ? -inactive_count : +inactive_count;
+    return inactive_count;
+}
+
+// Inactive pieces: pieces on board edges
+int Heuristics::inactive_pieces(const GameState& state, const std::string& player, bool wrt_self, bool use_parent, HeuristicsInfo* parent_info, Move* last_move, HeuristicsInfo* my_info) {
+    
+    if(use_parent && parent_info != nullptr && last_move != nullptr){
+        // Check if we already computed this
+        if(my_info != nullptr && my_info->inactive_circle_count != -1 && my_info->inactive_square_count != -1){
+            int count = (player == "circle") ? my_info->inactive_circle_count : my_info->inactive_square_count;
+            return wrt_self ? -count : +count;
+        }
+        
+        // Start with parent's counts
+        int my_inactive_circle = parent_info->inactive_circle_count;
+        int my_inactive_square = parent_info->inactive_square_count;
+        
+        const auto& encoded_board = state.encoded_board;
+        int rows = state.rows;
+        int cols = state.cols;
+        
+        if(last_move->action == "move"){
+            int from_x = last_move->from[0];
+            int from_y = last_move->from[1];
+            int to_x = last_move->to[0];
+            int to_y = last_move->to[1];
+            
+            bool from_edge = is_on_edge(from_x, from_y, rows, cols);
+            bool to_edge = is_on_edge(to_x, to_y, rows, cols);
+            
+            // Determine which player moved
+            EncodedCell moved_cell = encoded_board[to_y][to_x];
+            bool is_circle = GameState::is_circle(moved_cell);
+            
+            // Update count based on move
+            if(from_edge && !to_edge) {
+                // Moved away from edge
+                if(is_circle) my_inactive_circle--;
+                else my_inactive_square--;
+            } else if(!from_edge && to_edge) {
+                // Moved to edge
+                if(is_circle) my_inactive_circle++;
+                else my_inactive_square++;
+            }
+            // If from_edge && to_edge or !from_edge && !to_edge, count doesn't change
+            
+        } else if(last_move->action == "push"){
+            int from_x = last_move->from[0];
+            int from_y = last_move->from[1];
+            int to_x = last_move->to[0];
+            int to_y = last_move->to[1];
+            int pushed_x = last_move->pushed_to[0];
+            int pushed_y = last_move->pushed_to[1];
+            
+            const auto& encoded_board = state.encoded_board;
+            
+            bool from_edge = is_on_edge(from_x, from_y, rows, cols);
+            bool to_edge = is_on_edge(to_x, to_y, rows, cols);
+            bool pushed_edge = is_on_edge(pushed_x, pushed_y, rows, cols);
+            
+            // Piece at 'to' position (pusher)
+            EncodedCell pusher = encoded_board[to_y][to_x];
+            bool pusher_is_circle = GameState::is_circle(pusher);
+            
+            // Piece at 'pushed_to' position (pushed)
+            EncodedCell pushed = encoded_board[pushed_y][pushed_x];
+            bool pushed_is_circle = GameState::is_circle(pushed);
+            
+            // Update for pusher moving from -> to
+            if(from_edge && !to_edge) {
+                if(pusher_is_circle) my_inactive_circle--;
+                else my_inactive_square--;
+            } else if(!from_edge && to_edge) {
+                if(pusher_is_circle) my_inactive_circle++;
+                else my_inactive_square++;
+            }
+            
+            // Update for pushed piece moving to -> pushed_to
+            if(to_edge && !pushed_edge) {
+                if(pushed_is_circle) my_inactive_circle--;
+                else my_inactive_square--;
+            } else if(!to_edge && pushed_edge) {
+                if(pushed_is_circle) my_inactive_circle++;
+                else my_inactive_square++;
+            }
+        }
+        // For flip and rotate, positions don't change, so no update needed
+        
+        my_info->inactive_circle_count = my_inactive_circle;
+        my_info->inactive_square_count = my_inactive_square;
+        
+        int count = (player == "circle") ? my_inactive_circle : my_inactive_square;
+        return wrt_self ? -count : +count;
+    }
+    
+    // Full computation when not using parent
+    int circle_count = compute_inactive_count(state, "circle");
+    int square_count = compute_inactive_count(state, "square");
+    
+    my_info->inactive_circle_count = circle_count;
+    my_info->inactive_square_count = square_count;
+    
+    int count = (player == "circle") ? circle_count : square_count;
+    return wrt_self ? -count : +count;
 }
 
 // Terminal result: check for win condition
@@ -819,7 +926,7 @@ Heuristics::HeuristicsInfo Heuristics::evaluate_position(const GameState& state,
     info.horizontal_attack_self_value = weights_.horizontal_attack_self * horizontal_attack(state, player, true);
     final_score += info.horizontal_attack_self_value;
     
-    info.inactive_self_value = weights_.inactive_self * inactive_pieces(state, player, true);
+    info.inactive_self_value = weights_.inactive_self * inactive_pieces(state, player, true, use_parent_heuristics, parent_info, last_move, &info);
     final_score += info.inactive_self_value;
     
     info.pieces_blocking_vertical_self_value = weights_.pieces_blocking_vertical_self * pieces_blocking_vertical_h(state, player, true, use_parent_heuristics, parent_info, last_move, &info);
@@ -846,7 +953,7 @@ Heuristics::HeuristicsInfo Heuristics::evaluate_position(const GameState& state,
     info.horizontal_attack_opp_value = weights_.horizontal_attack_opp * horizontal_attack(state, opponent, false);
     final_score += info.horizontal_attack_opp_value;
     
-    info.inactive_opp_value = weights_.inactive_opp * inactive_pieces(state, opponent, false);
+    info.inactive_opp_value = weights_.inactive_opp * inactive_pieces(state, opponent, false, use_parent_heuristics, parent_info, last_move, &info);
     final_score += info.inactive_opp_value;
 
     info.total_score = final_score;
