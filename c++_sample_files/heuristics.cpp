@@ -8,12 +8,127 @@
 
 Heuristics::Weights Heuristics::weights_{};
 
+// Initialize the global 2D scoring area weights matrix
+int Heuristics::scoring_area_weights_[2][12][12] = {};
+
+// Static initialization flag
+namespace {
+    bool scoring_weights_initialized = false;
+}
+
 const Heuristics::Weights& Heuristics::get_weights() {
     return weights_;
 }
 
 void Heuristics::set_weights(const Heuristics::Weights& new_weights) {
     weights_ = new_weights;
+}
+
+// Initialize scoring weights based on zones for both players
+void Heuristics::initialize_scoring_weights(int rows) {
+    const int w1 = 100000;  // Pieces in scoring row
+    const int w2 = 350;     // Zone 1: rows±0-1, cols 3-8
+    const int w3 = 175;     // Zone 2: rows±(-1)-1, cols 2-9
+    const int w4 = 80;      // Zone 3: rows±(-2)-2, cols 1-10
+    const int w5 = 4;       // Zone 4: rows±(-2)-2, cols 0-11
+    
+    // Initialize for circle (player_type = 0)
+    int target_row = top_score_row();
+    int direction = -1;
+    
+    // w1: Scoring row (columns 4-7)
+    for (int col = 4; col <= 7; col++) {
+        scoring_area_weights_[0][target_row][col] = std::max(scoring_area_weights_[0][target_row][col], w1);
+    }
+    
+    // w2: Zone 1 (rows±0-1, cols 3-8)
+    for (int col = 3; col <= 8; col++) {
+        for (int r = 0; r <= 1; r++) {
+            int check_row = target_row + direction * r;
+            if (check_row >= 0 && check_row < rows) {
+                scoring_area_weights_[0][check_row][col] = std::max(scoring_area_weights_[0][check_row][col], w2);
+            }
+        }
+    }
+    
+    // w3: Zone 2 (rows±(-1)-1, cols 2-9)
+    for (int col = 2; col <= 9; col++) {
+        for (int r = -1; r <= 1; r++) {
+            int check_row = target_row + direction * r;
+            if (check_row >= 0 && check_row < rows) {
+                scoring_area_weights_[0][check_row][col] = std::max(scoring_area_weights_[0][check_row][col], w3);
+            }
+        }
+    }
+    
+    // w4: Zone 3 (rows±(-2)-2, cols 1-10)
+    for (int col = 1; col <= 10; col++) {
+        for (int r = -2; r <= 2; r++) {
+            int check_row = target_row + direction * r;
+            if (check_row >= 0 && check_row < rows) {
+                scoring_area_weights_[0][check_row][col] = std::max(scoring_area_weights_[0][check_row][col], w4);
+            }
+        }
+    }
+    
+    // w5: Zone 4 (rows±(-2)-2, cols 0-11)
+    for (int col = 0; col <= 11; col++) {
+        for (int r = -2; r <= 2; r++) {
+            int check_row = target_row + direction * r;
+            if (check_row >= 0 && check_row < rows) {
+                scoring_area_weights_[0][check_row][col] = std::max(scoring_area_weights_[0][check_row][col], w5);
+            }
+        }
+    }
+    
+    // Initialize for square (player_type = 1)
+    target_row = bottom_score_row(rows);
+    direction = 1;
+    
+    // w1: Scoring row (columns 4-7)
+    for (int col = 4; col <= 7; col++) {
+        scoring_area_weights_[1][target_row][col] = std::max(scoring_area_weights_[1][target_row][col], w1);
+    }
+    
+    // w2: Zone 1 (rows±0-1, cols 3-8)
+    for (int col = 3; col <= 8; col++) {
+        for (int r = 0; r <= 1; r++) {
+            int check_row = target_row + direction * r;
+            if (check_row >= 0 && check_row < rows) {
+                scoring_area_weights_[1][check_row][col] = std::max(scoring_area_weights_[1][check_row][col], w2);
+            }
+        }
+    }
+    
+    // w3: Zone 2 (rows±(-1)-1, cols 2-9)
+    for (int col = 2; col <= 9; col++) {
+        for (int r = -1; r <= 1; r++) {
+            int check_row = target_row + direction * r;
+            if (check_row >= 0 && check_row < rows) {
+                scoring_area_weights_[1][check_row][col] = std::max(scoring_area_weights_[1][check_row][col], w3);
+            }
+        }
+    }
+    
+    // w4: Zone 3 (rows±(-2)-2, cols 1-10)
+    for (int col = 1; col <= 10; col++) {
+        for (int r = -2; r <= 2; r++) {
+            int check_row = target_row + direction * r;
+            if (check_row >= 0 && check_row < rows) {
+                scoring_area_weights_[1][check_row][col] = std::max(scoring_area_weights_[1][check_row][col], w4);
+            }
+        }
+    }
+    
+    // w5: Zone 4 (rows±(-2)-2, cols 0-11)
+    for (int col = 0; col <= 11; col++) {
+        for (int r = -2; r <= 2; r++) {
+            int check_row = target_row + direction * r;
+            if (check_row >= 0 && check_row < rows) {
+                scoring_area_weights_[1][check_row][col] = std::max(scoring_area_weights_[1][check_row][col], w5);
+            }
+        }
+    }
 }
 
 int Heuristics::max(int a, int b) {
@@ -310,101 +425,148 @@ int Heuristics::pieces_in_scoring_virgin_cols(const GameState& state, const std:
 }
 
 // Split scoring heuristic - Part 2: Zonewise weighted pieces (can be incrementally updated)
-int Heuristics::pieces_in_scoring_zonewise(const GameState& state, const std::string& player, bool wrt_self) {
+int Heuristics::pieces_in_scoring_zonewise(const GameState& state, const std::string& player, bool wrt_self, bool use_parent, HeuristicsInfo* parent_info, Move* last_move, HeuristicsInfo* my_info) {
+    // Initialize weights matrix on first call
+    if (!scoring_weights_initialized) {
+        initialize_scoring_weights(state.rows);
+        scoring_weights_initialized = true;
+    }
+
     const auto& encoded_board = state.encoded_board;
     int rows = state.rows;
-
-    int score = 0;
-    const int w1 = 100000;  // Pieces in scoring row
-    const int w2 = 350;     // Zone 1: rows±0-1, cols 3-8
-    const int w3 = 175;     // Zone 2: rows±(-1)-1, cols 2-9
-    const int w4 = 80;      // Zone 3: rows±(-2)-2, cols 1-10
-    const int w5 = 4;       // Zone 4: rows±(-2)-2, cols 0-11
 
     std::string player_to_check = player;
     if (!wrt_self) {
         player_to_check = get_opponent(player);
     }
 
-    int target_row, direction;
-    if (player_to_check == "circle") {
-        target_row = top_score_row();
-        direction = -1;
-    } else {
-        target_row = bottom_score_row(rows);
-        direction = 1;
-    }
+    // Determine which player's weight matrix to use
+    int player_type = (player_to_check == "circle") ? 0 : 1;
 
-    std::map<int, std::map<int, int>> val;
+    // Try to use incremental update if parent info is available
+    if (use_parent && parent_info != nullptr && last_move != nullptr) {
+        // Check if we already computed this value
+        if (my_info != nullptr) {
+            int cached_val = (player_to_check == "circle") ? my_info->pieces_in_scoring_zonewise_circle : my_info->pieces_in_scoring_zonewise_square;
+            if (cached_val != -1) {
+                return wrt_self ? cached_val : -cached_val;
+            }
+        }
 
-    // w1: Scoring row (columns 4-7)
-    for (int col = 4; col <= 7; col++) {
-        EncodedCell cell = encoded_board[target_row][col];
-        if (GameState::is_empty(cell)) continue;
-        if (GameState::is_owner(cell, player_to_check)) {
-            val[target_row][col] = max(val[target_row][col], w1);
+        // Get parent's cached value
+        int parent_circle_val = parent_info->pieces_in_scoring_zonewise_circle;
+        int parent_square_val = parent_info->pieces_in_scoring_zonewise_square;
+
+        // If parent has valid cached values, do incremental update
+        if (parent_circle_val != -1 && parent_square_val != -1) {
+            int score_circle = parent_circle_val;
+            int score_square = parent_square_val;
+
+            if (last_move->action == "move") {
+                // Remove weight from old position, add weight at new position
+                int from_x = last_move->from[0];
+                int from_y = last_move->from[1];
+                int to_x = last_move->to[0];
+                int to_y = last_move->to[1];
+
+                EncodedCell from_cell = encoded_board[from_y][from_x]; // This is now empty
+                EncodedCell to_cell = encoded_board[to_y][to_x]; // This has the moved piece
+
+                // Determine which player moved
+                std::string moved_player = GameState::is_owner(to_cell, "circle") ? "circle" : "square";
+                int moved_player_type = (moved_player == "circle") ? 0 : 1;
+
+                // Subtract old weight and add new weight
+                int old_weight = scoring_area_weights_[moved_player_type][from_y][from_x];
+                int new_weight = scoring_area_weights_[moved_player_type][to_y][to_x];
+
+                if (moved_player == "circle") {
+                    score_circle = score_circle - old_weight + new_weight;
+                } else {
+                    score_square = score_square - old_weight + new_weight;
+                }
+            }
+            else if (last_move->action == "push") {
+                // Update weights for all affected positions
+                int from_x = last_move->from[0];
+                int from_y = last_move->from[1];
+                int to_x = last_move->to[0];
+                int to_y = last_move->to[1];
+                int pushed_to_x = last_move->pushed_to[0];
+                int pushed_to_y = last_move->pushed_to[1];
+
+                // Get cells at current positions
+                EncodedCell to_cell = encoded_board[to_y][to_x]; // Pusher piece
+                EncodedCell pushed_cell = encoded_board[pushed_to_y][pushed_to_x]; // Pushed piece
+
+                // Determine players
+                std::string pusher_player = GameState::is_owner(to_cell, "circle") ? "circle" : "square";
+                std::string pushed_player = GameState::is_owner(pushed_cell, "circle") ? "circle" : "square";
+
+                int pusher_type = (pusher_player == "circle") ? 0 : 1;
+                int pushed_type = (pushed_player == "circle") ? 0 : 1;
+
+                // Update pusher position: from -> to
+                int pusher_old_weight = scoring_area_weights_[pusher_type][from_y][from_x];
+                int pusher_new_weight = scoring_area_weights_[pusher_type][to_y][to_x];
+
+                // Update pushed piece position: to -> pushed_to
+                int pushed_old_weight = scoring_area_weights_[pushed_type][to_y][to_x];
+                int pushed_new_weight = scoring_area_weights_[pushed_type][pushed_to_y][pushed_to_x];
+
+                if (pusher_player == "circle") {
+                    score_circle = score_circle - pusher_old_weight + pusher_new_weight;
+                } else {
+                    score_square = score_square - pusher_old_weight + pusher_new_weight;
+                }
+
+                if (pushed_player == "circle") {
+                    score_circle = score_circle - pushed_old_weight + pushed_new_weight;
+                } else {
+                    score_square = score_square - pushed_old_weight + pushed_new_weight;
+                }
+            }
+            else if (last_move->action == "flip" || last_move->action == "rotate") {
+                // Flip/rotate doesn't change position, so weights remain the same
+                // Just copy parent values (already done above)
+            }
+
+            // Store computed values
+            if (my_info != nullptr) {
+                my_info->pieces_in_scoring_zonewise_circle = score_circle;
+                my_info->pieces_in_scoring_zonewise_square = score_square;
+            }
+
+            // Return appropriate score
+            int score = (player_to_check == "circle") ? score_circle : score_square;
+            return wrt_self ? score : -score;
         }
     }
 
-    // w2: Zone 1 (rows±0-1, cols 3-8)
-    for (int col = 3; col <= 8; col++) {
-        for (int r = 0; r <= 1; r++) {
-            int check_row = target_row + direction * r;
-            if (check_row < 0 || check_row >= rows) continue;
-            EncodedCell cell = encoded_board[check_row][col];
+    // Full computation (no incremental update available)
+    int score_circle = 0;
+    int score_square = 0;
+
+    for (int row = 0; row < rows; row++) {
+        for (int col = 0; col < state.cols; col++) {
+            EncodedCell cell = encoded_board[row][col];
             if (GameState::is_empty(cell)) continue;
-            if (GameState::is_owner(cell, player_to_check)) {
-                val[check_row][col] = max(val[check_row][col], w2);
+            
+            if (GameState::is_owner(cell, "circle")) {
+                score_circle += scoring_area_weights_[0][row][col];
+            } else if (GameState::is_owner(cell, "square")) {
+                score_square += scoring_area_weights_[1][row][col];
             }
         }
     }
 
-    // w3: Zone 2 (rows±(-1)-1, cols 2-9)
-    for (int col = 2; col <= 9; col++) {
-        for (int r = -1; r <= 1; r++) {
-            int check_row = target_row + direction * r;
-            if (check_row < 0 || check_row >= rows) continue;
-            EncodedCell cell = encoded_board[check_row][col];
-            if (GameState::is_empty(cell)) continue;
-            if (GameState::is_owner(cell, player_to_check)) {
-                val[check_row][col] = max(val[check_row][col], w3);
-            }
-        }
+    // Store computed values for future incremental updates
+    if (my_info != nullptr) {
+        my_info->pieces_in_scoring_zonewise_circle = score_circle;
+        my_info->pieces_in_scoring_zonewise_square = score_square;
     }
 
-    // w4: Zone 3 (rows±(-2)-2, cols 1-10)
-    for (int col = 1; col <= 10; col++) {
-        for (int r = -2; r <= 2; r++) {
-            int check_row = target_row + direction * r;
-            if (check_row < 0 || check_row >= rows) continue;
-            EncodedCell cell = encoded_board[check_row][col];
-            if (GameState::is_empty(cell)) continue;
-            if (GameState::is_owner(cell, player_to_check)) {
-                val[check_row][col] = max(val[check_row][col], w4);
-            }
-        }
-    }
-
-    // w5: Zone 4 (rows±(-2)-2, cols 0-11)
-    for (int col = 0; col <= 11; col++) {
-        for (int r = -2; r <= 2; r++) {
-            int check_row = target_row + direction * r;
-            if (check_row < 0 || check_row >= rows) continue;
-            EncodedCell cell = encoded_board[check_row][col];
-            if (GameState::is_empty(cell)) continue;
-            if (GameState::is_owner(cell, player_to_check)) {
-                val[check_row][col] = max(val[check_row][col], w5);
-            }
-        }
-    }
-
-    // Sum all zone values
-    for (auto &e1 : val) {
-        for (auto &e2 : e1.second) {
-            score += e2.second;
-        }
-    }
-
+    int score = (player_to_check == "circle") ? score_circle : score_square;
     return wrt_self ? score : -score;
 }
 
@@ -920,7 +1082,7 @@ Heuristics::HeuristicsInfo Heuristics::evaluate_position(const GameState& state,
     info.vertical_push_value = weights_.vertical_push * vertical_push_h(state, player, true, use_parent_heuristics, parent_info, last_move, &info);
     final_score += info.vertical_push_value;
     
-    info.pieces_in_scoring_attack_value = weights_.pieces_in_scoring_attack * (pieces_in_scoring_virgin_cols(state, player, true) + pieces_in_scoring_zonewise(state, player, true));
+    info.pieces_in_scoring_attack_value = weights_.pieces_in_scoring_attack * (pieces_in_scoring_virgin_cols(state, player, true) + pieces_in_scoring_zonewise(state, player, true, use_parent_heuristics, parent_info, last_move, &info));
     final_score += info.pieces_in_scoring_attack_value;
     
     info.horizontal_attack_self_value = weights_.horizontal_attack_self * horizontal_attack(state, player, true);
@@ -941,7 +1103,7 @@ Heuristics::HeuristicsInfo Heuristics::evaluate_position(const GameState& state,
     // Opponent heuristics
     std::string opponent = get_opponent(player);
     
-    info.pieces_in_scoring_defense_value = weights_.pieces_in_scoring_defense * (pieces_in_scoring_virgin_cols(state, player, false) + pieces_in_scoring_zonewise(state, player, false));
+    info.pieces_in_scoring_defense_value = weights_.pieces_in_scoring_defense * (pieces_in_scoring_virgin_cols(state, player, false) + pieces_in_scoring_zonewise(state, player, false, use_parent_heuristics, parent_info, last_move, &info));
     final_score += info.pieces_in_scoring_defense_value;
     
     info.pieces_blocking_vertical_opp_value = weights_.pieces_blocking_vertical_opp * pieces_blocking_vertical_h(state, opponent, false, use_parent_heuristics, parent_info, last_move, &info);
