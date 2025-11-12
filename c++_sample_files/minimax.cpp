@@ -60,31 +60,50 @@ void print_principal_variation(const std::vector<Move>& pv, const std::string& s
 }
 
 
+// Structure to hold ordered moves and their pre-computed heuristics
+struct OrderedMovesWithHeuristics {
+    std::vector<Move> moves;
+    std::vector<Heuristics::HeuristicsInfo> heuristics;
+};
+
 // Order moves by heuristic evaluation to improve alpha-beta pruning efficiency
-std::vector<Move> order_moves_by_heuristic(GameState& state, const std::vector<Move>& moves,
-                                           const std::string& original_player, bool maximizing_player) {
-    std::vector<MinimaxResult> move_evaluations;
+// Returns both the sorted moves AND their heuristics to avoid recomputation
+OrderedMovesWithHeuristics order_moves_by_heuristic(GameState& state, const std::vector<Move>& moves,
+                                           const std::string& original_player, bool maximizing_player,
+                                           Heuristics::HeuristicsInfo* parent_heuristics) {
+    struct MoveWithHeuristic {
+        double value;
+        Move move;
+        Heuristics::HeuristicsInfo heuristics;
+    };
+
+    std::vector<MoveWithHeuristic> move_evaluations;
     move_evaluations.reserve(moves.size());
 
     for (const Move& move : moves) {
         GameState::UndoInfo undo = state.make_move(move);
-        double value = Heuristics::evaluate_position(state, original_player, false).total_score;
+        // Use incremental heuristics (same pattern as in minimax_alpha_beta line 156)
+        // Need to cast away const for the move pointer parameter
+        Move* move_ptr = const_cast<Move*>(&move);
+        Heuristics::HeuristicsInfo heuristics = Heuristics::evaluate_position(state, original_player, true, parent_heuristics, move_ptr);
         state.undo_move(move, undo);
-        move_evaluations.emplace_back(value, move);
+        move_evaluations.push_back({heuristics.total_score, move, heuristics});
     }
-    
+
     // Sort: descending for max (best first), ascending for min (worst for opponent first)
-    std::sort(move_evaluations.begin(), move_evaluations.end(), 
-              [maximizing_player](const MinimaxResult& a, const MinimaxResult& b) {
+    std::sort(move_evaluations.begin(), move_evaluations.end(),
+              [maximizing_player](const MoveWithHeuristic& a, const MoveWithHeuristic& b) {
                   return maximizing_player ? (a.value > b.value) : (a.value < b.value);
               });
-    
-    std::vector<Move> sorted_moves;
-    sorted_moves.reserve(move_evaluations.size());
-    for (const MinimaxResult& eval : move_evaluations) {
-        sorted_moves.push_back(eval.best_move);
+
+    OrderedMovesWithHeuristics result;
+    result.moves.reserve(move_evaluations.size());
+    result.heuristics.reserve(move_evaluations.size());
+    for (const MoveWithHeuristic& eval : move_evaluations) {
+        result.moves.push_back(eval.move);
+        result.heuristics.push_back(eval.heuristics);
     }
-    return sorted_moves;
+    return result;
 }
 
 // Minimax with alpha-beta pruning - uses make_move/undo_move for efficiency
@@ -137,15 +156,23 @@ MinimaxResult minimax_alpha_beta(GameState& state, int depth, double alpha, doub
     }
 
     // Order moves for better pruning, or shuffle if depth is shallow
-    std::vector<Move> moves_to_explore = (depth >= MIN_DEPTH_FOR_ORDERING && ENABLE_MOVE_ORDERING)
-        ? order_moves_by_heuristic(state, legal_moves, original_player, maximizing_player)
-        : ([&legal_moves]() {
-            std::shuffle(legal_moves.begin(), legal_moves.end(), std::mt19937{std::random_device{}()});
-            return legal_moves;
-          })();
+    // When ordering, also cache the heuristics to avoid recomputation
+    std::vector<Move> moves_to_explore;
+    std::vector<Heuristics::HeuristicsInfo> cached_heuristics;
+    bool use_cached_heuristics = false;
+
+    if (depth >= MIN_DEPTH_FOR_ORDERING && ENABLE_MOVE_ORDERING) {
+        OrderedMovesWithHeuristics ordered = order_moves_by_heuristic(state, legal_moves, original_player, maximizing_player, parent_heuristics);
+        moves_to_explore = std::move(ordered.moves);
+        cached_heuristics = std::move(ordered.heuristics);
+        use_cached_heuristics = true;
+    } else {
+        moves_to_explore = legal_moves;
+        std::shuffle(moves_to_explore.begin(), moves_to_explore.end(), std::mt19937{std::random_device{}()});
+    }
 
     Move best_move = moves_to_explore.back();
-    double best_value = maximizing_player ? -std::numeric_limits<double>::infinity() 
+    double best_value = maximizing_player ? -std::numeric_limits<double>::infinity()
                                           : std::numeric_limits<double>::infinity();
     double original_alpha = alpha;  // Save for TT entry type determination
     std::vector<Move> best_pv;  // Track the principal variation
@@ -153,10 +180,20 @@ MinimaxResult minimax_alpha_beta(GameState& state, int depth, double alpha, doub
     for (size_t i = 0; i < moves_to_explore.size(); ++i) {
         Move move = moves_to_explore[i];
         GameState::UndoInfo undo = state.make_move(move);
-        Heuristics::HeuristicsInfo my_heuristics = Heuristics::evaluate_position(state, original_player, true, parent_heuristics, &move);
+
+        // CRITICAL OPTIMIZATION: Reuse cached heuristics from move ordering instead of recomputing!
+        Heuristics::HeuristicsInfo my_heuristics;
+        if (use_cached_heuristics) {
+            // Use the pre-computed heuristics from ordering - no recomputation needed!
+            my_heuristics = cached_heuristics[i];
+        } else {
+            // Compute fresh (only when we didn't do move ordering)
+            my_heuristics = Heuristics::evaluate_position(state, original_player, true, parent_heuristics, &move);
+        }
+
         // Recursive call with TT parameter passed through
         // allow_tt_cutoff=true for all recursive calls (only root is false)
-        MinimaxResult result = minimax_alpha_beta(state, depth - 1, alpha, beta, 
+        MinimaxResult result = minimax_alpha_beta(state, depth - 1, alpha, beta,
                                                   !maximizing_player, original_player, tt, true, move_to_ignore, &my_heuristics);
         state.undo_move(move, undo);
 
