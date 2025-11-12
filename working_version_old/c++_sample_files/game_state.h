@@ -65,9 +65,6 @@ struct HeuristicCache {
 };
 */
 
-// Forward declaration for TranspositionTable
-class TranspositionTable;
-
 // ---- Game State representation ----
 struct GameState {
     std::vector<std::vector<std::map<std::string, std::string>>> board;
@@ -76,17 +73,11 @@ struct GameState {
     int rows, cols;
     std::vector<int> score_cols;
 
-    // Incremental Zobrist hash - updated by make_move/undo_move
-    uint64_t zobrist_hash;
-    bool hash_initialized;
-    const TranspositionTable* tt_for_hashing;  // Non-owning pointer for hash updates
-
     // HeuristicCache heuristic_cache;  // COMMENTED OUT: Not used, just overhead
 
     GameState(const std::vector<std::vector<std::map<std::string, std::string>>>& b,
               const std::string& player, int r, int c, const std::vector<int>& sc)
-        : board(b), current_player(player), rows(r), cols(c), score_cols(sc),
-          zobrist_hash(0), hash_initialized(false), tt_for_hashing(nullptr) {
+        : board(b), current_player(player), rows(r), cols(c), score_cols(sc) {
         encode_board();
     }
 
@@ -100,7 +91,6 @@ struct GameState {
         EncodedCell to_encoded;
         EncodedCell pushed_encoded;
         std::string prev_player;
-        uint64_t prev_hash;  // Store previous hash for undo
         bool valid;  // Whether the move was actually applied
     };
 
@@ -108,14 +98,6 @@ struct GameState {
     void apply_move(const Move& move);
     std::vector<Move> get_legal_moves() const;
     bool is_terminal() const;
-
-    // Incremental Zobrist hash management
-    void initialize_hash(const TranspositionTable* tt);
-    uint64_t get_hash() const { return zobrist_hash; }
-    
-    // Inline for performance - these are called frequently in hot path
-    inline void update_hash_for_cell_change(int row, int col, EncodedCell old_piece, EncodedCell new_piece);
-    inline void update_hash_for_player_change();
 
     // Incremental heuristic cache management - COMMENTED OUT (not used)
     // void initialize_heuristic_cache();

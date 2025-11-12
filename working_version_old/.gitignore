@@ -1,0 +1,12 @@
+.DS_Store
+*.pyc
+*.pyc
+*.pyc
+*.pyc
+*.pyc
+*.pyc
+*.pyc
+/.venv
+.venv/bin/activate
+*.csh
+/.venv

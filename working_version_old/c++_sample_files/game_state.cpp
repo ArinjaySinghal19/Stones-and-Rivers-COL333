@@ -1,5 +1,4 @@
 #include "game_state.h"
-#include "transposition_table.h"
 #include <algorithm>
 #include <queue>
 #include <cmath>
@@ -103,63 +102,6 @@ void GameState::encode_board() {
             encoded_board[y][x] = encode_cell(board[y][x]);
         }
     }
-}
-
-// ---- Incremental Zobrist Hash Implementation ----
-
-// Initialize hash from scratch using the transposition table's Zobrist values
-void GameState::initialize_hash(const TranspositionTable* tt) {
-    if (!tt) {
-        hash_initialized = false;
-        return;
-    }
-    
-    tt_for_hashing = tt;
-    zobrist_hash = 0;
-    
-    // XOR in each piece on the board (including empty cells with piece=0)
-    for (int row = 0; row < rows && row < 16; ++row) {
-        for (int col = 0; col < cols && col < 12; ++col) {
-            EncodedCell piece = encoded_board[row][col];
-            if (piece < 7) {  // Valid piece encoding (0-6)
-                zobrist_hash ^= tt->get_zobrist_piece(row, col, piece);
-            }
-        }
-    }
-    
-    // XOR player to move
-    if (current_player == "square") {
-        zobrist_hash ^= tt->get_zobrist_player();
-    }
-    
-    hash_initialized = true;
-}
-
-// Incrementally update hash when a cell changes
-void GameState::update_hash_for_cell_change(int row, int col, EncodedCell old_piece, EncodedCell new_piece) {
-    if (!hash_initialized) {
-        return;  // Hash not initialized, can't update incrementally
-    }
-    
-    // XOR out the old piece (including empty=0)
-    if (old_piece < 7) {
-        zobrist_hash ^= tt_for_hashing->get_zobrist_piece(row, col, old_piece);
-    }
-    
-    // XOR in the new piece (including empty=0)
-    if (new_piece < 7) {
-        zobrist_hash ^= tt_for_hashing->get_zobrist_piece(row, col, new_piece);
-    }
-}
-
-// Update hash when player changes
-void GameState::update_hash_for_player_change() {
-    if (!hash_initialized) {
-        return;  // Hash not initialized, can't update incrementally
-    }
-    
-    // XOR the player bit (toggles between square and circle)
-    zobrist_hash ^= tt_for_hashing->get_zobrist_player();
 }
 
 // Helper to update a single cell's encoding
@@ -322,12 +264,6 @@ ValidTargets compute_valid_targets(
 GameState GameState::copy() const {
     GameState copied(board, current_player, rows, cols, score_cols);
     copied.encoded_board = encoded_board;  // Copy encoded board as well
-    
-    // Copy hash state
-    copied.zobrist_hash = zobrist_hash;
-    copied.hash_initialized = hash_initialized;
-    copied.tt_for_hashing = tt_for_hashing;
-    
     return copied;
 }
 
@@ -673,7 +609,6 @@ GameState::UndoInfo GameState::make_move(const Move& move) {
     UndoInfo undo;
     undo.valid = true;
     undo.prev_player = current_player;
-    undo.prev_hash = zobrist_hash;  // Save current hash for undo
 
     int fx = move.from[0], fy = move.from[1];
     int tx = move.to[0], ty = move.to[1];
@@ -690,28 +625,18 @@ GameState::UndoInfo GameState::make_move(const Move& move) {
             // Simple move: from -> to, from becomes empty
             board[ty][tx] = board[fy][fx];
             board[fy][fx].clear();
-            
-            // Incremental hash update
-            update_hash_for_cell_change(fy, fx, undo.from_encoded, 0);
-            update_hash_for_cell_change(ty, tx, undo.to_encoded, undo.from_encoded);
-            
             encoded_board[ty][tx] = undo.from_encoded;
             encoded_board[fy][fx] = 0;
         } else {
             // Move with push (pushed_to is provided)
             int ptx = move.pushed_to[0], pty = move.pushed_to[1];
-            undo.pushed_cell = board[pty][ptx];  // Save what's at pushed position
-            undo.pushed_encoded = encoded_board[pty][ptx];  // Save encoded value
+            undo.pushed_cell = std::map<std::string, std::string>(); // empty
+            undo.pushed_encoded = 0;
 
             // from -> to, to -> pushed_to, from becomes empty
             board[pty][ptx] = board[ty][tx];
             board[ty][tx] = board[fy][fx];
             board[fy][fx].clear();
-
-            // Incremental hash update (3 cells change)
-            update_hash_for_cell_change(fy, fx, undo.from_encoded, 0);
-            update_hash_for_cell_change(ty, tx, undo.to_encoded, undo.from_encoded);
-            update_hash_for_cell_change(pty, ptx, undo.pushed_encoded, undo.to_encoded);
 
             encoded_board[pty][ptx] = undo.to_encoded;
             encoded_board[ty][tx] = undo.from_encoded;
@@ -720,8 +645,8 @@ GameState::UndoInfo GameState::make_move(const Move& move) {
     }
     else if (move.action == "push") {
         int px = move.pushed_to[0], py = move.pushed_to[1];
-        undo.pushed_cell = board[py][px];  // Save what's at pushed position
-        undo.pushed_encoded = encoded_board[py][px];  // Save encoded value
+        undo.pushed_cell = std::map<std::string, std::string>(); // empty
+        undo.pushed_encoded = 0;
 
         bool was_river = (board[fy][fx].at("side") == "river");
 
@@ -737,15 +662,8 @@ GameState::UndoInfo GameState::make_move(const Move& move) {
         }
 
         // Update encoded board
-        EncodedCell new_tx_encoded = encode_cell(board[ty][tx]);
-        
-        // Incremental hash update (3 cells change, and potentially the piece type at tx)
-        update_hash_for_cell_change(fy, fx, undo.from_encoded, 0);
-        update_hash_for_cell_change(ty, tx, undo.to_encoded, new_tx_encoded);
-        update_hash_for_cell_change(py, px, undo.pushed_encoded, undo.to_encoded);
-        
         encoded_board[py][px] = undo.to_encoded;
-        encoded_board[ty][tx] = new_tx_encoded;
+        encoded_board[ty][tx] = encode_cell(board[ty][tx]);
         encoded_board[fy][fx] = 0;
     }
     else if (move.action == "flip") {
@@ -759,31 +677,18 @@ GameState::UndoInfo GameState::make_move(const Move& move) {
             board[fy][fx]["side"] = "stone";
             board[fy][fx].erase("orientation");
         }
-        
-        EncodedCell new_encoded = encode_cell(board[fy][fx]);
-        
-        // Incremental hash update (1 cell changes)
-        update_hash_for_cell_change(fy, fx, undo.from_encoded, new_encoded);
-        
-        encoded_board[fy][fx] = new_encoded;
+        encoded_board[fy][fx] = encode_cell(board[fy][fx]);
     }
     else if (move.action == "rotate") {
         // Rotate river orientation
         std::string current_ori = board[fy][fx].at("orientation");
         std::string new_ori = (current_ori == "horizontal") ? "vertical" : "horizontal";
         board[fy][fx]["orientation"] = new_ori;
-        
-        EncodedCell new_encoded = encode_cell(board[fy][fx]);
-        
-        // Incremental hash update (1 cell changes)
-        update_hash_for_cell_change(fy, fx, undo.from_encoded, new_encoded);
-        
-        encoded_board[fy][fx] = new_encoded;
+        encoded_board[fy][fx] = encode_cell(board[fy][fx]);
     }
 
-    // Switch player and update hash
+    // Switch player
     current_player = get_opponent(current_player);
-    update_hash_for_player_change();
 
     return undo;
 }
@@ -796,9 +701,6 @@ void GameState::undo_move(const Move& move, const UndoInfo& undo_info) {
 
     // Restore player
     current_player = undo_info.prev_player;
-    
-    // Restore hash (simpler and more reliable than trying to reverse incremental updates)
-    zobrist_hash = undo_info.prev_hash;
 
     if (move.action == "move") {
         if (move.pushed_to.empty()) {

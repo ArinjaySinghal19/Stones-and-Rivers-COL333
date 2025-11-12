@@ -126,23 +126,6 @@ public:
      */
     uint64_t compute_hash(const GameState& state) const;
 
-    /**
-     * Get Zobrist value for a specific piece at a specific position
-     * Used for incremental hash updates in make_move/undo_move
-     * Inlined for performance in hot path
-     */
-    inline uint64_t get_zobrist_piece(int row, int col, EncodedCell piece) const {
-        // Assume caller has already validated bounds (make_move ensures this)
-        return zobrist_pieces_[row][col][piece];
-    }
-
-    /**
-     * Get Zobrist value for player to move
-     */
-    inline uint64_t get_zobrist_player() const {
-        return zobrist_player_;
-    }
-
 private:
     std::vector<TTEntry> table_;  // Hash table (fixed size, replacement strategy)
     size_t table_size_;           // Number of entries

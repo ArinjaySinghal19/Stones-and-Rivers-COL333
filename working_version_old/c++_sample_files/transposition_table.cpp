@@ -75,22 +75,8 @@ uint64_t TranspositionTable::compute_hash(const GameState& state) const {
 
 // Probe table for cached position
 bool TranspositionTable::probe(const GameState& state, int depth, double alpha, double beta, double& value) const {
-    // Use incremental hash if available, otherwise compute from scratch
-    uint64_t hash;
-    if (state.hash_initialized && state.tt_for_hashing == this) {
-        hash = state.zobrist_hash;
-        
-        // DEBUG: Verify incremental hash is correct
-        #ifdef VERIFY_INCREMENTAL_HASH
-        uint64_t computed = compute_hash(state);
-        if (hash != computed) {
-            std::cerr << "ERROR: Incremental hash mismatch! Inc=" << hash << " Computed=" << computed << std::endl;
-        }
-        #endif
-    } else {
-        hash = compute_hash(state);
-    }
-    
+    // Compute hash for this position
+    uint64_t hash = compute_hash(state);
     size_t index = get_index(hash);
     
     const TTEntry& entry = table_[index];
@@ -148,14 +134,7 @@ bool TranspositionTable::probe(const GameState& state, int depth, double alpha, 
 
 // Store position evaluation in table
 void TranspositionTable::store(const GameState& state, int depth, double value, EntryType type) {
-    // Use incremental hash if available, otherwise compute from scratch
-    uint64_t hash;
-    if (state.hash_initialized && state.tt_for_hashing == this) {
-        hash = state.zobrist_hash;
-    } else {
-        hash = compute_hash(state);
-    }
-    
+    uint64_t hash = compute_hash(state);
     size_t index = get_index(hash);
     
     TTEntry& entry = table_[index];

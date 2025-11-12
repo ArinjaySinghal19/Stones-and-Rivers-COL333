@@ -1,0 +1,192 @@
+[
+  {
+    "iteration": 1,
+    "fitness": 0.3845275821965076,
+    "best_fitness": 0.3845275821965076,
+    "weights": {
+      "vertical_push": 4.299335803923478,
+      "pieces_in_scoring_attack": 17.197343215693913,
+      "horizontal_attack_self": 4.299335803923478,
+      "inactive_self": 21.49667901961739,
+      "pieces_blocking_vertical_self": 64.49003705885217,
+      "horizontal_base_self": 4.299335803923478,
+      "horizontal_negative_self": 8.598671607846956,
+      "pieces_in_scoring_defense": 17.197343215693913,
+      "pieces_blocking_vertical_opp": 64.49003705885217,
+      "horizontal_base_opp": 4.299335803923478,
+      "horizontal_attack_opp": 4.299335803923478,
+      "inactive_opp": 21.49667901961739
+    }
+  },
+  {
+    "iteration": 2,
+    "fitness": 0.3845275821965076,
+    "best_fitness": 0.3845275821965076,
+    "weights": {
+      "vertical_push": 4.299335803923478,
+      "pieces_in_scoring_attack": 17.197343215693913,
+      "horizontal_attack_self": 4.299335803923478,
+      "inactive_self": 21.49667901961739,
+      "pieces_blocking_vertical_self": 64.49003705885217,
+      "horizontal_base_self": 4.299335803923478,
+      "horizontal_negative_self": 8.598671607846956,
+      "pieces_in_scoring_defense": 17.197343215693913,
+      "pieces_blocking_vertical_opp": 64.49003705885217,
+      "horizontal_base_opp": 4.299335803923478,
+      "horizontal_attack_opp": 4.299335803923478,
+      "inactive_opp": 21.49667901961739
+    }
+  },
+  {
+    "iteration": 3,
+    "fitness": 0.3845275821965076,
+    "best_fitness": 0.3845275821965076,
+    "weights": {
+      "vertical_push": 4.299335803923478,
+      "pieces_in_scoring_attack": 17.197343215693913,
+      "horizontal_attack_self": 4.299335803923478,
+      "inactive_self": 21.49667901961739,
+      "pieces_blocking_vertical_self": 64.49003705885217,
+      "horizontal_base_self": 4.299335803923478,
+      "horizontal_negative_self": 8.598671607846956,
+      "pieces_in_scoring_defense": 17.197343215693913,
+      "pieces_blocking_vertical_opp": 64.49003705885217,
+      "horizontal_base_opp": 4.299335803923478,
+      "horizontal_attack_opp": 4.299335803923478,
+      "inactive_opp": 21.49667901961739
+    }
+  },
+  {
+    "iteration": 4,
+    "fitness": 0.3845275821965076,
+    "best_fitness": 0.3845275821965076,
+    "weights": {
+      "vertical_push": 4.299335803923478,
+      "pieces_in_scoring_attack": 17.197343215693913,
+      "horizontal_attack_self": 4.299335803923478,
+      "inactive_self": 21.49667901961739,
+      "pieces_blocking_vertical_self": 64.49003705885217,
+      "horizontal_base_self": 4.299335803923478,
+      "horizontal_negative_self": 8.598671607846956,
+      "pieces_in_scoring_defense": 17.197343215693913,
+      "pieces_blocking_vertical_opp": 64.49003705885217,
+      "horizontal_base_opp": 4.299335803923478,
+      "horizontal_attack_opp": 4.299335803923478,
+      "inactive_opp": 21.49667901961739
+    }
+  },
+  {
+    "iteration": 5,
+    "fitness": 0.3845275821965076,
+    "best_fitness": 0.3845275821965076,
+    "weights": {
+      "vertical_push": 4.299335803923478,
+      "pieces_in_scoring_attack": 17.197343215693913,
+      "horizontal_attack_self": 4.299335803923478,
+      "inactive_self": 21.49667901961739,
+      "pieces_blocking_vertical_self": 64.49003705885217,
+      "horizontal_base_self": 4.299335803923478,
+      "horizontal_negative_self": 8.598671607846956,
+      "pieces_in_scoring_defense": 17.197343215693913,
+      "pieces_blocking_vertical_opp": 64.49003705885217,
+      "horizontal_base_opp": 4.299335803923478,
+      "horizontal_attack_opp": 4.299335803923478,
+      "inactive_opp": 21.49667901961739
+    }
+  },
+  {
+    "iteration": 6,
+    "fitness": 0.3845275821965076,
+    "best_fitness": 0.3845275821965076,
+    "weights": {
+      "vertical_push": 4.299335803923478,
+      "pieces_in_scoring_attack": 17.197343215693913,
+      "horizontal_attack_self": 4.299335803923478,
+      "inactive_self": 21.49667901961739,
+      "pieces_blocking_vertical_self": 64.49003705885217,
+      "horizontal_base_self": 4.299335803923478,
+      "horizontal_negative_self": 8.598671607846956,
+      "pieces_in_scoring_defense": 17.197343215693913,
+      "pieces_blocking_vertical_opp": 64.49003705885217,
+      "horizontal_base_opp": 4.299335803923478,
+      "horizontal_attack_opp": 4.299335803923478,
+      "inactive_opp": 21.49667901961739
+    }
+  },
+  {
+    "iteration": 7,
+    "fitness": 0.3845275821965076,
+    "best_fitness": 0.3845275821965076,
+    "weights": {
+      "vertical_push": 4.299335803923478,
+      "pieces_in_scoring_attack": 17.197343215693913,
+      "horizontal_attack_self": 4.299335803923478,
+      "inactive_self": 21.49667901961739,
+      "pieces_blocking_vertical_self": 64.49003705885217,
+      "horizontal_base_self": 4.299335803923478,
+      "horizontal_negative_self": 8.598671607846956,
+      "pieces_in_scoring_defense": 17.197343215693913,
+      "pieces_blocking_vertical_opp": 64.49003705885217,
+      "horizontal_base_opp": 4.299335803923478,
+      "horizontal_attack_opp": 4.299335803923478,
+      "inactive_opp": 21.49667901961739
+    }
+  },
+  {
+    "iteration": 8,
+    "fitness": 0.3845275821965076,
+    "best_fitness": 0.3845275821965076,
+    "weights": {
+      "vertical_push": 4.299335803923478,
+      "pieces_in_scoring_attack": 17.197343215693913,
+      "horizontal_attack_self": 4.299335803923478,
+      "inactive_self": 21.49667901961739,
+      "pieces_blocking_vertical_self": 64.49003705885217,
+      "horizontal_base_self": 4.299335803923478,
+      "horizontal_negative_self": 8.598671607846956,
+      "pieces_in_scoring_defense": 17.197343215693913,
+      "pieces_blocking_vertical_opp": 64.49003705885217,
+      "horizontal_base_opp": 4.299335803923478,
+      "horizontal_attack_opp": 4.299335803923478,
+      "inactive_opp": 21.49667901961739
+    }
+  },
+  {
+    "iteration": 9,
+    "fitness": 0.3845275821965076,
+    "best_fitness": 0.3845275821965076,
+    "weights": {
+      "vertical_push": 4.299335803923478,
+      "pieces_in_scoring_attack": 17.197343215693913,
+      "horizontal_attack_self": 4.299335803923478,
+      "inactive_self": 21.49667901961739,
+      "pieces_blocking_vertical_self": 64.49003705885217,
+      "horizontal_base_self": 4.299335803923478,
+      "horizontal_negative_self": 8.598671607846956,
+      "pieces_in_scoring_defense": 17.197343215693913,
+      "pieces_blocking_vertical_opp": 64.49003705885217,
+      "horizontal_base_opp": 4.299335803923478,
+      "horizontal_attack_opp": 4.299335803923478,
+      "inactive_opp": 21.49667901961739
+    }
+  },
+  {
+    "iteration": 10,
+    "fitness": 0.3845275821965076,
+    "best_fitness": 0.3845275821965076,
+    "weights": {
+      "vertical_push": 4.299335803923478,
+      "pieces_in_scoring_attack": 17.197343215693913,
+      "horizontal_attack_self": 4.299335803923478,
+      "inactive_self": 21.49667901961739,
+      "pieces_blocking_vertical_self": 64.49003705885217,
+      "horizontal_base_self": 4.299335803923478,
+      "horizontal_negative_self": 8.598671607846956,
+      "pieces_in_scoring_defense": 17.197343215693913,
+      "pieces_blocking_vertical_opp": 64.49003705885217,
+      "horizontal_base_opp": 4.299335803923478,
+      "horizontal_attack_opp": 4.299335803923478,
+      "inactive_opp": 21.49667901961739
+    }
+  }
+]

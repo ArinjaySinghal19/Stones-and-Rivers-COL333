@@ -1,0 +1,67 @@
+#ifndef HEURISTICS_H
+#define HEURISTICS_H
+
+#include "game_state.h"
+#include <vector>
+#include <map>
+#include <string>
+
+// ---- Heuristic Function Types ----
+class Heuristics {
+public:
+    struct HeuristicsInfo {
+        double vertical_push_value = 0.0;
+        double pieces_in_scoring_attack_value = 0.0;
+        double horizontal_attack_self_value = 0.0;
+        double inactive_self_value = 0.0;
+        double pieces_blocking_vertical_self_value = 0.0;
+        double horizontal_base_self_value = 0.0;
+        double horizontal_negative_self_value = 0.0;
+        
+        double pieces_in_scoring_defense_value = 0.0;
+        double pieces_blocking_vertical_opp_value = 0.0;
+        double horizontal_base_opp_value = 0.0;
+        double horizontal_attack_opp_value = 0.0;
+        double inactive_opp_value = 0.0;
+        
+        double total_score = 0.0;
+    };
+
+    struct Weights {
+        double vertical_push = 2.647791;
+        double pieces_in_scoring_attack = 18.181160;
+        double horizontal_attack_self = 4.483519;
+        double inactive_self = 25.479092;
+        double pieces_blocking_vertical_self = 65.134920;
+        double horizontal_base_self = 2.129200;
+        double horizontal_negative_self = 7.875787;
+        double pieces_in_scoring_defense = 18.321765;
+        double pieces_blocking_vertical_opp = 61.570257;
+        double horizontal_base_opp = 2.294520;
+        double horizontal_attack_opp = 2.612308;
+        double inactive_opp = 23.352871;
+                            };
+
+    // Main heuristic evaluation function
+    static HeuristicsInfo evaluate_position(const GameState& state, const std::string& player);
+    static const Weights& get_weights();
+    static void set_weights(const Weights& new_weights);
+    
+    // Individual heuristic components
+    static double vertical_push_h(const GameState& state, const std::string& player, bool wrt_self = true);
+    static int pieces_in_scoring_virgin_cols(const GameState& state, const std::string& player, bool wrt_self);
+    static int pieces_in_scoring_zonewise(const GameState& state, const std::string& player, bool wrt_self);
+    static int pieces_blocking_vertical_h(const GameState& state, const std::string& player, bool wrt_self = true);
+    static int horizontal_base_rivers(const GameState& state, const std::string& player, bool wrt_self = true);
+    static int horizontal_negative(const GameState& state, const std::string& player, bool wrt_self = true);
+    static int horizontal_attack(const GameState& state, const std::string& player, bool wrt_self = true);
+    static int inactive_pieces(const GameState& state, const std::string& player, bool wrt_self = true);
+    static int terminal_result(const GameState& state, const std::string& player, bool wrt_self = true);
+    void debug_heuristic(const GameState& state, const std::string& player);
+    
+private:
+    static int max(int a, int b);
+    static Weights weights_;
+};
+
+#endif // HEURISTICS_H
