@@ -472,18 +472,31 @@ int Heuristics::pieces_in_scoring_zonewise(const GameState& state, const std::st
                 EncodedCell from_cell = encoded_board[from_y][from_x]; // This is now empty
                 EncodedCell to_cell = encoded_board[to_y][to_x]; // This has the moved piece
 
-                // Determine which player moved
-                std::string moved_player = GameState::is_owner(to_cell, "circle") ? "circle" : "square";
-                int moved_player_type = (moved_player == "circle") ? 0 : 1;
+                // Safety check: to_cell should not be empty
+                if (!GameState::is_empty(to_cell)) {
+                    // Determine which player moved
+                    std::string moved_player = GameState::is_owner(to_cell, "circle") ? "circle" : "square";
+                    int moved_player_type = (moved_player == "circle") ? 0 : 1;
 
-                // Subtract old weight and add new weight
-                int old_weight = scoring_area_weights_[moved_player_type][from_y][from_x];
-                int new_weight = scoring_area_weights_[moved_player_type][to_y][to_x];
+                    // Subtract old weight and add new weight
+                    int old_weight = scoring_area_weights_[moved_player_type][from_y][from_x];
+                    int new_weight = scoring_area_weights_[moved_player_type][to_y][to_x];
 
-                if (moved_player == "circle") {
-                    score_circle = score_circle - old_weight + new_weight;
-                } else {
-                    score_square = score_square - old_weight + new_weight;
+                    if (moved_player == "circle") {
+                        score_circle = score_circle - old_weight + new_weight;
+                    } else {
+                        score_square = score_square - old_weight + new_weight;
+                    }
+
+                    // Store computed values
+                    if (my_info != nullptr) {
+                        my_info->pieces_in_scoring_zonewise_circle = score_circle;
+                        my_info->pieces_in_scoring_zonewise_square = score_square;
+                    }
+
+                    // Return appropriate score
+                    int score = (player_to_check == "circle") ? score_circle : score_square;
+                    return wrt_self ? score : -score;
                 }
             }
             else if (last_move->action == "push") {
@@ -499,31 +512,47 @@ int Heuristics::pieces_in_scoring_zonewise(const GameState& state, const std::st
                 EncodedCell to_cell = encoded_board[to_y][to_x]; // Pusher piece
                 EncodedCell pushed_cell = encoded_board[pushed_to_y][pushed_to_x]; // Pushed piece
 
-                // Determine players
-                std::string pusher_player = GameState::is_owner(to_cell, "circle") ? "circle" : "square";
-                std::string pushed_player = GameState::is_owner(pushed_cell, "circle") ? "circle" : "square";
-
-                int pusher_type = (pusher_player == "circle") ? 0 : 1;
-                int pushed_type = (pushed_player == "circle") ? 0 : 1;
-
-                // Update pusher position: from -> to
-                int pusher_old_weight = scoring_area_weights_[pusher_type][from_y][from_x];
-                int pusher_new_weight = scoring_area_weights_[pusher_type][to_y][to_x];
-
-                // Update pushed piece position: to -> pushed_to
-                int pushed_old_weight = scoring_area_weights_[pushed_type][to_y][to_x];
-                int pushed_new_weight = scoring_area_weights_[pushed_type][pushed_to_y][pushed_to_x];
-
-                if (pusher_player == "circle") {
-                    score_circle = score_circle - pusher_old_weight + pusher_new_weight;
+                // Safety check: ensure cells are not empty
+                if (GameState::is_empty(to_cell) || GameState::is_empty(pushed_cell)) {
+                    // Something is wrong, fall back to full computation
+                    // This shouldn't happen but better safe than sorry
                 } else {
-                    score_square = score_square - pusher_old_weight + pusher_new_weight;
-                }
+                    // Determine players
+                    std::string pusher_player = GameState::is_owner(to_cell, "circle") ? "circle" : "square";
+                    std::string pushed_player = GameState::is_owner(pushed_cell, "circle") ? "circle" : "square";
 
-                if (pushed_player == "circle") {
-                    score_circle = score_circle - pushed_old_weight + pushed_new_weight;
-                } else {
-                    score_square = score_square - pushed_old_weight + pushed_new_weight;
+                    int pusher_type = (pusher_player == "circle") ? 0 : 1;
+                    int pushed_type = (pushed_player == "circle") ? 0 : 1;
+
+                    // Update pusher position: from -> to
+                    int pusher_old_weight = scoring_area_weights_[pusher_type][from_y][from_x];
+                    int pusher_new_weight = scoring_area_weights_[pusher_type][to_y][to_x];
+
+                    // Update pushed piece position: to -> pushed_to
+                    int pushed_old_weight = scoring_area_weights_[pushed_type][to_y][to_x];
+                    int pushed_new_weight = scoring_area_weights_[pushed_type][pushed_to_y][pushed_to_x];
+
+                    if (pusher_player == "circle") {
+                        score_circle = score_circle - pusher_old_weight + pusher_new_weight;
+                    } else {
+                        score_square = score_square - pusher_old_weight + pusher_new_weight;
+                    }
+
+                    if (pushed_player == "circle") {
+                        score_circle = score_circle - pushed_old_weight + pushed_new_weight;
+                    } else {
+                        score_square = score_square - pushed_old_weight + pushed_new_weight;
+                    }
+
+                    // Store computed values
+                    if (my_info != nullptr) {
+                        my_info->pieces_in_scoring_zonewise_circle = score_circle;
+                        my_info->pieces_in_scoring_zonewise_square = score_square;
+                    }
+
+                    // Return appropriate score
+                    int score = (player_to_check == "circle") ? score_circle : score_square;
+                    return wrt_self ? score : -score;
                 }
             }
             else if (last_move->action == "flip" || last_move->action == "rotate") {
@@ -629,91 +658,107 @@ int Heuristics::pieces_blocking_vertical_h(const GameState& state, const std::st
         if(last_move->action == "move"){
             int from_col = last_move->from[0];
             int to_col = last_move->to[0];
-            int circle_val_from = compute_blocking_for_column(state, from_col, "circle");
-            int square_val_from = compute_blocking_for_column(state, from_col, "square");
-            int circle_val_to = compute_blocking_for_column(state, to_col, "circle");
-            int square_val_to = compute_blocking_for_column(state, to_col, "square");
-            std::vector<int> my_blocking_circle_vals = parent_info->pieces_blocking_v_circle;
-            std::vector<int> my_blocking_square_vals = parent_info->pieces_blocking_v_square;
-            my_blocking_circle_vals[from_col] = circle_val_from;
-            my_blocking_square_vals[from_col] = square_val_from;  
-            my_blocking_circle_vals[to_col] = circle_val_to;
-            my_blocking_square_vals[to_col] = square_val_to;
-            my_info->pieces_blocking_v_circle = my_blocking_circle_vals;
-            my_info->pieces_blocking_v_square = my_blocking_square_vals;
-            int score = 0;
-            if(player == "circle"){
-                for(auto val: my_blocking_circle_vals){
-                    score += val;
-                }
+            
+            // Safety check: ensure parent vectors are properly sized
+            if (parent_info->pieces_blocking_v_circle.empty() || parent_info->pieces_blocking_v_square.empty()) {
+                // Fall through to full computation
             } else {
-                for(auto val: my_blocking_square_vals){
-                    score += val;
+                int circle_val_from = compute_blocking_for_column(state, from_col, "circle");
+                int square_val_from = compute_blocking_for_column(state, from_col, "square");
+                int circle_val_to = compute_blocking_for_column(state, to_col, "circle");
+                int square_val_to = compute_blocking_for_column(state, to_col, "square");
+                std::vector<int> my_blocking_circle_vals = parent_info->pieces_blocking_v_circle;
+                std::vector<int> my_blocking_square_vals = parent_info->pieces_blocking_v_square;
+                my_blocking_circle_vals[from_col] = circle_val_from;
+                my_blocking_square_vals[from_col] = square_val_from;  
+                my_blocking_circle_vals[to_col] = circle_val_to;
+                my_blocking_square_vals[to_col] = square_val_to;
+                my_info->pieces_blocking_v_circle = my_blocking_circle_vals;
+                my_info->pieces_blocking_v_square = my_blocking_square_vals;
+                int score = 0;
+                if(player == "circle"){
+                    for(auto val: my_blocking_circle_vals){
+                        score += val;
+                    }
+                } else {
+                    for(auto val: my_blocking_square_vals){
+                        score += val;
+                    }
                 }
+                return wrt_self ? score : -score;
             }
-            return wrt_self ? score : -score;
         }
         else if(last_move->action == "push"){
-            int col1 = last_move->from[0];
-            int col2 = last_move->to[0];
-            int col3 = last_move->pushed_to[0];
-            int circle_val_col1 = compute_blocking_for_column(state, col1, "circle");
-            int square_val_col1 = compute_blocking_for_column(state, col1, "square");
-            int circle_val_col2 = circle_val_col1;
-            int square_val_col2 = square_val_col1;
-            if(col2 != col1){
-                circle_val_col2 = compute_blocking_for_column(state, col2, "circle");
-                square_val_col2 = compute_blocking_for_column(state, col2, "square");
-            }
-            int circle_val_col3 = circle_val_col1;
-            int square_val_col3 = square_val_col1;
-            if(col3 != col1 && col3 != col2){
-                circle_val_col3 = compute_blocking_for_column(state, col3, "circle");
-                square_val_col3 = compute_blocking_for_column(state, col3, "square");
-            }
-            std::vector<int> my_blocking_circle_vals = parent_info->pieces_blocking_v_circle;
-            std::vector<int> my_blocking_square_vals = parent_info->pieces_blocking_v_square;
-            my_blocking_circle_vals[col1] = circle_val_col1;
-            my_blocking_square_vals[col1] = square_val_col1;  
-            my_blocking_circle_vals[col2] = circle_val_col2;
-            my_blocking_square_vals[col2] = square_val_col2;  
-            my_blocking_circle_vals[col3] = circle_val_col3;
-            my_blocking_square_vals[col3] = square_val_col3;
-            my_info->pieces_blocking_v_circle = my_blocking_circle_vals;
-            my_info->pieces_blocking_v_square = my_blocking_square_vals;
-            int score = 0;
-            if(player == "circle"){
-                for(auto val: my_blocking_circle_vals){
-                    score += val;
-                }
+            // Safety check: ensure parent vectors are properly sized
+            if (parent_info->pieces_blocking_v_circle.empty() || parent_info->pieces_blocking_v_square.empty()) {
+                // Fall through to full computation
             } else {
-                for(auto val: my_blocking_square_vals){
-                    score += val;
+                int col1 = last_move->from[0];
+                int col2 = last_move->to[0];
+                int col3 = last_move->pushed_to[0];
+                int circle_val_col1 = compute_blocking_for_column(state, col1, "circle");
+                int square_val_col1 = compute_blocking_for_column(state, col1, "square");
+                int circle_val_col2 = circle_val_col1;
+                int square_val_col2 = square_val_col1;
+                if(col2 != col1){
+                    circle_val_col2 = compute_blocking_for_column(state, col2, "circle");
+                    square_val_col2 = compute_blocking_for_column(state, col2, "square");
                 }
+                int circle_val_col3 = circle_val_col1;
+                int square_val_col3 = square_val_col1;
+                if(col3 != col1 && col3 != col2){
+                    circle_val_col3 = compute_blocking_for_column(state, col3, "circle");
+                    square_val_col3 = compute_blocking_for_column(state, col3, "square");
+                }
+                std::vector<int> my_blocking_circle_vals = parent_info->pieces_blocking_v_circle;
+                std::vector<int> my_blocking_square_vals = parent_info->pieces_blocking_v_square;
+                my_blocking_circle_vals[col1] = circle_val_col1;
+                my_blocking_square_vals[col1] = square_val_col1;  
+                my_blocking_circle_vals[col2] = circle_val_col2;
+                my_blocking_square_vals[col2] = square_val_col2;  
+                my_blocking_circle_vals[col3] = circle_val_col3;
+                my_blocking_square_vals[col3] = square_val_col3;
+                my_info->pieces_blocking_v_circle = my_blocking_circle_vals;
+                my_info->pieces_blocking_v_square = my_blocking_square_vals;
+                int score = 0;
+                if(player == "circle"){
+                    for(auto val: my_blocking_circle_vals){
+                        score += val;
+                    }
+                } else {
+                    for(auto val: my_blocking_square_vals){
+                        score += val;
+                    }
+                }
+                return wrt_self ? score : -score;
             }
-            return wrt_self ? score : -score;
         }
         else if(last_move->action == "flip" || last_move->action == "rotate"){
-            int col = last_move->from[0];
-            int circle_val = compute_blocking_for_column(state, col, "circle");
-            int square_val = compute_blocking_for_column(state, col, "square");
-            std::vector<int> my_blocking_circle_vals = parent_info->pieces_blocking_v_circle;
-            std::vector<int> my_blocking_square_vals = parent_info->pieces_blocking_v_square;
-            my_blocking_circle_vals[col] = circle_val;
-            my_blocking_square_vals[col] = square_val;  
-            my_info->pieces_blocking_v_circle = my_blocking_circle_vals;
-            my_info->pieces_blocking_v_square = my_blocking_square_vals;
-            int score = 0;
-            if(player == "circle"){
-                for(auto val: my_blocking_circle_vals){
-                    score += val;
-                }
+            // Safety check: ensure parent vectors are properly sized
+            if (parent_info->pieces_blocking_v_circle.empty() || parent_info->pieces_blocking_v_square.empty()) {
+                // Fall through to full computation
             } else {
-                for(auto val: my_blocking_square_vals){
-                    score += val;
+                int col = last_move->from[0];
+                int circle_val = compute_blocking_for_column(state, col, "circle");
+                int square_val = compute_blocking_for_column(state, col, "square");
+                std::vector<int> my_blocking_circle_vals = parent_info->pieces_blocking_v_circle;
+                std::vector<int> my_blocking_square_vals = parent_info->pieces_blocking_v_square;
+                my_blocking_circle_vals[col] = circle_val;
+                my_blocking_square_vals[col] = square_val;  
+                my_info->pieces_blocking_v_circle = my_blocking_circle_vals;
+                my_info->pieces_blocking_v_square = my_blocking_square_vals;
+                int score = 0;
+                if(player == "circle"){
+                    for(auto val: my_blocking_circle_vals){
+                        score += val;
+                    }
+                } else {
+                    for(auto val: my_blocking_square_vals){
+                        score += val;
+                    }
                 }
+                return wrt_self ? score : -score;
             }
-            return wrt_self ? score : -score;
         }
     }
 
