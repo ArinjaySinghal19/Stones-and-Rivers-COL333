@@ -798,7 +798,7 @@ def run_gui(mode:str, circle_strategy:str, square_strategy:str, load_file:Option
     if mode=="aivai": players={"circle":"ai","square":"ai"}
     elif mode=="hvh": players={"circle":"human","square":"human"}
     else:
-        if circle_strategy=="student_cpp": players={"circle":"ai","square":"human"}
+        if circle_strategy=="random": players={"circle":"ai","square":"human"}
         else: players={"circle":"human","square":"ai"}
     
     # instantiate agents (they only receive board)

@@ -143,9 +143,9 @@ public:
 
 
         auto minimax_start = std::chrono::high_resolution_clock::now();
-        // Use Minimax with Alpha-Beta Pruning, repetition checking, and Transposition Table
-        const int MINIMAX_DEPTH = 3;
-        selected = run_minimax_with_repetition_check(current_state, MINIMAX_DEPTH, side, recent_keys, tt);
+        // Use Minimax with Alpha-Beta Pruning, stalemate avoidance, and Transposition Table
+        const int MINIMAX_DEPTH = 4;
+        selected = run_minimax_with_repetition_check(current_state, MINIMAX_DEPTH, side, recent_board_hashes, tt);
         auto minimax_end = std::chrono::high_resolution_clock::now();
         auto minimax_duration = std::chrono::duration_cast<std::chrono::microseconds>(minimax_end - minimax_start);
         std::cout << "Move returned in " << minimax_duration.count() / 1e6 << " seconds." << std::endl;
@@ -163,14 +163,16 @@ public:
         double elapsed_seconds = duration.count();
 
         // std::cout << "Elapsed time (microseconds): " << elapsed_seconds << std::endl;
-        
+        move_count++;
+        std::cout << "Total moves made by agent: " << move_count << std::endl;
         return selected;
     }
 
 private:
     std::string side;
-    std::deque<Move> recent_keys; // Rolling history of recent moves
+    std::deque<uint64_t> recent_board_hashes; // Rolling history of recent board states (for stalemate detection)
     TranspositionTable* tt;  // Transposition table for caching positions
+    int move_count = 0;
 };
 
 // ---- PyBind11 bindings ----
