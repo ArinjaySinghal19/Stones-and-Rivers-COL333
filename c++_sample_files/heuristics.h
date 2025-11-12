@@ -57,7 +57,7 @@ public:
     static double vertical_push_h(const GameState& state, const std::string& player, bool wrt_self = true, bool use_parent = false, HeuristicsInfo* parent_info = nullptr, Move* last_move = nullptr, HeuristicsInfo* my_info = nullptr);
     static int pieces_in_scoring_virgin_cols(const GameState& state, const std::string& player, bool wrt_self);
     static int pieces_in_scoring_zonewise(const GameState& state, const std::string& player, bool wrt_self);
-    static int pieces_blocking_vertical_h(const GameState& state, const std::string& player, bool wrt_self = true);
+    static int pieces_blocking_vertical_h(const GameState& state, const std::string& player, bool wrt_self = true, bool use_parent = false, HeuristicsInfo* parent_info = nullptr, Move* last_move = nullptr, HeuristicsInfo* my_info = nullptr);
     static int horizontal_base_rivers(const GameState& state, const std::string& player, bool wrt_self = true);
     static int horizontal_negative(const GameState& state, const std::string& player, bool wrt_self = true);
     static int horizontal_attack(const GameState& state, const std::string& player, bool wrt_self = true);

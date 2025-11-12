@@ -408,45 +408,168 @@ int Heuristics::pieces_in_scoring_zonewise(const GameState& state, const std::st
     return wrt_self ? score : -score;
 }
 
-// Pieces blocking opponent's vertical rivers
-int Heuristics::pieces_blocking_vertical_h(const GameState& state, const std::string& player, bool wrt_self) {
+// Helper function to compute blocking count for a single column
+int compute_blocking_for_column(const GameState& state, int col, const std::string& player) {
     const auto& encoded_board = state.encoded_board;
     int rows = state.rows;
-    int cols = state.cols;
-
+    
     int block_count = 0;
     std::string opponent = get_opponent(player);
     int flow_dy = (opponent == "square") ? 1 : -1;
 
     for (int y = 0; y < rows; ++y) {
-        for (int x = 0; x < cols; ++x) {
-            EncodedCell cell = encoded_board[y][x];
-            if (GameState::is_owner(cell, opponent) && GameState::is_vertical_river(cell)) {
-                int ny = y + flow_dy;
-                while (in_bounds(x, ny, rows, cols)) {
-                    EncodedCell blocking_cell = encoded_board[ny][x];
-                    if (GameState::is_empty(blocking_cell)) {
-                        ny += flow_dy;
-                        continue;
-                    }
-                    if (GameState::is_owner(blocking_cell, player)) {
-                        // Horizontal river blocks
-                        if (GameState::is_horizontal_river(blocking_cell)) {
-                            block_count++;
-                            break;
-                        }
-                        // Stone blocks if distance > 1
-                        if (GameState::is_stone(blocking_cell) && std::abs(ny - y) > 1) {
-                            block_count++;
-                            break;
-                        }
-                    }
-                    break;
+        EncodedCell cell = encoded_board[y][col];
+        if (GameState::is_owner(cell, opponent) && GameState::is_vertical_river(cell)) {
+            int ny = y + flow_dy;
+            while (in_bounds(col, ny, rows, state.cols)) {
+                EncodedCell blocking_cell = encoded_board[ny][col];
+                if (GameState::is_empty(blocking_cell)) {
+                    ny += flow_dy;
+                    continue;
                 }
+                if (GameState::is_owner(blocking_cell, player)) {
+                    // Horizontal river blocks
+                    if (GameState::is_horizontal_river(blocking_cell)) {
+                        block_count++;
+                        break;
+                    }
+                    // Stone blocks if distance > 1
+                    if (GameState::is_stone(blocking_cell) && std::abs(ny - y) > 1) {
+                        block_count++;
+                        break;
+                    }
+                }
+                break;
             }
         }
     }
-    return wrt_self ? block_count : -block_count;
+    return block_count;
+}
+
+// Pieces blocking opponent's vertical rivers
+int Heuristics::pieces_blocking_vertical_h(const GameState& state, const std::string& player, bool wrt_self, bool use_parent, HeuristicsInfo* parent_info, Move* last_move, HeuristicsInfo* my_info) {
+    
+    if(use_parent && parent_info != nullptr && last_move != nullptr){
+        if(my_info != nullptr && !my_info->pieces_blocking_v_circle.empty() && !my_info->pieces_blocking_v_square.empty()){
+            int score = 0;
+            if(player == "circle"){
+                for(auto val: my_info->pieces_blocking_v_circle){
+                    score += val;
+                }
+            } else {
+                for(auto val: my_info->pieces_blocking_v_square){
+                    score += val;
+                }
+            }
+            return wrt_self ? score : -score;
+        }
+        
+        if(last_move->action == "move"){
+            int from_col = last_move->from[0];
+            int to_col = last_move->to[0];
+            int circle_val_from = compute_blocking_for_column(state, from_col, "circle");
+            int square_val_from = compute_blocking_for_column(state, from_col, "square");
+            int circle_val_to = compute_blocking_for_column(state, to_col, "circle");
+            int square_val_to = compute_blocking_for_column(state, to_col, "square");
+            std::vector<int> my_blocking_circle_vals = parent_info->pieces_blocking_v_circle;
+            std::vector<int> my_blocking_square_vals = parent_info->pieces_blocking_v_square;
+            my_blocking_circle_vals[from_col] = circle_val_from;
+            my_blocking_square_vals[from_col] = square_val_from;  
+            my_blocking_circle_vals[to_col] = circle_val_to;
+            my_blocking_square_vals[to_col] = square_val_to;
+            my_info->pieces_blocking_v_circle = my_blocking_circle_vals;
+            my_info->pieces_blocking_v_square = my_blocking_square_vals;
+            int score = 0;
+            if(player == "circle"){
+                for(auto val: my_blocking_circle_vals){
+                    score += val;
+                }
+            } else {
+                for(auto val: my_blocking_square_vals){
+                    score += val;
+                }
+            }
+            return wrt_self ? score : -score;
+        }
+        else if(last_move->action == "push"){
+            int col1 = last_move->from[0];
+            int col2 = last_move->to[0];
+            int col3 = last_move->pushed_to[0];
+            int circle_val_col1 = compute_blocking_for_column(state, col1, "circle");
+            int square_val_col1 = compute_blocking_for_column(state, col1, "square");
+            int circle_val_col2 = circle_val_col1;
+            int square_val_col2 = square_val_col1;
+            if(col2 != col1){
+                circle_val_col2 = compute_blocking_for_column(state, col2, "circle");
+                square_val_col2 = compute_blocking_for_column(state, col2, "square");
+            }
+            int circle_val_col3 = circle_val_col1;
+            int square_val_col3 = square_val_col1;
+            if(col3 != col1 && col3 != col2){
+                circle_val_col3 = compute_blocking_for_column(state, col3, "circle");
+                square_val_col3 = compute_blocking_for_column(state, col3, "square");
+            }
+            std::vector<int> my_blocking_circle_vals = parent_info->pieces_blocking_v_circle;
+            std::vector<int> my_blocking_square_vals = parent_info->pieces_blocking_v_square;
+            my_blocking_circle_vals[col1] = circle_val_col1;
+            my_blocking_square_vals[col1] = square_val_col1;  
+            my_blocking_circle_vals[col2] = circle_val_col2;
+            my_blocking_square_vals[col2] = square_val_col2;  
+            my_blocking_circle_vals[col3] = circle_val_col3;
+            my_blocking_square_vals[col3] = square_val_col3;
+            my_info->pieces_blocking_v_circle = my_blocking_circle_vals;
+            my_info->pieces_blocking_v_square = my_blocking_square_vals;
+            int score = 0;
+            if(player == "circle"){
+                for(auto val: my_blocking_circle_vals){
+                    score += val;
+                }
+            } else {
+                for(auto val: my_blocking_square_vals){
+                    score += val;
+                }
+            }
+            return wrt_self ? score : -score;
+        }
+        else if(last_move->action == "flip" || last_move->action == "rotate"){
+            int col = last_move->from[0];
+            int circle_val = compute_blocking_for_column(state, col, "circle");
+            int square_val = compute_blocking_for_column(state, col, "square");
+            std::vector<int> my_blocking_circle_vals = parent_info->pieces_blocking_v_circle;
+            std::vector<int> my_blocking_square_vals = parent_info->pieces_blocking_v_square;
+            my_blocking_circle_vals[col] = circle_val;
+            my_blocking_square_vals[col] = square_val;  
+            my_info->pieces_blocking_v_circle = my_blocking_circle_vals;
+            my_info->pieces_blocking_v_square = my_blocking_square_vals;
+            int score = 0;
+            if(player == "circle"){
+                for(auto val: my_blocking_circle_vals){
+                    score += val;
+                }
+            } else {
+                for(auto val: my_blocking_square_vals){
+                    score += val;
+                }
+            }
+            return wrt_self ? score : -score;
+        }
+    }
+
+    int cols = state.cols;
+    int score = 0;
+    for(int col = 0; col < cols; ++col){
+        int col_val_circle = compute_blocking_for_column(state, col, "circle");
+        int col_val_square = compute_blocking_for_column(state, col, "square");
+        my_info->pieces_blocking_v_circle.push_back(col_val_circle);
+        my_info->pieces_blocking_v_square.push_back(col_val_square);
+        if(player == "circle"){
+            score += col_val_circle;
+        } else {
+            score += col_val_square;
+        }
+    }
+
+    return wrt_self ? score : -score;
 }
 
 // Horizontal rivers on base rows (perimeter of scoring area)
@@ -699,7 +822,7 @@ Heuristics::HeuristicsInfo Heuristics::evaluate_position(const GameState& state,
     info.inactive_self_value = weights_.inactive_self * inactive_pieces(state, player, true);
     final_score += info.inactive_self_value;
     
-    info.pieces_blocking_vertical_self_value = weights_.pieces_blocking_vertical_self * pieces_blocking_vertical_h(state, player, true);
+    info.pieces_blocking_vertical_self_value = weights_.pieces_blocking_vertical_self * pieces_blocking_vertical_h(state, player, true, use_parent_heuristics, parent_info, last_move, &info);
     final_score += info.pieces_blocking_vertical_self_value;
     
     info.horizontal_base_self_value = weights_.horizontal_base_self * horizontal_base_rivers(state, player, true);
@@ -714,7 +837,7 @@ Heuristics::HeuristicsInfo Heuristics::evaluate_position(const GameState& state,
     info.pieces_in_scoring_defense_value = weights_.pieces_in_scoring_defense * (pieces_in_scoring_virgin_cols(state, player, false) + pieces_in_scoring_zonewise(state, player, false));
     final_score += info.pieces_in_scoring_defense_value;
     
-    info.pieces_blocking_vertical_opp_value = weights_.pieces_blocking_vertical_opp * pieces_blocking_vertical_h(state, opponent, false);
+    info.pieces_blocking_vertical_opp_value = weights_.pieces_blocking_vertical_opp * pieces_blocking_vertical_h(state, opponent, false, use_parent_heuristics, parent_info, last_move, &info);
     final_score += info.pieces_blocking_vertical_opp_value;
     
     info.horizontal_base_opp_value = weights_.horizontal_base_opp * horizontal_base_rivers(state, opponent, false);
