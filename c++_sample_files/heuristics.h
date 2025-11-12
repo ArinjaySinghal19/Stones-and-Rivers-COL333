@@ -28,6 +28,8 @@ public:
 
         std::vector <double> v_push_circle_vals;
         std::vector <double> v_push_square_vals;
+        std::vector <int> pieces_blocking_v_circle;
+        std::vector <int> pieces_blocking_v_square;
     };
 
     struct Weights {

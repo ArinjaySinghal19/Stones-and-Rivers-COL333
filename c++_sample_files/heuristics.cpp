@@ -29,6 +29,9 @@ double compute_vertical_push_for_column(const GameState& state, int col, const s
     int push_direction = (player == "circle") ? -1 : 1;
     double column_score = 0.0;
 
+    // Track which cells are reached to avoid double counting
+    std::vector<bool> reached(rows, false);
+
     // Find all player's vertical rivers in this column
     for (int y = 0; y < rows; ++y) {
         EncodedCell cell = encoded_board[y][col];
@@ -42,17 +45,24 @@ double compute_vertical_push_for_column(const GameState& state, int col, const s
                 EncodedCell next_cell = encoded_board[ny][col];
 
                 if (GameState::is_empty(next_cell)) {
-                    column_score += col_weight[col];
+                    reached[ny] = true;
                     continue;
                 }
                 else if (GameState::is_owner(next_cell, opponent)) {
                     break;  // Blocked by opponent
                 }
                 else {
-                    column_score += col_weight[col];  // Can reach through own pieces
+                    reached[ny] = true;  // Can reach through own pieces
                     continue;
                 }
             }
+        }
+    }
+
+    // Sum up the weights for all reached cells
+    for (int y = 0; y < rows; ++y) {
+        if (reached[y]) {
+            column_score += col_weight[col];
         }
     }
 
