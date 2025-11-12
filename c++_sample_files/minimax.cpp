@@ -10,6 +10,10 @@ Move g_empty_move = {"", {}, {}, {}, ""};
 static constexpr bool ENABLE_MOVE_ORDERING = true;
 static constexpr int MIN_DEPTH_FOR_ORDERING = 2;
 
+// Global counters for pruning statistics
+static int nodes_visited = 0;
+static int nodes_pruned = 0;
+
 // Helper function to format a move as a readable string
 std::string format_move(const Move& move) {
     std::string result;
@@ -89,6 +93,9 @@ MinimaxResult minimax_alpha_beta(GameState& state, int depth, double alpha, doub
                                  bool maximizing_player, const std::string& original_player,
                                  TranspositionTable* tt, bool allow_tt_cutoff,
                                  Move& move_to_ignore) {
+    // Increment nodes visited counter
+    nodes_visited++;
+    
     // ===== TRANSPOSITION TABLE PROBE =====
     // Check if we've already evaluated this position at sufficient depth
     // BUT: Don't return cached result at root level (we need the actual best move!)
@@ -142,7 +149,8 @@ MinimaxResult minimax_alpha_beta(GameState& state, int depth, double alpha, doub
     double original_alpha = alpha;  // Save for TT entry type determination
     std::vector<Move> best_pv;  // Track the principal variation
 
-    for (const Move& move : moves_to_explore) {
+    for (size_t i = 0; i < moves_to_explore.size(); ++i) {
+        const Move& move = moves_to_explore[i];
         GameState::UndoInfo undo = state.make_move(move);
         
         // Recursive call with TT parameter passed through
@@ -173,7 +181,12 @@ MinimaxResult minimax_alpha_beta(GameState& state, int depth, double alpha, doub
             beta = std::min(beta, result.value);
         }
 
-        if (beta <= alpha) break; // Alpha-beta pruning
+        if (beta <= alpha) {
+            // Alpha-beta cutoff: prune remaining siblings
+            int remaining_moves = moves_to_explore.size() - i - 1;
+            nodes_pruned += remaining_moves;
+            break; // Alpha-beta pruning
+        }
     }
 
     // ===== TRANSPOSITION TABLE STORE =====
@@ -256,6 +269,11 @@ Move run_minimax_with_repetition_check(const GameState& initial_state, int max_d
 
     std::cout << "=========================================\n";
     std::cout << "Doing Minimax for player: " << side << " at depth " << max_depth << "\n";
+    
+    // Reset pruning statistics
+    nodes_visited = 0;
+    nodes_pruned = 0;
+    
     GameState working_state = initial_state.copy();
     Move move_to_ignore = {"", {}, {}, {}, ""};
     // Use standard alpha-beta minimax with the specified depth and TT
@@ -269,6 +287,16 @@ Move run_minimax_with_repetition_check(const GameState& initial_state, int max_d
                                               false,
                                               move_to_ignore); // DON'T allow TT cutoff at root!
     Move selected = result.best_move;
+    
+    // Print pruning statistics
+    int total_nodes = nodes_visited + nodes_pruned;
+    double pruning_efficiency = (total_nodes > 0) ? (100.0 * nodes_pruned / total_nodes) : 0.0;
+    std::cout << "\n--- Pruning Statistics ---\n";
+    std::cout << "Nodes visited: " << nodes_visited << "\n";
+    std::cout << "Nodes pruned: " << nodes_pruned << "\n";
+    std::cout << "Total nodes (visited + pruned): " << total_nodes << "\n";
+    std::cout << "Pruning efficiency: " << pruning_efficiency << "%\n";
+    std::cout << "-------------------------\n\n";
     
     // Print the principal variation
     print_principal_variation(result.principal_variation, side);
@@ -295,6 +323,11 @@ Move run_minimax_with_repetition_check(const GameState& initial_state, int max_d
         // }
         move_to_ignore = selected;
         // Rerun minimax ignoring the repeating move
+        
+        // Reset pruning statistics for the re-run
+        nodes_visited = 0;
+        nodes_pruned = 0;
+        
         result = minimax_alpha_beta(working_state, max_depth,
                                     -std::numeric_limits<double>::infinity(),
                                     std::numeric_limits<double>::infinity(),
@@ -305,6 +338,16 @@ Move run_minimax_with_repetition_check(const GameState& initial_state, int max_d
                                     move_to_ignore);
         selected = result.best_move;
         std::cout << "After re-minimax, selected move: " << selected.action << "\n";
+        
+        // Print pruning statistics for the re-run
+        int total_nodes = nodes_visited + nodes_pruned;
+        double pruning_efficiency = (total_nodes > 0) ? (100.0 * nodes_pruned / total_nodes) : 0.0;
+        std::cout << "\n--- Pruning Statistics (Re-run) ---\n";
+        std::cout << "Nodes visited: " << nodes_visited << "\n";
+        std::cout << "Nodes pruned: " << nodes_pruned << "\n";
+        std::cout << "Total nodes (visited + pruned): " << total_nodes << "\n";
+        std::cout << "Pruning efficiency: " << pruning_efficiency << "%\n";
+        std::cout << "-----------------------------------\n\n";
         
         // Print the new principal variation after avoiding repetition
         std::cout << "\n--- Updated Analysis (avoiding repetition) ---\n";
