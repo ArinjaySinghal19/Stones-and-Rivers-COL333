@@ -68,7 +68,7 @@ std::vector<Move> order_moves_by_heuristic(GameState& state, const std::vector<M
 
     for (const Move& move : moves) {
         GameState::UndoInfo undo = state.make_move(move);
-        double value = Heuristics::evaluate_position(state, original_player).total_score;
+        double value = Heuristics::evaluate_position(state, original_player, false).total_score;
         state.undo_move(move, undo);
         move_evaluations.emplace_back(value, move);
     }
@@ -92,7 +92,8 @@ std::vector<Move> order_moves_by_heuristic(GameState& state, const std::vector<M
 MinimaxResult minimax_alpha_beta(GameState& state, int depth, double alpha, double beta,
                                  bool maximizing_player, const std::string& original_player,
                                  TranspositionTable* tt, bool allow_tt_cutoff,
-                                 Move& move_to_ignore) {
+                                 Move& move_to_ignore,
+                                 Heuristics::HeuristicsInfo* parent_heuristics) {
     // Increment nodes visited counter
     nodes_visited++;
     
@@ -110,7 +111,7 @@ MinimaxResult minimax_alpha_beta(GameState& state, int depth, double alpha, doub
     
     // Base case: terminal state or depth limit reached
     if (depth == 0 || state.is_terminal()) {
-        double eval = Heuristics::evaluate_position(state, original_player).total_score;
+        double eval = Heuristics::evaluate_position(state, original_player, false).total_score;
         
         // Store leaf evaluation in TT (exact value)
         if (tt != nullptr) {
@@ -125,7 +126,7 @@ MinimaxResult minimax_alpha_beta(GameState& state, int depth, double alpha, doub
         legal_moves.erase(std::remove(legal_moves.begin(), legal_moves.end(), move_to_ignore), legal_moves.end());
     }
     if (legal_moves.empty()) {
-        double eval = Heuristics::evaluate_position(state, original_player).total_score;
+        double eval = Heuristics::evaluate_position(state, original_player, false).total_score;
         
         // Store terminal position evaluation
         if (tt != nullptr) {
@@ -150,13 +151,13 @@ MinimaxResult minimax_alpha_beta(GameState& state, int depth, double alpha, doub
     std::vector<Move> best_pv;  // Track the principal variation
 
     for (size_t i = 0; i < moves_to_explore.size(); ++i) {
-        const Move& move = moves_to_explore[i];
+        Move move = moves_to_explore[i];
         GameState::UndoInfo undo = state.make_move(move);
-        
+        Heuristics::HeuristicsInfo my_heuristics = Heuristics::evaluate_position(state, original_player, true, parent_heuristics, &move);
         // Recursive call with TT parameter passed through
         // allow_tt_cutoff=true for all recursive calls (only root is false)
         MinimaxResult result = minimax_alpha_beta(state, depth - 1, alpha, beta, 
-                                                  !maximizing_player, original_player, tt, true, move_to_ignore);
+                                                  !maximizing_player, original_player, tt, true, move_to_ignore, &my_heuristics);
         state.undo_move(move, undo);
 
         if (maximizing_player) {
@@ -290,7 +291,8 @@ Move run_minimax_with_repetition_check(const GameState& initial_state, int max_d
                                               initial_state.current_player,
                                               tt,    // Pass TT to minimax
                                               false,
-                                              move_to_ignore); // DON'T allow TT cutoff at root!
+                                              move_to_ignore,
+                                              nullptr); // DON'T allow TT cutoff at root!
     Move selected = result.best_move;
     
     // Print pruning statistics
@@ -324,7 +326,8 @@ Move run_minimax_with_repetition_check(const GameState& initial_state, int max_d
                                     initial_state.current_player,
                                     tt,    // Pass TT to minimax
                                     false,
-                                    move_to_ignore);
+                                    move_to_ignore,
+                                    nullptr); // DON'T allow TT cutoff at root!
         selected = result.best_move;
         std::cout << "✅ After re-minimax, selected move: " << selected.action << "\n";
         
@@ -353,7 +356,8 @@ Move run_minimax_with_repetition_check(const GameState& initial_state, int max_d
     record_board_state(after_state, recent_board_hashes, tt);
 
     // Debug output
-    Heuristics().debug_heuristic(after_state, initial_state.current_player);
+    Heuristics::HeuristicsInfo debug_info = Heuristics::evaluate_position(after_state, initial_state.current_player, false);
+    Heuristics::debug_heuristic(debug_info);
     
     return selected;
 }

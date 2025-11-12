@@ -20,13 +20,48 @@ int Heuristics::max(int a, int b) {
     return (a > b) ? a : b;
 }
 
-// Vertical push heuristic - calculates reach of vertical rivers
-double Heuristics::vertical_push_h(const GameState& state, const std::string& player, bool wrt_self) {
+
+double compute_vertical_push_for_column(const GameState& state, int col, const std::string& player, std::vector<double>& col_weight) {
     const auto& encoded_board = state.encoded_board;
     int rows = state.rows;
-    int cols = state.cols;
 
-    double score = 0;
+    std::string opponent = get_opponent(player);
+    int push_direction = (player == "circle") ? -1 : 1;
+    double column_score = 0.0;
+
+    // Find all player's vertical rivers in this column
+    for (int y = 0; y < rows; ++y) {
+        EncodedCell cell = encoded_board[y][col];
+
+        if (GameState::is_owner(cell, player) && GameState::is_vertical_river(cell)) {
+            // Calculate reach in push direction
+            for (int dist = 1; dist < rows; ++dist) {
+                int ny = y + push_direction * dist;
+                if (!in_bounds(col, ny, rows, state.cols)) break;
+
+                EncodedCell next_cell = encoded_board[ny][col];
+
+                if (GameState::is_empty(next_cell)) {
+                    column_score += col_weight[col];
+                    continue;
+                }
+                else if (GameState::is_owner(next_cell, opponent)) {
+                    break;  // Blocked by opponent
+                }
+                else {
+                    column_score += col_weight[col];  // Can reach through own pieces
+                    continue;
+                }
+            }
+        }
+    }
+
+    return column_score;
+}
+
+// Vertical push heuristic - calculates reach of vertical rivers
+double Heuristics::vertical_push_h(const GameState& state, const std::string& player, bool wrt_self, bool use_parent, HeuristicsInfo* parent_info, Move* last_move, HeuristicsInfo* my_info) {
+
     std::vector<double> col_weight(12);
 
     // Column weights
@@ -42,46 +77,177 @@ double Heuristics::vertical_push_h(const GameState& state, const std::string& pl
     col_weight[0] = 1;
     col_weight[11] = 1;
 
-    std::string opponent = get_opponent(player);
-    int push_direction = (player == "circle") ? -1 : 1;
-    std::vector<std::vector<double>> reach(rows, std::vector<double>(cols, 0));
-
-    // Find all player's vertical rivers and calculate their reach
-    for (int y = 0; y < rows; ++y) {
-        for (int x = 0; x < cols; ++x) {
-            EncodedCell cell = encoded_board[y][x];
-
-            if (GameState::is_owner(cell, player) && GameState::is_vertical_river(cell)) {
-                // Calculate reach in push direction
-                for (int dist = 1; dist < rows; ++dist) {
-                    int ny = y + push_direction * dist;
-                    if (!in_bounds(x, ny, rows, cols)) break;
-
-                    EncodedCell next_cell = encoded_board[ny][x];
-
-                    if (GameState::is_empty(next_cell)) {
-                        reach[ny][x] = col_weight[x];
-                        continue;
-                    }
-                    else if (GameState::is_owner(next_cell, opponent)) {
-                        break;  // Blocked by opponent
-                    }
-                    else {
-                        reach[ny][x] = col_weight[x];  // Can reach through own pieces
-                        continue;
-                    }
+    if(use_parent && parent_info != nullptr && last_move != nullptr){
+        if(my_info != nullptr && !my_info->v_push_circle_vals.empty() && !my_info->v_push_square_vals.empty()){
+            double score = 0.0;
+            if(player=="circle"){
+                for(auto val: my_info->v_push_circle_vals){
+                    score += val;
+                }
+            } else {
+                for(auto val: my_info->v_push_square_vals){
+                    score += val;
                 }
             }
+            // std::cout << "Already computed vertical push heuristic using my_info.\n";
+            return wrt_self ? score : -score;
+        }
+        if(last_move->action == "move"){
+            // std::cout << "Using parent_info to update vertical push heuristic for move action.\n";
+            int from_col = last_move->from[0];
+            int to_col = last_move->to[0];
+            double circle_val_from = compute_vertical_push_for_column(state, from_col, "circle", col_weight);
+            double square_val_from = compute_vertical_push_for_column(state, from_col, "square", col_weight);
+            double circle_val_to = compute_vertical_push_for_column(state, to_col, "circle", col_weight);
+            double square_val_to = compute_vertical_push_for_column(state, to_col, "square", col_weight);
+            std::vector <double> my_v_push_circle_vals = parent_info->v_push_circle_vals;
+            std::vector <double> my_v_push_square_vals = parent_info->v_push_square_vals;
+            my_v_push_circle_vals[from_col] = circle_val_from;
+            my_v_push_square_vals[from_col] = square_val_from;  
+            my_v_push_circle_vals[to_col] = circle_val_to;
+            my_v_push_square_vals[to_col] = square_val_to;
+            my_info->v_push_circle_vals = my_v_push_circle_vals;
+            my_info->v_push_square_vals = my_v_push_square_vals;
+            double score = 0.0;
+            if(player=="circle"){
+                for(auto val: my_v_push_circle_vals){
+                    score += val;
+                }
+            } else {
+                for(auto val: my_v_push_square_vals){
+                    score += val;
+                }
+            }
+            return wrt_self ? score : -score;
+        }
+        else if(last_move->action == "push"){
+            // std::cout << "Using parent_info to update vertical push heuristic for push action.\n";
+            int col1 = last_move->from[0];
+            int col2 = last_move->to[0];
+            int col3 = last_move->pushed_to[0];
+            double circle_val_col1 = compute_vertical_push_for_column(state, col1, "circle", col_weight);
+            double square_val_col1 = compute_vertical_push_for_column(state, col1, "square", col_weight);
+            double circle_val_col2 = circle_val_col1;
+            double square_val_col2 = square_val_col1;
+            if(col2 != col1){
+                circle_val_col2 = compute_vertical_push_for_column(state, col2, "circle", col_weight);
+                square_val_col2 = compute_vertical_push_for_column(state, col2, "square", col_weight);
+            }
+            double circle_val_col3 = circle_val_col1;
+            double square_val_col3 = square_val_col1;
+            if(col3 != col1 && col3 != col2){
+                circle_val_col3 = compute_vertical_push_for_column(state, col3, "circle", col_weight);
+                square_val_col3 = compute_vertical_push_for_column(state, col3, "square", col_weight);
+            }
+            std::vector <double> my_v_push_circle_vals = parent_info->v_push_circle_vals;
+            std::vector <double> my_v_push_square_vals = parent_info->v_push_square_vals;
+            my_v_push_circle_vals[col1] = circle_val_col1;
+            my_v_push_square_vals[col1] = square_val_col1;  
+            my_v_push_circle_vals[col2] = circle_val_col2;
+            my_v_push_square_vals[col2] = square_val_col2;  
+            my_v_push_circle_vals[col3] = circle_val_col3;
+            my_v_push_square_vals[col3] = square_val_col3;
+            my_info->v_push_circle_vals = my_v_push_circle_vals;
+            my_info->v_push_square_vals = my_v_push_square_vals;
+            double score = 0.0;
+            if(player=="circle"){
+                for(auto val: my_v_push_circle_vals){
+                    score += val;
+                }
+            } else {
+                for(auto val: my_v_push_square_vals){
+                    score += val;
+                }
+            }
+            return wrt_self ? score : -score;
+        }
+        else if(last_move->action == "flip" || last_move->action == "rotate"){
+            // std::cout << "Using parent_info to update vertical push heuristic for flip/rotate action.\n";
+            int col = last_move->from[0];
+            double circle_val = compute_vertical_push_for_column(state, col, "circle", col_weight);
+            double square_val = compute_vertical_push_for_column(state, col, "square", col_weight);
+            std::vector <double> my_v_push_circle_vals = parent_info->v_push_circle_vals;
+            std::vector <double> my_v_push_square_vals = parent_info->v_push_square_vals;
+            my_v_push_circle_vals[col] = circle_val;
+            my_v_push_square_vals[col] = square_val;  
+            my_info->v_push_circle_vals = my_v_push_circle_vals;
+            my_info->v_push_square_vals = my_v_push_square_vals;
+            double score = 0.0;
+            if(player=="circle"){
+                for(auto val: my_v_push_circle_vals){
+                    score += val;
+                }
+            } else {
+                for(auto val: my_v_push_square_vals){
+                    score += val;
+                }
+            }
+            return wrt_self ? score : -score;
+        }
+    }
+    int cols = state.cols;
+    double score = 0.0;
+    for(int col = 0; col < cols; ++col){
+        double col_val_circle = compute_vertical_push_for_column(state, col, "circle", col_weight);
+        double col_val_square = compute_vertical_push_for_column(state, col, "square", col_weight);
+        my_info->v_push_circle_vals.push_back(col_val_circle);
+        my_info->v_push_square_vals.push_back(col_val_square);
+        if(player == "circle"){
+            score += col_val_circle;
+        } else {
+            score += col_val_square;
         }
     }
 
-    // Sum all reach values
-    for (auto &e1 : reach) {
-        for (auto &e2 : e1) {
-            score += e2;
-        }
-    }
     return wrt_self ? score : -score;
+
+    // const auto& encoded_board = state.encoded_board;
+    // int rows = state.rows;
+    // int cols = state.cols;
+
+    // double score = 0;
+
+    // std::string opponent = get_opponent(player);
+    // int push_direction = (player == "circle") ? -1 : 1;
+    // std::vector<std::vector<double>> reach(rows, std::vector<double>(cols, 0));
+
+    // // Find all player's vertical rivers and calculate their reach
+    // for (int y = 0; y < rows; ++y) {
+    //     for (int x = 0; x < cols; ++x) {
+    //         EncodedCell cell = encoded_board[y][x];
+
+    //         if (GameState::is_owner(cell, player) && GameState::is_vertical_river(cell)) {
+    //             // Calculate reach in push direction
+    //             for (int dist = 1; dist < rows; ++dist) {
+    //                 int ny = y + push_direction * dist;
+    //                 if (!in_bounds(x, ny, rows, cols)) break;
+
+    //                 EncodedCell next_cell = encoded_board[ny][x];
+
+    //                 if (GameState::is_empty(next_cell)) {
+    //                     reach[ny][x] = col_weight[x];
+    //                     continue;
+    //                 }
+    //                 else if (GameState::is_owner(next_cell, opponent)) {
+    //                     break;  // Blocked by opponent
+    //                 }
+    //                 else {
+    //                     reach[ny][x] = col_weight[x];  // Can reach through own pieces
+    //                     continue;
+    //                 }
+    //             }
+    //         }
+    //     }
+    // }
+
+    // // Sum all reach values
+    // for (auto &e1 : reach) {
+    //     for (auto &e2 : e1) {
+    //         score += e2;
+    //     }
+    // }
+
+    // return wrt_self ? score : -score;
 }
 
 // Split scoring heuristic - Part 1: Virgin columns proximity bonus (recalculated each time)
@@ -501,7 +667,7 @@ int Heuristics::terminal_result(const GameState& state, const std::string& playe
 }
 
 // Main evaluation function
-Heuristics::HeuristicsInfo Heuristics::evaluate_position(const GameState& state, const std::string& player) {
+Heuristics::HeuristicsInfo Heuristics::evaluate_position(const GameState& state, const std::string& player, bool use_parent_heuristics, HeuristicsInfo* parent_info, Move* last_move) {
     HeuristicsInfo info;
     if (state.is_terminal()){
         info.total_score = terminal_result(state, player, true);
@@ -511,7 +677,7 @@ Heuristics::HeuristicsInfo Heuristics::evaluate_position(const GameState& state,
     double final_score = 0.0;
 
     // Self heuristics
-    info.vertical_push_value = weights_.vertical_push * vertical_push_h(state, player, true);
+    info.vertical_push_value = weights_.vertical_push * vertical_push_h(state, player, true, use_parent_heuristics, parent_info, last_move, &info);
     final_score += info.vertical_push_value;
     
     info.pieces_in_scoring_attack_value = weights_.pieces_in_scoring_attack * (pieces_in_scoring_virgin_cols(state, player, true) + pieces_in_scoring_zonewise(state, player, true));
@@ -554,40 +720,23 @@ Heuristics::HeuristicsInfo Heuristics::evaluate_position(const GameState& state,
     return info;
 }
 
-void Heuristics::debug_heuristic(const GameState& state, const std::string& player) {
+void Heuristics::debug_heuristic(HeuristicsInfo& info) {
     std::cout << "----- Debug Heuristic -----" << std::endl;
-    std::cout << "Player: " << player << std::endl;
-    std::cout << "Vertical Push: " << vertical_push_h(state, player, true) 
-              << " weighted: " << weights_.vertical_push * vertical_push_h(state, player, true) << std::endl;
-    std::cout << "Scoring Virgin Cols: " << pieces_in_scoring_virgin_cols(state, player, true)
-              << " weighted: " << weights_.pieces_in_scoring_attack * pieces_in_scoring_virgin_cols(state, player, true) << std::endl;
-    std::cout << "Scoring Zonewise: " << pieces_in_scoring_zonewise(state, player, true)
-              << " weighted: " << weights_.pieces_in_scoring_attack * pieces_in_scoring_zonewise(state, player, true) << std::endl;
-    std::cout << "Horizontal Attack: " << horizontal_attack(state, player, true)
-              << " weighted: " << weights_.horizontal_attack_self * horizontal_attack(state, player, true) << std::endl;
-    std::cout << "Inactive Pieces: " << inactive_pieces(state, player, true)
-              << " weighted: " << weights_.inactive_self * inactive_pieces(state, player, true) << std::endl;
-    std::cout << "Pieces Blocking Vertical: " << pieces_blocking_vertical_h(state, player, true)
-              << " weighted: " << weights_.pieces_blocking_vertical_self * pieces_blocking_vertical_h(state, player, true) << std::endl;
-    std::cout << "Horizontal Base: " << horizontal_base_rivers(state, player, true)
-              << " weighted: " << weights_.horizontal_base_self * horizontal_base_rivers(state, player, true) << std::endl;
-    std::cout << "Horizontal Negative: " << horizontal_negative(state, player, true)
-              << " weighted: " << weights_.horizontal_negative_self * horizontal_negative(state, player, true) << std::endl;
-
-    std::string opponent = get_opponent(player);
-    std::cout << "--- Opponent (" << opponent << ") ---" << std::endl;
-    std::cout << "Scoring (Defense): " << (pieces_in_scoring_virgin_cols(state, player, false) + pieces_in_scoring_zonewise(state, player, false))
-              << " weighted: " << weights_.pieces_in_scoring_defense * (pieces_in_scoring_virgin_cols(state, player, false) + pieces_in_scoring_zonewise(state, player, false)) << std::endl;
-    std::cout << "Pieces Blocking Vertical: " << pieces_blocking_vertical_h(state, opponent, false)
-              << " weighted: " << weights_.pieces_blocking_vertical_opp * pieces_blocking_vertical_h(state, opponent, false) << std::endl;
-    std::cout << "Horizontal Base: " << horizontal_base_rivers(state, opponent, false)
-              << " weighted: " << weights_.horizontal_base_opp * horizontal_base_rivers(state, opponent, false) << std::endl;
-    std::cout << "Horizontal Attack: " << horizontal_attack(state, opponent, false)
-              << " weighted: " << weights_.horizontal_attack_opp * horizontal_attack(state, opponent, false) << std::endl;
-    std::cout << "Inactive Pieces: " << inactive_pieces(state, opponent, false)
-              << " weighted: " << weights_.inactive_opp * inactive_pieces(state, opponent, false) << std::endl;
+    std::cout << "Vertical Push: " << info.vertical_push_value << std::endl;
+    std::cout << "Pieces in Scoring (Attack): " << info.pieces_in_scoring_attack_value << std::endl;
+    std::cout << "Horizontal Attack Self: " << info.horizontal_attack_self_value << std::endl;
+    std::cout << "Inactive Self: " << info.inactive_self_value << std::endl;
+    std::cout << "Pieces Blocking Vertical Self: " << info.pieces_blocking_vertical_self_value << std::endl;
+    std::cout << "Horizontal Base Self: " << info.horizontal_base_self_value << std::endl;
+    std::cout << "Horizontal Negative Self: " << info.horizontal_negative_self_value << std::endl;
     
-    HeuristicsInfo info = evaluate_position(state, player);
+    std::cout << "--- Opponent ---" << std::endl;
+    std::cout << "Pieces in Scoring (Defense): " << info.pieces_in_scoring_defense_value << std::endl;
+    std::cout << "Pieces Blocking Vertical Opp: " << info.pieces_blocking_vertical_opp_value << std::endl;
+    std::cout << "Horizontal Base Opp: " << info.horizontal_base_opp_value << std::endl;
+    std::cout << "Horizontal Attack Opp: " << info.horizontal_attack_opp_value << std::endl;
+    std::cout << "Inactive Opp: " << info.inactive_opp_value << std::endl;
+    
     std::cout << "Total Evaluation: " << info.total_score << std::endl;
     std::cout << "---------------------------" << std::endl;
 }

@@ -25,6 +25,9 @@ public:
         double inactive_opp_value = 0.0;
         
         double total_score = 0.0;
+
+        std::vector <double> v_push_circle_vals;
+        std::vector <double> v_push_square_vals;
     };
 
     struct Weights {
@@ -44,12 +47,12 @@ public:
     };
 
     // Main heuristic evaluation function
-    static HeuristicsInfo evaluate_position(const GameState& state, const std::string& player);
+    static HeuristicsInfo evaluate_position(const GameState& state, const std::string& player, bool use_parent_heuristics, HeuristicsInfo* parent_info = nullptr, Move* last_move = nullptr);
     static const Weights& get_weights();
     static void set_weights(const Weights& new_weights);
     
     // Individual heuristic components
-    static double vertical_push_h(const GameState& state, const std::string& player, bool wrt_self = true);
+    static double vertical_push_h(const GameState& state, const std::string& player, bool wrt_self = true, bool use_parent = false, HeuristicsInfo* parent_info = nullptr, Move* last_move = nullptr, HeuristicsInfo* my_info = nullptr);
     static int pieces_in_scoring_virgin_cols(const GameState& state, const std::string& player, bool wrt_self);
     static int pieces_in_scoring_zonewise(const GameState& state, const std::string& player, bool wrt_self);
     static int pieces_blocking_vertical_h(const GameState& state, const std::string& player, bool wrt_self = true);
@@ -58,7 +61,7 @@ public:
     static int horizontal_attack(const GameState& state, const std::string& player, bool wrt_self = true);
     static int inactive_pieces(const GameState& state, const std::string& player, bool wrt_self = true);
     static int terminal_result(const GameState& state, const std::string& player, bool wrt_self = true);
-    void debug_heuristic(const GameState& state, const std::string& player);
+    static void debug_heuristic(HeuristicsInfo& info);
     
 private:
     static int max(int a, int b);

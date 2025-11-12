@@ -3,6 +3,7 @@
 
 #include "game_state.h"
 #include "transposition_table.h"
+#include "heuristics.h"
 #include <limits>
 #include <deque>
 #include <string>
@@ -28,11 +29,8 @@ extern Move g_empty_move;
 MinimaxResult minimax_alpha_beta(GameState& state, int depth, double alpha, double beta,
                                 bool maximizing_player, const std::string& original_player,
                                 TranspositionTable* tt = nullptr, bool allow_tt_cutoff = true,
-                                Move& move_to_ignore = g_empty_move);
-
-// Beam search: evaluates all moves at depth 2, takes top N, searches those to depth 3
-MinimaxResult minimax_beam_search(GameState& state, const std::string& original_player, 
-                                 int beam_width = 5, TranspositionTable* tt = nullptr);
+                                Move& move_to_ignore = g_empty_move,
+                                Heuristics::HeuristicsInfo* parent_heuristics = nullptr);
 
 // ---- Repetition Detection Functions (using board state hashing) ----
 // Check if a move would cause stalemate (3 identical board states at 2-move intervals)
