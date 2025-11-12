@@ -34,18 +34,23 @@ MinimaxResult minimax_alpha_beta(GameState& state, int depth, double alpha, doub
 MinimaxResult minimax_beam_search(GameState& state, const std::string& original_player, 
                                  int beam_width = 5, TranspositionTable* tt = nullptr);
 
-// ---- Repetition Detection Functions ----
-bool moves_equal(const Move& m1, const Move& m2);
+// ---- Repetition Detection Functions (using board state hashing) ----
+// Check if a move would cause stalemate (3 identical board states at 2-move intervals)
+// Note: Uses make_move/undo_move for efficiency, so state is non-const but unchanged after call
+bool would_cause_stalemate(GameState& initial_state, const Move& move,
+                          const std::deque<uint64_t>& recent_board_hashes,
+                          TranspositionTable* tt);
 
-bool would_repeat_after(const GameState& state, const Move& move, const std::string& side, 
-                       const std::deque<Move>& recent_moves);
-
-void record_move(const Move& move, std::deque<Move>& recent_moves);
+// Record the current board state hash for stalemate detection
+void record_board_state(const GameState& state, std::deque<uint64_t>& recent_board_hashes,
+                       TranspositionTable* tt);
 
 Move flip_topmost_piece(const GameState& state, const std::string& side);
 
+// Main minimax entry point with stalemate avoidance
+// Uses board state hashing to detect and avoid alternating 3-state repetitions
 Move run_minimax_with_repetition_check(const GameState& initial_state, int max_depth, 
-                                      const std::string& side, std::deque<Move>& recent_moves,
+                                      const std::string& side, std::deque<uint64_t>& recent_board_hashes,
                                       TranspositionTable* tt = nullptr);
 
 #endif // MINIMAX_H

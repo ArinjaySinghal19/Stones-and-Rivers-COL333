@@ -214,53 +214,58 @@ MinimaxResult minimax_alpha_beta(GameState& state, int depth, double alpha, doub
     return MinimaxResult(best_value, best_move, best_pv);
 }
 
-// Repetition detection utilities
-bool moves_equal(const Move& m1, const Move& m2) {
-    return m1.action == m2.action && 
-           m1.from[0] == m2.from[0] && m1.from[1] == m2.from[1] &&
-           m1.to[0] == m2.to[0] && m1.to[1] == m2.to[1];
-}
-
-bool would_repeat_after(const GameState& state, const Move& move, const std::string& side, 
-                        const std::deque<Move>& recent_moves) {
-    // Detect cycle of the form [A,B,A,B,...] or [A,A,...]
-    if (recent_moves.size() < 2) return false;
-    std::cout << "Recorded moves:\n";
-    for (const Move& m : recent_moves) {
-        std::cout << m.action << " from (" << m.from[0] << "," << m.from[1] << ") to ("
-                  << m.to[0] << "," << m.to[1] << ")\n";
+// Repetition detection utilities using board state hashing
+// Similar to stalemate detection in gameEngine.py
+bool would_cause_stalemate(GameState& initial_state, const Move& move,
+                          const std::deque<uint64_t>& recent_board_hashes,
+                          TranspositionTable* tt) {
+    // Check if making this move would create a board state that repeats
+    // GameEngine.py checks for 3 consecutive identical states at alternating positions
+    // We need at least 4 previous states to have enough history
+    if (tt == nullptr || recent_board_hashes.size() < 4) {
+        return false;
     }
-    const Move& m1 = recent_moves[recent_moves.size() - 1];
-    const Move& m2 = recent_moves[recent_moves.size() - 2];
-    if (moves_equal(move, m2)) {
-        if (recent_moves.size() >= 4) {
-            const Move& m3 = recent_moves[recent_moves.size() - 3];
-            const Move& m4 = recent_moves[recent_moves.size() - 4];
-            if (moves_equal(m2, m4) && moves_equal(m1, m3)) {
-                std::cout << "Detected 2-move cycle repetition\n";
-                return true;
-            }
-        }
-        if (moves_equal(move, m1)) {
-            std::cout << "Detected immediate repetition\n";
-            return true;
-        }
+    
+    // Simulate the move using make_move/undo_move to get the resulting board hash
+    // This is more efficient than creating a copy
+    GameState::UndoInfo undo = initial_state.make_move(move);
+    uint64_t new_hash = tt->compute_hash(initial_state);
+    initial_state.undo_move(move, undo);
+    
+    // Check for alternating repetition pattern (states at -4, -2, and new are identical)
+    // This corresponds to the same board position appearing every 2 moves
+    uint64_t state_minus_4 = recent_board_hashes[recent_board_hashes.size() - 4];
+    uint64_t state_minus_2 = recent_board_hashes[recent_board_hashes.size() - 2];
+    
+    if (new_hash == state_minus_2 && state_minus_2 == state_minus_4) {
+        std::cout << "⚠️  STALEMATE WARNING: Board state repeating every 2 moves (3 times)!\n";
+        std::cout << "   This indicates both players are cycling moves.\n";
+        std::cout << "   Avoiding this move to prevent draw by repetition.\n";
+        return true;
     }
+    
     return false;
 }
 
-void record_move(const Move& move, std::deque<Move>& recent_moves) {
-    recent_moves.push_back(move);
-    if (recent_moves.size() > 4) recent_moves.pop_front();
-    std::cout << "recorded move. recent moves now:\n";
-    for (const Move& m : recent_moves) {
-        std::cout << m.action << " from (" << m.from[0] << "," << m.from[1] << ") to ("
-                  << m.to[0] << "," << m.to[1] << ")\n";
+void record_board_state(const GameState& state, std::deque<uint64_t>& recent_board_hashes,
+                       TranspositionTable* tt) {
+    if (tt == nullptr) return;
+    
+    uint64_t current_hash = tt->compute_hash(state);
+    recent_board_hashes.push_back(current_hash);
+    
+    // Keep only last 6 states (enough to check pattern across 4-move cycles)
+    // We check states at -4, -2, and current (0), so need 5 total
+    // But keep 6 for safety margin
+    if (recent_board_hashes.size() > 6) {
+        recent_board_hashes.pop_front();
     }
+    
+    std::cout << "📊 Board state recorded. History size: " << recent_board_hashes.size() << "\n";
 }
 
 Move run_minimax_with_repetition_check(const GameState& initial_state, int max_depth,
-                                       const std::string& side, std::deque<Move>& recent_moves,
+                                       const std::string& side, std::deque<uint64_t>& recent_board_hashes,
                                        TranspositionTable* tt) {
     std::vector<Move> legal_moves = initial_state.get_legal_moves();
     if (legal_moves.empty()) {
@@ -301,28 +306,12 @@ Move run_minimax_with_repetition_check(const GameState& initial_state, int max_d
     // Print the principal variation
     print_principal_variation(result.principal_variation, side);
 
-    // Check for repetition and find alternative if needed
-    if (would_repeat_after(initial_state, selected, side, recent_moves)) {
-        std::cout << "Repetition detected! Looking for alternative...\n";
+    // Check for stalemate (alternating repetition pattern) and find alternative if needed
+    if (would_cause_stalemate(working_state, selected, recent_board_hashes, tt)) {
+        std::cout << "🔄 Stalemate would occur! Looking for alternative move...\n";
         
-        // std::vector<Move> ordered_moves = order_moves_by_heuristic(working_state, legal_moves, 
-        //                                                             initial_state.current_player, true);
-        // bool found_alternative = false;
-        
-        // for (const Move& move : ordered_moves) {
-        //     if (!would_repeat_after(initial_state, move, side, recent_moves)) {
-        //         selected = move;
-        //         found_alternative = true;
-        //         std::cout << "Found non-repeating alternative\n";
-        //         break;
-        //     }
-        // }
-        
-        // if (!found_alternative) {
-        //     std::cout << "All moves repeat - using best move anyway\n";
-        // }
         move_to_ignore = selected;
-        // Rerun minimax ignoring the repeating move
+        // Rerun minimax ignoring the stalemate-causing move
         
         // Reset pruning statistics for the re-run
         nodes_visited = 0;
@@ -337,20 +326,20 @@ Move run_minimax_with_repetition_check(const GameState& initial_state, int max_d
                                     false,
                                     move_to_ignore);
         selected = result.best_move;
-        std::cout << "After re-minimax, selected move: " << selected.action << "\n";
+        std::cout << "✅ After re-minimax, selected move: " << selected.action << "\n";
         
         // Print pruning statistics for the re-run
-        int total_nodes = nodes_visited + nodes_pruned;
-        double pruning_efficiency = (total_nodes > 0) ? (100.0 * nodes_pruned / total_nodes) : 0.0;
+        int total_nodes_rerun = nodes_visited + nodes_pruned;
+        double pruning_efficiency_rerun = (total_nodes_rerun > 0) ? (100.0 * nodes_pruned / total_nodes_rerun) : 0.0;
         std::cout << "\n--- Pruning Statistics (Re-run) ---\n";
         std::cout << "Nodes visited: " << nodes_visited << "\n";
         std::cout << "Nodes pruned: " << nodes_pruned << "\n";
-        std::cout << "Total nodes (visited + pruned): " << total_nodes << "\n";
-        std::cout << "Pruning efficiency: " << pruning_efficiency << "%\n";
+        std::cout << "Total nodes (visited + pruned): " << total_nodes_rerun << "\n";
+        std::cout << "Pruning efficiency: " << pruning_efficiency_rerun << "%\n";
         std::cout << "-----------------------------------\n\n";
         
-        // Print the new principal variation after avoiding repetition
-        std::cout << "\n--- Updated Analysis (avoiding repetition) ---\n";
+        // Print the new principal variation after avoiding stalemate
+        std::cout << "\n--- Updated Analysis (avoiding stalemate) ---\n";
         print_principal_variation(result.principal_variation, side);
     }
     
@@ -358,11 +347,12 @@ Move run_minimax_with_repetition_check(const GameState& initial_state, int max_d
               << " from (" << selected.from[0] << "," << selected.from[1] 
               << ") to (" << selected.to[0] << "," << selected.to[1] << ")\n";
 
-    record_move(selected, recent_moves);
-
-    // Debug output
+    // Record the resulting board state after making this move
     GameState after_state = initial_state.copy();
     after_state.apply_move(selected);
+    record_board_state(after_state, recent_board_hashes, tt);
+
+    // Debug output
     Heuristics().debug_heuristic(after_state, initial_state.current_player);
     
     return selected;
