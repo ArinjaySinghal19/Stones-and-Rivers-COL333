@@ -103,8 +103,8 @@ class GameCoordinator:
             "win_count": win_count,
             "current_player": "circle",
             "players": {
-                "circle": {"connected": False, "port": 8181, "time_left": 60.0},
-                "square": {"connected": False, "port": 8182, "time_left": 60.0}
+                "circle": {"connected": False, "port": 8181, "time_left": 180.0},
+                "square": {"connected": False, "port": 8182, "time_left": 180.0}
             },
             "game_status": "waiting",  # waiting, active, finished
             "winner": None,

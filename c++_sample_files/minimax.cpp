@@ -6,29 +6,16 @@
 #include <fstream>
 #include <chrono>
 #include <iomanip>
-#include <unordered_map>
 
 // Global empty move for default parameter
 Move g_empty_move = {"", {}, {}, {}, ""};
 
 static constexpr bool ENABLE_MOVE_ORDERING = true;
 static constexpr int MIN_DEPTH_FOR_ORDERING = 2;
-static constexpr double HISTORY_WEIGHT = 0.05; // influence of history scores
-static constexpr double KILLER_BONUS = 100000.0; // large ordering bonus
-static constexpr int MAX_DEPTH_LIMIT = 64; // killer/history indexing bound
 
 // Global counters for pruning statistics
 static int nodes_visited = 0;
 static int nodes_pruned = 0;
-static Move killer_moves[MAX_DEPTH_LIMIT + 1][2];
-static std::unordered_map<std::string, double> history_scores; // encoded_move -> score
-
-static inline std::string encode_move(const Move& m) {
-    return m.action + "|" +
-           (m.from.empty()?"":std::to_string(m.from[0])+","+std::to_string(m.from[1])) + "|" +
-           (m.to.empty()?"":std::to_string(m.to[0])+","+std::to_string(m.to[1])) + "|" +
-           (m.pushed_to.empty()?"":std::to_string(m.pushed_to[0])+","+std::to_string(m.pushed_to[1])) + "|" + m.orientation;
-}
 
 // Helper function to format a move as a readable string
 std::string format_move(const Move& move) {
@@ -86,7 +73,7 @@ struct OrderedMovesWithHeuristics {
 // Returns both the sorted moves AND their heuristics to avoid recomputation
 OrderedMovesWithHeuristics order_moves_by_heuristic(GameState& state, const std::vector<Move>& moves,
                                            const std::string& original_player, bool maximizing_player,
-                                           Heuristics::HeuristicsInfo* parent_heuristics, int depth_remaining) {
+                                           Heuristics::HeuristicsInfo* parent_heuristics) {
     struct MoveWithHeuristic {
         double value;
         Move move;
@@ -106,22 +93,7 @@ OrderedMovesWithHeuristics order_moves_by_heuristic(GameState& state, const std:
         move_evaluations.push_back({heuristics.total_score, move, heuristics});
     }
 
-    // Apply history & killer move bonuses before sorting
-    for (auto &eval : move_evaluations) {
-        if (eval.move.action == "move") { // quiet move
-            auto it = history_scores.find(encode_move(eval.move));
-            if (it != history_scores.end()) {
-                eval.value += (maximizing_player ? 1 : -1) * (HISTORY_WEIGHT * it->second);
-            }
-        }
-        if (depth_remaining >=0 && depth_remaining <= MAX_DEPTH_LIMIT) {
-            if (eval.move == killer_moves[depth_remaining][0]) {
-                eval.value += maximizing_player ? KILLER_BONUS : -KILLER_BONUS;
-            } else if (eval.move == killer_moves[depth_remaining][1]) {
-                eval.value += maximizing_player ? (KILLER_BONUS * 0.9) : -(KILLER_BONUS * 0.9);
-            }
-        }
-    }
+    // Sort: descending for max (best first), ascending for min (worst for opponent first)
     std::sort(move_evaluations.begin(), move_evaluations.end(),
               [maximizing_player](const MoveWithHeuristic& a, const MoveWithHeuristic& b) {
                   return maximizing_player ? (a.value > b.value) : (a.value < b.value);
@@ -193,7 +165,7 @@ MinimaxResult minimax_alpha_beta(GameState& state, int depth, double alpha, doub
     bool use_cached_heuristics = false;
 
     if (depth >= MIN_DEPTH_FOR_ORDERING && ENABLE_MOVE_ORDERING) {
-        OrderedMovesWithHeuristics ordered = order_moves_by_heuristic(state, legal_moves, original_player, maximizing_player, parent_heuristics, depth);
+        OrderedMovesWithHeuristics ordered = order_moves_by_heuristic(state, legal_moves, original_player, maximizing_player, parent_heuristics);
         moves_to_explore = std::move(ordered.moves);
         cached_heuristics = std::move(ordered.heuristics);
         use_cached_heuristics = true;
@@ -267,14 +239,7 @@ MinimaxResult minimax_alpha_beta(GameState& state, int depth, double alpha, doub
         }
 
         if (beta <= alpha) {
-            // Beta cutoff (or alpha cutoff) - record killer & history for quiet move
-            if (move.action == "move" && depth >=1 && depth <= MAX_DEPTH_LIMIT) {
-                if (!(move == killer_moves[depth][0])) {
-                    killer_moves[depth][1] = killer_moves[depth][0];
-                    killer_moves[depth][0] = move;
-                }
-                history_scores[encode_move(move)] += (double)depth * (double)depth; // depth^2 reward
-            }
+            // Alpha-beta cutoff: prune remaining siblings
             int remaining_moves = moves_to_explore.size() - i - 1;
             nodes_pruned += remaining_moves;
             break; // Alpha-beta pruning
