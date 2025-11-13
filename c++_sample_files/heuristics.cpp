@@ -449,17 +449,18 @@ double Heuristics::vertical_push_h_small(const GameState& state, const std::stri
     std::vector<double> col_weight(12);
 
     // Column weights
-    for (int i = 2; i <= 3; i++) {
-        col_weight[i] = 3.25;
-        col_weight[11-i] = 3.25;
-    }
-    col_weight[1] = 2.25;
-    col_weight[4] = 2.25;
-    col_weight[6] = 2.25;
-    col_weight[10] = 2.25;
-    col_weight[5] = 1.5;
-    col_weight[0] = 1;
-    col_weight[11] = 1;
+    col_weight[0] = 1.0;
+    col_weight[1] = 1.5;
+    col_weight[2] = 2;
+    col_weight[3] = 3.25;
+    col_weight[4] = 3.25;
+    col_weight[5] = 1.0;
+    col_weight[6] = 1.0;
+    col_weight[7] = 3.25;
+    col_weight[8] = 3.25;
+    col_weight[9] = 2.0;
+    col_weight[10] = 1.5;
+    col_weight[11] = 1.0;  
 
     if(use_parent && parent_info != nullptr && last_move != nullptr){
         if(my_info != nullptr && !my_info->v_push_circle_vals.empty() && !my_info->v_push_square_vals.empty()){
