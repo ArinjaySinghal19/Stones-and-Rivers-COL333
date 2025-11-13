@@ -15,6 +15,8 @@ Game Rules Summary:
 
 import random
 import copy
+import sys
+from pathlib import Path
 from typing import List, Dict, Any, Optional, Tuple
 from abc import ABC, abstractmethod
 
@@ -568,6 +570,98 @@ except ImportError:
             moves = self.generate_all_moves(board, rows, cols, score_cols)
             return random.choice(moves) if moves else None
 
+# ==================== TOURNAMENT BOT SUPPORT ====================
+
+class TournamentBotWrapper(BaseAgent):
+    """
+    Wrapper for dynamically loaded tournament bots.
+    Provides the BaseAgent interface for C++ tournament bots.
+    """
+    def __init__(self, player: str, cpp_agent, bot_name: str = "unknown"):
+        """
+        Args:
+            player: "circle" or "square"
+            cpp_agent: The C++ agent instance from the loaded module
+            bot_name: Name of the bot for debugging
+        """
+        super().__init__(player)
+        self.cpp_agent = cpp_agent
+        self.bot_name = bot_name
+        self.move_count = 0
+    
+    def choose(self, board: List[List[Any]], rows: int, cols: int, score_cols: List[int], 
+               current_player_time: float, opponent_time: float) -> Optional[Dict[str, Any]]:
+        """Call the C++ agent's choose method"""
+        self.move_count += 1
+        print(f"[{self.bot_name.upper()}] Move #{self.move_count} for {self.player}")
+        
+        # Convert board to C++ format (same as student_agent_cpp.py)
+        cpp_board = []
+        for row in board:
+            cpp_row = []
+            for cell in row:
+                if cell is None:
+                    cpp_row.append({})  # Empty cell
+                else:
+                    cpp_row.append({
+                        "owner": cell.owner,
+                        "side": cell.side,
+                        "orientation": cell.orientation if cell.orientation is not None else "horizontal"
+                    })
+            cpp_board.append(cpp_row)
+        
+        # Call C++ agent
+        cpp_move = self.cpp_agent.choose(cpp_board, rows, cols, score_cols, 
+                                         current_player_time, opponent_time)
+        if cpp_move is None:
+            return None
+
+        # Convert to engine-compatible dict
+        move_dict = {
+            "action": cpp_move.action,
+            "from": cpp_move.from_pos,
+            "to": cpp_move.to_pos,
+        }
+        if cpp_move.action == "push":
+            move_dict["pushed_to"] = cpp_move.pushed_to
+        if cpp_move.action == "flip":
+            move_dict["orientation"] = cpp_move.orientation
+        
+        print(f"[{self.bot_name.upper()}] Chose: {cpp_move.action} from {cpp_move.from_pos} to {cpp_move.to_pos}")
+
+        return move_dict
+
+
+def load_tournament_bot(bot_name: str, player: str) -> TournamentBotWrapper:
+    """
+    Load a tournament bot from the tournament_bots directory.
+    
+    Args:
+        bot_name: Name of the bot (directory name in tournament_bots/)
+        player: Player identifier ("circle" or "square")
+    
+    Returns:
+        TournamentBotWrapper instance
+    """
+    # Import the bot loader
+    # Add parent directory to path to access tournament module
+    project_root = Path(__file__).parent.parent
+    if str(project_root) not in sys.path:
+        sys.path.insert(0, str(project_root))
+    
+    try:
+        from tournament.bot_loader import BotLoader
+        
+        loader = BotLoader()
+        cpp_agent = loader.create_agent(bot_name, player)
+        return TournamentBotWrapper(player, cpp_agent, bot_name)
+        
+    except ImportError as e:
+        raise ImportError(f"Failed to import tournament bot loader: {e}")
+    except Exception as e:
+        raise RuntimeError(f"Failed to load tournament bot '{bot_name}': {e}")
+
+
 # ==================== AGENT FACTORY ====================
 
 def get_agent(player: str, strategy: str) -> BaseAgent:
@@ -576,7 +670,9 @@ def get_agent(player: str, strategy: str) -> BaseAgent:
     
     Args:
         player: "circle" or "square"
-        strategy: Strategy name ("random", "student")
+        strategy: Strategy name or tournament bot name
+                 Built-in: "random", "student", "student_cpp"
+                 Tournament: any bot name from tournament_bots/ directory
     
     Returns:
         Agent instance
@@ -599,4 +695,14 @@ def get_agent(player: str, strategy: str) -> BaseAgent:
             print("C++ StudentAgent not available. Falling back to Python StudentAgent.")
             return StudentAgent(player)
     else:
-        raise ValueError(f"Unknown strategy: {strategy}. Available: random, student")
+        # Try to load as tournament bot
+        try:
+            print(f"[Agent Factory] Attempting to load tournament bot: {strategy}")
+            return load_tournament_bot(strategy, player)
+        except Exception as e:
+            raise ValueError(
+                f"Unknown strategy: '{strategy}'. "
+                f"Available built-in strategies: random, student, student_cpp. "
+                f"Or specify a bot name from tournament_bots/ directory. "
+                f"Error: {e}"
+            )

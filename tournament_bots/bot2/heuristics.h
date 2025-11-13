@@ -116,13 +116,8 @@ private:
     // Global 2D weights matrix for scoring area zones
     // [player_type][row][col] where player_type: 0=circle, 1=square
     // Each cell contains the weight for that position based on its zone
-    static int scoring_area_weights_small_[2][13][12];
-    static int scoring_area_weights_medium_[2][15][14];
-    static int scoring_area_weights_large_[2][17][16];
+    static int scoring_area_weights_[2][12][12];
     static void initialize_scoring_weights(int rows);
-    static void initialize_scoring_weights_small(int rows);
-    static void initialize_scoring_weights_medium(int rows);
-    static void initialize_scoring_weights_large(int rows);
 };
 
 #endif // HEURISTICS_H

@@ -1,0 +1,2367 @@
+🐍 Setting up Python environment...
+✅ Python environment ready
+⚙️ Configuring CMake...
+-- Found pybind11: /Users/arinjaysinghal/Desktop/Stones-and-Rivers-COL333/.venv/lib/python3.13/site-packages/pybind11/include (found version "3.0.1")
+-- Configuring done (0.1s)
+-- Generating done (0.0s)
+-- Build files have been written to: /Users/arinjaysinghal/Desktop/Stones-and-Rivers-COL333/c++_sample_files/build
+✅ CMake configuration complete
+🔨 Compiling C++ code...
+[ 33%] Building CXX object CMakeFiles/student_agent_module.dir/student_agent.cpp.o
+[ 33%] Building CXX object CMakeFiles/student_agent_module.dir/minimax.cpp.o
+[ 50%] Building CXX object CMakeFiles/student_agent_module.dir/heuristics.cpp.o
+[ 66%] Linking CXX shared module student_agent_module.cpython-313-darwin.so
+[100%] Built target student_agent_module
+✅ C++ compilation successful
+📦 Setting up client directory...
+✅ Client directory setup complete
+🧪 Testing the setup...
+   Testing C++ module import...
+✅ C++ module imported successfully!
+   Testing agent creation...
+Transposition Table initialized: 2796202 entries (~64 MB)
+Student Agent () created with Transposition Table enabled
+✅ C++ agent created successfully!
+
+=== Transposition Table Statistics ===
+Hits: 0
+Misses: 0
+Stores: 0
+Collisions: 0
+Hit Rate: 0%
+✅ All tests passed!
+🎮 Starting Stones and Rivers Game (with GUI)...
+===============================================
+Mode: aivai | Circle: student_cpp | Square: student_cpp
+Transposition Table initialized: 2796202 entries (~64 MB)
+Student Agent () created with Transposition Table enabled
+Transposition Table initialized: 2796202 entries (~64 MB)
+Student Agent () created with Transposition Table enabled
+=========================================
+Doing Minimax for player: circle at depth 3
+Legal moves available: 48
+Initializing scoring area weights for 13 rows.
+Bottom score row: 10
+Updating scoring_area_weights_ for square at (8, 1) with w4 = 80
+Updating scoring_area_weights_ for square at (9, 1) with w4 = 80
+Updating scoring_area_weights_ for square at (10, 1) with w4 = 80
+Updating scoring_area_weights_ for square at (11, 1) with w4 = 80
+Updating scoring_area_weights_ for square at (12, 1) with w4 = 80
+Updating scoring_area_weights_ for square at (8, 2) with w4 = 80
+Updating scoring_area_weights_ for square at (9, 2) with w4 = 80
+Updating scoring_area_weights_ for square at (10, 2) with w4 = 80
+Updating scoring_area_weights_ for square at (11, 2) with w4 = 80
+Updating scoring_area_weights_ for square at (12, 2) with w4 = 80
+Updating scoring_area_weights_ for square at (8, 3) with w4 = 80
+Updating scoring_area_weights_ for square at (9, 3) with w4 = 80
+Updating scoring_area_weights_ for square at (10, 3) with w4 = 80
+Updating scoring_area_weights_ for square at (11, 3) with w4 = 80
+Updating scoring_area_weights_ for square at (12, 3) with w4 = 80
+Updating scoring_area_weights_ for square at (8, 4) with w4 = 80
+Updating scoring_area_weights_ for square at (9, 4) with w4 = 80
+Updating scoring_area_weights_ for square at (10, 4) with w4 = 80
+Updating scoring_area_weights_ for square at (11, 4) with w4 = 80
+Updating scoring_area_weights_ for square at (12, 4) with w4 = 80
+Updating scoring_area_weights_ for square at (8, 5) with w4 = 80
+Updating scoring_area_weights_ for square at (9, 5) with w4 = 80
+Updating scoring_area_weights_ for square at (10, 5) with w4 = 80
+Updating scoring_area_weights_ for square at (11, 5) with w4 = 80
+Updating scoring_area_weights_ for square at (12, 5) with w4 = 80
+Updating scoring_area_weights_ for square at (8, 6) with w4 = 80
+Updating scoring_area_weights_ for square at (9, 6) with w4 = 80
+Updating scoring_area_weights_ for square at (10, 6) with w4 = 80
+Updating scoring_area_weights_ for square at (11, 6) with w4 = 80
+Updating scoring_area_weights_ for square at (12, 6) with w4 = 80
+Updating scoring_area_weights_ for square at (8, 7) with w4 = 80
+Updating scoring_area_weights_ for square at (9, 7) with w4 = 80
+Updating scoring_area_weights_ for square at (10, 7) with w4 = 80
+Updating scoring_area_weights_ for square at (11, 7) with w4 = 80
+Updating scoring_area_weights_ for square at (12, 7) with w4 = 80
+Updating scoring_area_weights_ for square at (8, 8) with w4 = 80
+Updating scoring_area_weights_ for square at (9, 8) with w4 = 80
+Updating scoring_area_weights_ for square at (10, 8) with w4 = 80
+Updating scoring_area_weights_ for square at (11, 8) with w4 = 80
+Updating scoring_area_weights_ for square at (12, 8) with w4 = 80
+Updating scoring_area_weights_ for square at (8, 9) with w4 = 80
+Updating scoring_area_weights_ for square at (9, 9) with w4 = 80
+Updating scoring_area_weights_ for square at (10, 9) with w4 = 80
+Updating scoring_area_weights_ for square at (11, 9) with w4 = 80
+Updating scoring_area_weights_ for square at (12, 9) with w4 = 80
+Updating scoring_area_weights_ for square at (8, 10) with w4 = 80
+Updating scoring_area_weights_ for square at (9, 10) with w4 = 80
+Updating scoring_area_weights_ for square at (10, 10) with w4 = 80
+Updating scoring_area_weights_ for square at (11, 10) with w4 = 80
+Updating scoring_area_weights_ for square at (12, 10) with w4 = 80
+Updating scoring_area_weights_ for square at (8, 0) with w5 = 4
+Updating scoring_area_weights_ for square at (9, 0) with w5 = 4
+Updating scoring_area_weights_ for square at (10, 0) with w5 = 4
+Updating scoring_area_weights_ for square at (11, 0) with w5 = 4
+Updating scoring_area_weights_ for square at (12, 0) with w5 = 4
+Updating scoring_area_weights_ for square at (8, 1) with w5 = 4
+Updating scoring_area_weights_ for square at (9, 1) with w5 = 4
+Updating scoring_area_weights_ for square at (10, 1) with w5 = 4
+Updating scoring_area_weights_ for square at (11, 1) with w5 = 4
+Updating scoring_area_weights_ for square at (12, 1) with w5 = 4
+Updating scoring_area_weights_ for square at (8, 2) with w5 = 4
+Updating scoring_area_weights_ for square at (9, 2) with w5 = 4
+Updating scoring_area_weights_ for square at (10, 2) with w5 = 4
+Updating scoring_area_weights_ for square at (11, 2) with w5 = 4
+Updating scoring_area_weights_ for square at (12, 2) with w5 = 4
+Updating scoring_area_weights_ for square at (8, 3) with w5 = 4
+Updating scoring_area_weights_ for square at (9, 3) with w5 = 4
+Updating scoring_area_weights_ for square at (10, 3) with w5 = 4
+Updating scoring_area_weights_ for square at (11, 3) with w5 = 4
+Updating scoring_area_weights_ for square at (12, 3) with w5 = 4
+Updating scoring_area_weights_ for square at (8, 4) with w5 = 4
+Updating scoring_area_weights_ for square at (9, 4) with w5 = 4
+Updating scoring_area_weights_ for square at (10, 4) with w5 = 4
+Updating scoring_area_weights_ for square at (11, 4) with w5 = 4
+Updating scoring_area_weights_ for square at (12, 4) with w5 = 4
+Updating scoring_area_weights_ for square at (8, 5) with w5 = 4
+Updating scoring_area_weights_ for square at (9, 5) with w5 = 4
+Updating scoring_area_weights_ for square at (10, 5) with w5 = 4
+Updating scoring_area_weights_ for square at (11, 5) with w5 = 4
+Updating scoring_area_weights_ for square at (12, 5) with w5 = 4
+Updating scoring_area_weights_ for square at (8, 6) with w5 = 4
+Updating scoring_area_weights_ for square at (9, 6) with w5 = 4
+Updating scoring_area_weights_ for square at (10, 6) with w5 = 4
+Updating scoring_area_weights_ for square at (11, 6) with w5 = 4
+Updating scoring_area_weights_ for square at (12, 6) with w5 = 4
+Updating scoring_area_weights_ for square at (8, 7) with w5 = 4
+Updating scoring_area_weights_ for square at (9, 7) with w5 = 4
+Updating scoring_area_weights_ for square at (10, 7) with w5 = 4
+Updating scoring_area_weights_ for square at (11, 7) with w5 = 4
+Updating scoring_area_weights_ for square at (12, 7) with w5 = 4
+Updating scoring_area_weights_ for square at (8, 8) with w5 = 4
+Updating scoring_area_weights_ for square at (9, 8) with w5 = 4
+Updating scoring_area_weights_ for square at (10, 8) with w5 = 4
+Updating scoring_area_weights_ for square at (11, 8) with w5 = 4
+Updating scoring_area_weights_ for square at (12, 8) with w5 = 4
+Updating scoring_area_weights_ for square at (8, 9) with w5 = 4
+Updating scoring_area_weights_ for square at (9, 9) with w5 = 4
+Updating scoring_area_weights_ for square at (10, 9) with w5 = 4
+Updating scoring_area_weights_ for square at (11, 9) with w5 = 4
+Updating scoring_area_weights_ for square at (12, 9) with w5 = 4
+Updating scoring_area_weights_ for square at (8, 10) with w5 = 4
+Updating scoring_area_weights_ for square at (9, 10) with w5 = 4
+Updating scoring_area_weights_ for square at (10, 10) with w5 = 4
+Updating scoring_area_weights_ for square at (11, 10) with w5 = 4
+Updating scoring_area_weights_ for square at (12, 10) with w5 = 4
+Updating scoring_area_weights_ for square at (8, 11) with w5 = 4
+Updating scoring_area_weights_ for square at (9, 11) with w5 = 4
+Updating scoring_area_weights_ for square at (10, 11) with w5 = 4
+Updating scoring_area_weights_ for square at (11, 11) with w5 = 4
+Updating scoring_area_weights_ for square at (12, 11) with w5 = 4
+Scoring area weights size: 2 x 13 x 12
+Scoring Area Weights Matrix:
+Player: Circle
+4 80 80 80 80 80 80 80 80 80 80 4 
+4 80 175 350 350 350 350 350 350 175 80 4 
+4 80 175 350 100000 100000 100000 100000 350 175 80 4 
+4 80 175 175 175 175 175 175 175 175 80 4 
+4 80 80 80 80 80 80 80 80 80 80 4 
+0 0 0 0 0 0 0 0 0 0 0 0 
+0 0 0 0 0 0 0 0 0 0 0 0 
+0 0 0 0 0 0 0 0 0 0 0 0 
+0 0 0 0 0 0 0 0 0 0 0 0 
+0 0 0 0 0 0 0 0 0 0 0 0 
+0 0 0 0 0 0 0 0 0 0 0 0 
+0 0 0 0 0 0 0 0 0 0 0 0 
+0 0 0 0 0 0 0 0 0 0 0 0 
+Player: Square
+0 0 0 0 0 0 0 0 0 0 0 0 
+0 0 0 0 0 0 0 0 0 0 0 0 
+0 0 0 0 0 0 0 0 0 0 0 0 
+0 0 0 0 0 0 0 0 0 0 0 0 
+0 0 0 0 0 0 0 0 0 0 0 0 
+0 0 0 0 0 0 0 0 0 0 0 0 
+0 0 0 0 0 0 0 0 0 0 0 0 
+0 0 0 0 0 0 0 0 0 0 0 0 
+4 80 80 80 80 80 80 80 80 80 80 4 
+4 80 175 175 175 175 175 175 175 175 80 4 
+4 80 175 350 100000 100000 100000 100000 350 175 80 4 
+4 80 175 350 350 350 350 350 350 175 80 4 
+4 80 80 80 80 80 80 80 80 80 80 4 
+
+--- Pruning Statistics ---
+Nodes visited: 5987
+Nodes pruned: 5817
+Total nodes (visited + pruned): 11804
+Pruning efficiency: 49.2799%
+-------------------------
+
+
+========== PRINCIPAL VARIATION (Bot's Analysis) ==========
+The bot expects the following sequence of moves:
+
+  Move 1 - circle will flip at (3,9)
+  Move 2 - square will move from (3,3) to (2,3)
+  Move 3 - circle will flip at (8,9)
+==========================================================
+
+Selected: flip from (3,9) to (3,9)
+📊 Board state recorded. History size: 1
+----- Debug Heuristic -----
+Vertical Push: 130
+Pieces in Scoring (Attack): 0
+Horizontal Attack Self: 0
+Inactive Self: 0
+Pieces Blocking Vertical Self: 0
+Horizontal Base Self: 0
+Horizontal Negative Self: 0
+--- Opponent ---
+Pieces in Scoring (Defense): 0
+Pieces Blocking Vertical Opp: 0
+Horizontal Base Opp: 0
+Horizontal Attack Opp: 0
+Inactive Opp: 0
+Total Evaluation: 130
+---------------------------
+
+⏱️  Time taken: 0.062 seconds
+📊 Performance data logged to minimax_performance.csv
+Move returned in 0.064 seconds.
+TT Hit Rate: 15.052% (901 hits, 5085 misses)
+Total moves made by agent: 1
+=========================================
+Doing Minimax for player: square at depth 3
+Legal moves available: 48
+
+--- Pruning Statistics ---
+Nodes visited: 6579
+Nodes pruned: 7289
+Total nodes (visited + pruned): 13868
+Pruning efficiency: 52.560%
+-------------------------
+
+
+========== PRINCIPAL VARIATION (Bot's Analysis) ==========
+The bot expects the following sequence of moves:
+
+  Move 1 - square will flip at (3,3)
+  Move 2 - circle will push from (4,8) to (3,8) pushing to (2,8)
+  Move 3 - square will flip at (8,3)
+==========================================================
+
+Selected: flip from (3,3) to (3,3)
+📊 Board state recorded. History size: 1
+----- Debug Heuristic -----
+Vertical Push: 130.000
+Pieces in Scoring (Attack): 0.000
+Horizontal Attack Self: 0.000
+Inactive Self: 0.000
+Pieces Blocking Vertical Self: 0.000
+Horizontal Base Self: 0.000
+Horizontal Negative Self: 0.000
+--- Opponent ---
+Pieces in Scoring (Defense): 0.000
+Pieces Blocking Vertical Opp: 0.000
+Horizontal Base Opp: 0.000
+Horizontal Attack Opp: 0.000
+Inactive Opp: 0.000
+Total Evaluation: 130.000
+---------------------------
+
+⏱️  Time taken: 0.059 seconds
+📊 Performance data logged to minimax_performance.csv
+Move returned in 0.060 seconds.
+TT Hit Rate: 13.241% (871 hits, 5707 misses)
+Total moves made by agent: 1
+=========================================
+Doing Minimax for player: circle at depth 3
+Legal moves available: 59
+
+--- Pruning Statistics ---
+Nodes visited: 5113
+Nodes pruned: 12655
+Total nodes (visited + pruned): 17768
+Pruning efficiency: 71.224%
+-------------------------
+
+
+========== PRINCIPAL VARIATION (Bot's Analysis) ==========
+The bot expects the following sequence of moves:
+
+  Move 1 - circle will flip at (8,9)
+  Move 2 - square will flip at (6,3)
+  Move 3 - circle will move from (8,9) to (9,9)
+==========================================================
+
+Selected: flip from (8,9) to (8,9)
+📊 Board state recorded. History size: 2
+----- Debug Heuristic -----
+Vertical Push: 260.000
+Pieces in Scoring (Attack): 0.000
+Horizontal Attack Self: 0.000
+Inactive Self: 0.000
+Pieces Blocking Vertical Self: 0.000
+Horizontal Base Self: 0.000
+Horizontal Negative Self: 0.000
+--- Opponent ---
+Pieces in Scoring (Defense): 0.000
+Pieces Blocking Vertical Opp: 0.000
+Horizontal Base Opp: 0.000
+Horizontal Attack Opp: 0.000
+Inactive Opp: 0.000
+Total Evaluation: 260.000
+---------------------------
+
+⏱️  Time taken: 0.054 seconds
+📊 Performance data logged to minimax_performance.csv
+Move returned in 0.054 seconds.
+TT Hit Rate: 17.571% (1950 hits, 9148 misses)
+Total moves made by agent: 2
+=========================================
+Doing Minimax for player: square at depth 3
+Legal moves available: 59
+
+--- Pruning Statistics ---
+Nodes visited: 5368
+Nodes pruned: 14765
+Total nodes (visited + pruned): 20133
+Pruning efficiency: 73.337%
+-------------------------
+
+
+========== PRINCIPAL VARIATION (Bot's Analysis) ==========
+The bot expects the following sequence of moves:
+
+  Move 1 - square will flip at (8,3)
+  Move 2 - circle will flip at (7,9)
+  Move 3 - square will move from (8,3) to (9,3)
+==========================================================
+
+Selected: flip from (8,3) to (8,3)
+📊 Board state recorded. History size: 2
+----- Debug Heuristic -----
+Vertical Push: 260.000
+Pieces in Scoring (Attack): 0.000
+Horizontal Attack Self: 0.000
+Inactive Self: 0.000
+Pieces Blocking Vertical Self: 0.000
+Horizontal Base Self: 0.000
+Horizontal Negative Self: 0.000
+--- Opponent ---
+Pieces in Scoring (Defense): 0.000
+Pieces Blocking Vertical Opp: 0.000
+Horizontal Base Opp: 0.000
+Horizontal Attack Opp: 0.000
+Inactive Opp: 0.000
+Total Evaluation: 260.000
+---------------------------
+
+⏱️  Time taken: 0.062 seconds
+📊 Performance data logged to minimax_performance.csv
+Move returned in 0.062 seconds.
+TT Hit Rate: 15.345% (1833 hits, 10112 misses)
+Total moves made by agent: 2
+=========================================
+Doing Minimax for player: circle at depth 3
+Legal moves available: 70
+
+--- Pruning Statistics ---
+Nodes visited: 7215
+Nodes pruned: 17283
+Total nodes (visited + pruned): 24498
+Pruning efficiency: 70.549%
+-------------------------
+
+
+========== PRINCIPAL VARIATION (Bot's Analysis) ==========
+The bot expects the following sequence of moves:
+
+  Move 1 - circle will flip at (4,9)
+  Move 2 - square will move from (4,4) to (4,5)
+  Move 3 - circle will move from (8,9) to (9,9)
+==========================================================
+
+Selected: flip from (4,9) to (4,9)
+📊 Board state recorded. History size: 3
+----- Debug Heuristic -----
+Vertical Push: 350.000
+Pieces in Scoring (Attack): 0.000
+Horizontal Attack Self: 0.000
+Inactive Self: 0.000
+Pieces Blocking Vertical Self: 0.000
+Horizontal Base Self: 0.000
+Horizontal Negative Self: 0.000
+--- Opponent ---
+Pieces in Scoring (Defense): 0.000
+Pieces Blocking Vertical Opp: 0.000
+Horizontal Base Opp: 0.000
+Horizontal Attack Opp: 0.000
+Inactive Opp: 0.000
+Total Evaluation: 350.000
+---------------------------
+
+⏱️  Time taken: 0.079 seconds
+📊 Performance data logged to minimax_performance.csv
+Move returned in 0.079 seconds.
+TT Hit Rate: 15.645% (2865 hits, 15447 misses)
+Total moves made by agent: 3
+=========================================
+Doing Minimax for player: square at depth 3
+Legal moves available: 70
+
+--- Pruning Statistics ---
+Nodes visited: 7375
+Nodes pruned: 13115
+Total nodes (visited + pruned): 20490
+Pruning efficiency: 64.007%
+-------------------------
+
+
+========== PRINCIPAL VARIATION (Bot's Analysis) ==========
+The bot expects the following sequence of moves:
+
+  Move 1 - square will flip at (6,3)
+  Move 2 - circle will push from (6,9) to (6,8) pushing to (6,7)
+  Move 3 - square will move from (8,3) to (9,3)
+==========================================================
+
+Selected: flip from (6,3) to (6,3)
+📊 Board state recorded. History size: 3
+----- Debug Heuristic -----
+Vertical Push: 350.000
+Pieces in Scoring (Attack): 0.000
+Horizontal Attack Self: 0.000
+Inactive Self: 0.000
+Pieces Blocking Vertical Self: 0.000
+Horizontal Base Self: 0.000
+Horizontal Negative Self: 0.000
+--- Opponent ---
+Pieces in Scoring (Defense): 0.000
+Pieces Blocking Vertical Opp: 0.000
+Horizontal Base Opp: 0.000
+Horizontal Attack Opp: 0.000
+Inactive Opp: 0.000
+Total Evaluation: 350.000
+---------------------------
+
+⏱️  Time taken: 0.077 seconds
+📊 Performance data logged to minimax_performance.csv
+Move returned in 0.077 seconds.
+TT Hit Rate: 13.857% (2677 hits, 16642 misses)
+Total moves made by agent: 3
+=========================================
+Doing Minimax for player: circle at depth 3
+Legal moves available: 74
+
+--- Pruning Statistics ---
+Nodes visited: 8680
+Nodes pruned: 21552
+Total nodes (visited + pruned): 30232
+Pruning efficiency: 71.289%
+-------------------------
+
+
+========== PRINCIPAL VARIATION (Bot's Analysis) ==========
+The bot expects the following sequence of moves:
+
+  Move 1 - circle will flip at (5,9)
+  Move 2 - square will move from (4,4) to (4,5)
+  Move 3 - circle will move from (3,9) to (2,9)
+==========================================================
+
+Selected: flip from (5,9) to (5,9)
+📊 Board state recorded. History size: 4
+----- Debug Heuristic -----
+Vertical Push: 410.000
+Pieces in Scoring (Attack): 0.000
+Horizontal Attack Self: 0.000
+Inactive Self: 0.000
+Pieces Blocking Vertical Self: 0.000
+Horizontal Base Self: 0.000
+Horizontal Negative Self: 0.000
+--- Opponent ---
+Pieces in Scoring (Defense): 0.000
+Pieces Blocking Vertical Opp: 0.000
+Horizontal Base Opp: 0.000
+Horizontal Attack Opp: 0.000
+Inactive Opp: 0.000
+Total Evaluation: 410.000
+---------------------------
+
+⏱️  Time taken: 0.093 seconds
+📊 Performance data logged to minimax_performance.csv
+Move returned in 0.094 seconds.
+TT Hit Rate: 14.609% (3943 hits, 23048 misses)
+Total moves made by agent: 4
+=========================================
+Doing Minimax for player: square at depth 3
+Legal moves available: 74
+
+--- Pruning Statistics ---
+Nodes visited: 6752
+Nodes pruned: 10170
+Total nodes (visited + pruned): 16922
+Pruning efficiency: 60.099%
+-------------------------
+
+
+========== PRINCIPAL VARIATION (Bot's Analysis) ==========
+The bot expects the following sequence of moves:
+
+  Move 1 - square will move from (3,3) to (2,3)
+  Move 2 - circle will move from (3,9) to (2,9)
+  Move 3 - square will move from (8,3) to (9,3)
+==========================================================
+
+Selected: move from (3,3) to (2,3)
+📊 Board state recorded. History size: 4
+----- Debug Heuristic -----
+Vertical Push: 512.500
+Pieces in Scoring (Attack): 0.000
+Horizontal Attack Self: 0.000
+Inactive Self: 0.000
+Pieces Blocking Vertical Self: 0.000
+Horizontal Base Self: 0.000
+Horizontal Negative Self: 0.000
+--- Opponent ---
+Pieces in Scoring (Defense): 0.000
+Pieces Blocking Vertical Opp: 0.000
+Horizontal Base Opp: 0.000
+Horizontal Attack Opp: 0.000
+Inactive Opp: 0.000
+Total Evaluation: 512.500
+---------------------------
+
+⏱️  Time taken: 0.072 seconds
+📊 Performance data logged to minimax_performance.csv
+Move returned in 0.072 seconds.
+TT Hit Rate: 12.570% (3277 hits, 22793 misses)
+Total moves made by agent: 4
+=========================================
+Doing Minimax for player: circle at depth 3
+Legal moves available: 78
+
+--- Pruning Statistics ---
+Nodes visited: 35780
+Nodes pruned: 47385
+Total nodes (visited + pruned): 83165
+Pruning efficiency: 56.977%
+-------------------------
+
+
+========== PRINCIPAL VARIATION (Bot's Analysis) ==========
+The bot expects the following sequence of moves:
+
+  Move 1 - circle will push from (7,8) to (8,8) pushing to (9,8)
+  Move 2 - square will push from (8,3) to (8,4) pushing to (8,7)
+  Move 3 - circle will move from (8,9) to (9,9)
+==========================================================
+
+Selected: push from (7,8) to (8,8)
+📊 Board state recorded. History size: 5
+----- Debug Heuristic -----
+Vertical Push: 410.000
+Pieces in Scoring (Attack): 0.000
+Horizontal Attack Self: 0.000
+Inactive Self: 0.000
+Pieces Blocking Vertical Self: 0.000
+Horizontal Base Self: 0.000
+Horizontal Negative Self: 0.000
+--- Opponent ---
+Pieces in Scoring (Defense): 0.000
+Pieces Blocking Vertical Opp: 0.000
+Horizontal Base Opp: 0.000
+Horizontal Attack Opp: 0.000
+Inactive Opp: 0.000
+Total Evaluation: 410.000
+---------------------------
+
+⏱️  Time taken: 0.314 seconds
+📊 Performance data logged to minimax_performance.csv
+Move returned in 0.315 seconds.
+TT Hit Rate: 12.017% (7543 hits, 55227 misses)
+Total moves made by agent: 5
+=========================================
+Doing Minimax for player: square at depth 3
+Legal moves available: 65
+
+--- Pruning Statistics ---
+Nodes visited: 10966
+Nodes pruned: 28811
+Total nodes (visited + pruned): 39777
+Pruning efficiency: 72.431%
+-------------------------
+
+
+========== PRINCIPAL VARIATION (Bot's Analysis) ==========
+The bot expects the following sequence of moves:
+
+  Move 1 - square will flip at (7,3)
+  Move 2 - circle will move from (7,9) to (7,8)
+  Move 3 - square will flip at (4,3)
+==========================================================
+
+Selected: flip from (7,3) to (7,3)
+📊 Board state recorded. History size: 5
+----- Debug Heuristic -----
+Vertical Push: 512.500
+Pieces in Scoring (Attack): 0.000
+Horizontal Attack Self: 0.000
+Inactive Self: 0.000
+Pieces Blocking Vertical Self: 0.000
+Horizontal Base Self: 0.000
+Horizontal Negative Self: 0.000
+--- Opponent ---
+Pieces in Scoring (Defense): 0.000
+Pieces Blocking Vertical Opp: 0.000
+Horizontal Base Opp: 0.000
+Horizontal Attack Opp: 0.000
+Inactive Opp: 0.000
+Total Evaluation: 512.500
+---------------------------
+
+⏱️  Time taken: 0.119 seconds
+📊 Performance data logged to minimax_performance.csv
+Move returned in 0.120 seconds.
+TT Hit Rate: 13.439% (4977 hits, 32058 misses)
+Total moves made by agent: 5
+=========================================
+Doing Minimax for player: circle at depth 3
+Legal moves available: 87
+
+--- Pruning Statistics ---
+Nodes visited: 9031
+Nodes pruned: 11907
+Total nodes (visited + pruned): 20938
+Pruning efficiency: 56.868%
+-------------------------
+
+
+========== PRINCIPAL VARIATION (Bot's Analysis) ==========
+The bot expects the following sequence of moves:
+
+  Move 1 - circle will flip at (9,8)
+  Move 2 - square will push from (7,3) to (7,4) pushing to (7,8)
+  Move 3 - circle will move from (8,8) to (9,2)
+==========================================================
+
+Selected: flip from (9,8) to (9,8)
+📊 Board state recorded. History size: 6
+----- Debug Heuristic -----
+Vertical Push: 670.000
+Pieces in Scoring (Attack): 0.000
+Horizontal Attack Self: 0.000
+Inactive Self: 0.000
+Pieces Blocking Vertical Self: 0.000
+Horizontal Base Self: 0.000
+Horizontal Negative Self: 0.000
+--- Opponent ---
+Pieces in Scoring (Defense): 0.000
+Pieces Blocking Vertical Opp: 0.000
+Horizontal Base Opp: 0.000
+Horizontal Attack Opp: 0.000
+Inactive Opp: 0.000
+Total Evaluation: 670.000
+---------------------------
+
+⏱️  Time taken: 0.092 seconds
+📊 Performance data logged to minimax_performance.csv
+Move returned in 0.092 seconds.
+TT Hit Rate: 12.107% (8693 hits, 63107 misses)
+Total moves made by agent: 6
+=========================================
+Doing Minimax for player: square at depth 3
+Legal moves available: 71
+
+--- Pruning Statistics ---
+Nodes visited: 10377
+Nodes pruned: 32027
+Total nodes (visited + pruned): 42404
+Pruning efficiency: 75.528%
+-------------------------
+
+
+========== PRINCIPAL VARIATION (Bot's Analysis) ==========
+The bot expects the following sequence of moves:
+
+  Move 1 - square will move from (7,4) to (7,8)
+  Move 2 - circle will push from (7,9) to (7,8) pushing to (7,7)
+  Move 3 - square will push from (7,7) to (7,8) pushing to (7,9)
+==========================================================
+
+Selected: move from (7,4) to (7,8)
+📊 Board state recorded. History size: 6
+----- Debug Heuristic -----
+Vertical Push: 512.500
+Pieces in Scoring (Attack): 3200.000
+Horizontal Attack Self: 0.000
+Inactive Self: 0.000
+Pieces Blocking Vertical Self: 0.000
+Horizontal Base Self: 0.000
+Horizontal Negative Self: 0.000
+--- Opponent ---
+Pieces in Scoring (Defense): 0.000
+Pieces Blocking Vertical Opp: 0.000
+Horizontal Base Opp: 0.000
+Horizontal Attack Opp: 0.000
+Inactive Opp: 0.000
+Total Evaluation: 3712.500
+---------------------------
+
+⏱️  Time taken: 0.120 seconds
+📊 Performance data logged to minimax_performance.csv
+Move returned in 0.121 seconds.
+TT Hit Rate: 12.866% (6100 hits, 41311 misses)
+Total moves made by agent: 6
+=========================================
+Doing Minimax for player: circle at depth 3
+Legal moves available: 96
+
+--- Pruning Statistics ---
+Nodes visited: 12297
+Nodes pruned: 37715
+Total nodes (visited + pruned): 50012
+Pruning efficiency: 75.412%
+-------------------------
+
+
+========== PRINCIPAL VARIATION (Bot's Analysis) ==========
+The bot expects the following sequence of moves:
+
+  Move 1 - circle will push from (7,9) to (7,8) pushing to (7,7)
+  Move 2 - square will push from (7,7) to (7,8) pushing to (7,9)
+  Move 3 - circle will move from (8,8) to (9,3)
+==========================================================
+
+Selected: push from (7,9) to (7,8)
+📊 Board state recorded. History size: 6
+----- Debug Heuristic -----
+Vertical Push: 670.000
+Pieces in Scoring (Attack): 0.000
+Horizontal Attack Self: 0.000
+Inactive Self: 0.000
+Pieces Blocking Vertical Self: 0.000
+Horizontal Base Self: 0.000
+Horizontal Negative Self: 0.000
+--- Opponent ---
+Pieces in Scoring (Defense): 0.000
+Pieces Blocking Vertical Opp: 0.000
+Horizontal Base Opp: 0.000
+Horizontal Attack Opp: 0.000
+Inactive Opp: 0.000
+Total Evaluation: 670.000
+---------------------------
+
+⏱️  Time taken: 0.140 seconds
+📊 Performance data logged to minimax_performance.csv
+Move returned in 0.140 seconds.
+TT Hit Rate: 12.702% (10682 hits, 73414 misses)
+Total moves made by agent: 7
+=========================================
+Doing Minimax for player: square at depth 3
+Legal moves available: 76
+
+--- Pruning Statistics ---
+Nodes visited: 11474
+Nodes pruned: 26852
+Total nodes (visited + pruned): 38326
+Pruning efficiency: 70.062%
+-------------------------
+
+
+========== PRINCIPAL VARIATION (Bot's Analysis) ==========
+The bot expects the following sequence of moves:
+
+  Move 1 - square will push from (7,7) to (7,8) pushing to (7,9)
+  Move 2 - circle will push from (7,9) to (7,8) pushing to (7,7)
+==========================================================
+
+Selected: push from (7,7) to (7,8)
+📊 Board state recorded. History size: 6
+----- Debug Heuristic -----
+Vertical Push: 512.500
+Pieces in Scoring (Attack): 3200.000
+Horizontal Attack Self: 0.000
+Inactive Self: 0.000
+Pieces Blocking Vertical Self: 0.000
+Horizontal Base Self: 0.000
+Horizontal Negative Self: 0.000
+--- Opponent ---
+Pieces in Scoring (Defense): 0.000
+Pieces Blocking Vertical Opp: 0.000
+Horizontal Base Opp: 0.000
+Horizontal Attack Opp: 0.000
+Inactive Opp: 0.000
+Total Evaluation: 3712.500
+---------------------------
+
+⏱️  Time taken: 0.135 seconds
+📊 Performance data logged to minimax_performance.csv
+Move returned in 0.136 seconds.
+TT Hit Rate: 12.226% (7199 hits, 51685 misses)
+Total moves made by agent: 7
+=========================================
+Doing Minimax for player: circle at depth 3
+Legal moves available: 96
+
+--- Pruning Statistics ---
+Nodes visited: 439
+Nodes pruned: 0
+Total nodes (visited + pruned): 439
+Pruning efficiency: 0.000%
+-------------------------
+
+
+========== PRINCIPAL VARIATION (Bot's Analysis) ==========
+The bot expects the following sequence of moves:
+
+  Move 1 - circle will push from (7,9) to (7,8) pushing to (7,7)
+  Move 2 - square will push from (7,7) to (7,8) pushing to (7,9)
+==========================================================
+
+Selected: push from (7,9) to (7,8)
+📊 Board state recorded. History size: 6
+----- Debug Heuristic -----
+Vertical Push: 670.000
+Pieces in Scoring (Attack): 0.000
+Horizontal Attack Self: 0.000
+Inactive Self: 0.000
+Pieces Blocking Vertical Self: 0.000
+Horizontal Base Self: 0.000
+Horizontal Negative Self: 0.000
+--- Opponent ---
+Pieces in Scoring (Defense): 0.000
+Pieces Blocking Vertical Opp: 0.000
+Horizontal Base Opp: 0.000
+Horizontal Attack Opp: 0.000
+Inactive Opp: 0.000
+Total Evaluation: 670.000
+---------------------------
+
+⏱️  Time taken: 0.002 seconds
+📊 Performance data logged to minimax_performance.csv
+Move returned in 0.003 seconds.
+TT Hit Rate: 13.150% (11116 hits, 73418 misses)
+Total moves made by agent: 8
+=========================================
+Doing Minimax for player: square at depth 3
+Legal moves available: 76
+
+--- Pruning Statistics ---
+Nodes visited: 174
+Nodes pruned: 0
+Total nodes (visited + pruned): 174
+Pruning efficiency: 0.000%
+-------------------------
+
+
+========== PRINCIPAL VARIATION (Bot's Analysis) ==========
+The bot expects the following sequence of moves:
+
+  Move 1 - square will push from (7,7) to (7,8) pushing to (7,9)
+  Move 2 - circle will push from (7,9) to (7,8) pushing to (7,7)
+==========================================================
+
+Selected: push from (7,7) to (7,8)
+📊 Board state recorded. History size: 6
+----- Debug Heuristic -----
+Vertical Push: 512.500
+Pieces in Scoring (Attack): 3200.000
+Horizontal Attack Self: 0.000
+Inactive Self: 0.000
+Pieces Blocking Vertical Self: 0.000
+Horizontal Base Self: 0.000
+Horizontal Negative Self: 0.000
+--- Opponent ---
+Pieces in Scoring (Defense): 0.000
+Pieces Blocking Vertical Opp: 0.000
+Horizontal Base Opp: 0.000
+Horizontal Attack Opp: 0.000
+Inactive Opp: 0.000
+Total Evaluation: 3712.500
+---------------------------
+
+⏱️  Time taken: 0.001 seconds
+📊 Performance data logged to minimax_performance.csv
+Move returned in 0.001 seconds.
+TT Hit Rate: 12.481% (7371 hits, 51686 misses)
+Total moves made by agent: 8
+=========================================
+Doing Minimax for player: circle at depth 3
+Legal moves available: 96
+
+--- Pruning Statistics ---
+Nodes visited: 355
+Nodes pruned: 0
+Total nodes (visited + pruned): 355
+Pruning efficiency: 0.000%
+-------------------------
+
+
+========== PRINCIPAL VARIATION (Bot's Analysis) ==========
+The bot expects the following sequence of moves:
+
+  Move 1 - circle will push from (7,9) to (7,8) pushing to (7,7)
+  Move 2 - square will push from (7,7) to (7,8) pushing to (7,9)
+==========================================================
+
+Selected: push from (7,9) to (7,8)
+📊 Board state recorded. History size: 6
+----- Debug Heuristic -----
+Vertical Push: 670.000
+Pieces in Scoring (Attack): 0.000
+Horizontal Attack Self: 0.000
+Inactive Self: 0.000
+Pieces Blocking Vertical Self: 0.000
+Horizontal Base Self: 0.000
+Horizontal Negative Self: 0.000
+--- Opponent ---
+Pieces in Scoring (Defense): 0.000
+Pieces Blocking Vertical Opp: 0.000
+Horizontal Base Opp: 0.000
+Horizontal Attack Opp: 0.000
+Inactive Opp: 0.000
+Total Evaluation: 670.000
+---------------------------
+
+⏱️  Time taken: 0.002 seconds
+📊 Performance data logged to minimax_performance.csv
+Move returned in 0.003 seconds.
+TT Hit Rate: 13.508% (11467 hits, 73421 misses)
+Total moves made by agent: 9
+=========================================
+Doing Minimax for player: square at depth 3
+Legal moves available: 76
+
+--- Pruning Statistics ---
+Nodes visited: 174
+Nodes pruned: 0
+Total nodes (visited + pruned): 174
+Pruning efficiency: 0.000%
+-------------------------
+
+
+========== PRINCIPAL VARIATION (Bot's Analysis) ==========
+The bot expects the following sequence of moves:
+
+  Move 1 - square will push from (7,7) to (7,8) pushing to (7,9)
+  Move 2 - circle will push from (7,9) to (7,8) pushing to (7,7)
+==========================================================
+
+Selected: push from (7,7) to (7,8)
+📊 Board state recorded. History size: 6
+----- Debug Heuristic -----
+Vertical Push: 512.500
+Pieces in Scoring (Attack): 3200.000
+Horizontal Attack Self: 0.000
+Inactive Self: 0.000
+Pieces Blocking Vertical Self: 0.000
+Horizontal Base Self: 0.000
+Horizontal Negative Self: 0.000
+--- Opponent ---
+Pieces in Scoring (Defense): 0.000
+Pieces Blocking Vertical Opp: 0.000
+Horizontal Base Opp: 0.000
+Horizontal Attack Opp: 0.000
+Inactive Opp: 0.000
+Total Evaluation: 3712.500
+---------------------------
+
+⏱️  Time taken: 0.001 seconds
+📊 Performance data logged to minimax_performance.csv
+Move returned in 0.002 seconds.
+TT Hit Rate: 12.735% (7543 hits, 51687 misses)
+Total moves made by agent: 9
+=========================================
+Doing Minimax for player: circle at depth 3
+Legal moves available: 96
+
+--- Pruning Statistics ---
+Nodes visited: 355
+Nodes pruned: 0
+Total nodes (visited + pruned): 355
+Pruning efficiency: 0.000%
+-------------------------
+
+
+========== PRINCIPAL VARIATION (Bot's Analysis) ==========
+The bot expects the following sequence of moves:
+
+  Move 1 - circle will push from (7,9) to (7,8) pushing to (7,7)
+  Move 2 - square will push from (7,7) to (7,8) pushing to (7,9)
+==========================================================
+
+Selected: push from (7,9) to (7,8)
+📊 Board state recorded. History size: 6
+----- Debug Heuristic -----
+Vertical Push: 670.000
+Pieces in Scoring (Attack): 0.000
+Horizontal Attack Self: 0.000
+Inactive Self: 0.000
+Pieces Blocking Vertical Self: 0.000
+Horizontal Base Self: 0.000
+Horizontal Negative Self: 0.000
+--- Opponent ---
+Pieces in Scoring (Defense): 0.000
+Pieces Blocking Vertical Opp: 0.000
+Horizontal Base Opp: 0.000
+Horizontal Attack Opp: 0.000
+Inactive Opp: 0.000
+Total Evaluation: 670.000
+---------------------------
+
+⏱️  Time taken: 0.003 seconds
+📊 Performance data logged to minimax_performance.csv
+Move returned in 0.004 seconds.
+TT Hit Rate: 13.864% (11818 hits, 73424 misses)
+Total moves made by agent: 10
+=========================================
+Doing Minimax for player: square at depth 3
+Legal moves available: 76
+
+--- Pruning Statistics ---
+Nodes visited: 174
+Nodes pruned: 0
+Total nodes (visited + pruned): 174
+Pruning efficiency: 0.000%
+-------------------------
+
+
+========== PRINCIPAL VARIATION (Bot's Analysis) ==========
+The bot expects the following sequence of moves:
+
+  Move 1 - square will push from (7,7) to (7,8) pushing to (7,9)
+  Move 2 - circle will push from (7,9) to (7,8) pushing to (7,7)
+==========================================================
+
+⚠️  STALEMATE WARNING: Board state repeating every 2 moves (3 times)!
+   This indicates both players are cycling moves.
+   Avoiding this move to prevent draw by repetition.
+🔄 Stalemate would occur! Looking for alternative move...
+✅ After re-minimax, selected move: flip
+
+--- Pruning Statistics (Re-run) ---
+Nodes visited: 6043
+Nodes pruned: 11911
+Total nodes (visited + pruned): 17954
+Pruning efficiency: 66.342%
+-----------------------------------
+
+
+--- Updated Analysis (avoiding stalemate) ---
+
+========== PRINCIPAL VARIATION (Bot's Analysis) ==========
+The bot expects the following sequence of moves:
+
+  Move 1 - square will flip at (4,3)
+  Move 2 - circle will move from (8,8) to (8,5)
+  Move 3 - square will move from (8,3) to (9,3)
+==========================================================
+
+Selected: flip from (4,3) to (4,3)
+📊 Board state recorded. History size: 6
+----- Debug Heuristic -----
+Vertical Push: 602.500
+Pieces in Scoring (Attack): 0.000
+Horizontal Attack Self: 0.000
+Inactive Self: 0.000
+Pieces Blocking Vertical Self: 0.000
+Horizontal Base Self: 0.000
+Horizontal Negative Self: 0.000
+--- Opponent ---
+Pieces in Scoring (Defense): 0.000
+Pieces Blocking Vertical Opp: 0.000
+Horizontal Base Opp: 0.000
+Horizontal Attack Opp: 0.000
+Inactive Opp: 0.000
+Total Evaluation: 602.500
+---------------------------
+
+⏱️  Time taken: 0.075 seconds
+📊 Performance data logged to minimax_performance.csv
+Move returned in 0.076 seconds.
+TT Hit Rate: 18.073% (11828 hits, 53617 misses)
+Total moves made by agent: 10
+=========================================
+Doing Minimax for player: circle at depth 3
+Legal moves available: 96
+
+--- Pruning Statistics ---
+Nodes visited: 14675
+Nodes pruned: 45165
+Total nodes (visited + pruned): 59840
+Pruning efficiency: 75.476%
+-------------------------
+
+
+========== PRINCIPAL VARIATION (Bot's Analysis) ==========
+The bot expects the following sequence of moves:
+
+  Move 1 - circle will flip at (7,8)
+  Move 2 - square will move from (8,3) to (9,3)
+  Move 3 - circle will push from (7,8) to (8,8) pushing to (9,1)
+==========================================================
+
+Selected: flip from (7,8) to (7,8)
+📊 Board state recorded. History size: 6
+----- Debug Heuristic -----
+Vertical Push: 670.000
+Pieces in Scoring (Attack): 0.000
+Horizontal Attack Self: 0.000
+Inactive Self: 0.000
+Pieces Blocking Vertical Self: 0.000
+Horizontal Base Self: 10.000
+Horizontal Negative Self: 0.000
+--- Opponent ---
+Pieces in Scoring (Defense): 0.000
+Pieces Blocking Vertical Opp: 0.000
+Horizontal Base Opp: 0.000
+Horizontal Attack Opp: 0.000
+Inactive Opp: 0.000
+Total Evaluation: 680.000
+---------------------------
+
+⏱️  Time taken: 0.165 seconds
+📊 Performance data logged to minimax_performance.csv
+Move returned in 0.165 seconds.
+TT Hit Rate: 15.138% (15125 hits, 84791 misses)
+Total moves made by agent: 11
+=========================================
+Doing Minimax for player: square at depth 3
+Legal moves available: 78
+
+--- Pruning Statistics ---
+Nodes visited: 9724
+Nodes pruned: 64293
+Total nodes (visited + pruned): 74017
+Pruning efficiency: 86.862%
+-------------------------
+
+
+========== PRINCIPAL VARIATION (Bot's Analysis) ==========
+The bot expects the following sequence of moves:
+
+  Move 1 - square will move from (3,4) to (3,3)
+  Move 2 - circle will push from (7,8) to (8,8) pushing to (9,1)
+  Move 3 - square will move from (3,3) to (2,11)
+==========================================================
+
+Selected: move from (3,4) to (3,3)
+📊 Board state recorded. History size: 6
+----- Debug Heuristic -----
+Vertical Push: 602.500
+Pieces in Scoring (Attack): 0.000
+Horizontal Attack Self: 0.000
+Inactive Self: 0.000
+Pieces Blocking Vertical Self: 0.000
+Horizontal Base Self: 0.000
+Horizontal Negative Self: 0.000
+--- Opponent ---
+Pieces in Scoring (Defense): 0.000
+Pieces Blocking Vertical Opp: 0.000
+Horizontal Base Opp: -10.000
+Horizontal Attack Opp: 0.000
+Inactive Opp: 0.000
+Total Evaluation: 592.500
+---------------------------
+
+⏱️  Time taken: 0.151 seconds
+📊 Performance data logged to minimax_performance.csv
+Move returned in 0.151 seconds.
+TT Hit Rate: 18.723% (14074 hits, 61094 misses)
+Total moves made by agent: 11
+=========================================
+Doing Minimax for player: circle at depth 3
+Legal moves available: 120
+
+--- Pruning Statistics ---
+Nodes visited: 18156
+Nodes pruned: 19359
+Total nodes (visited + pruned): 37515
+Pruning efficiency: 51.603%
+-------------------------
+
+
+========== PRINCIPAL VARIATION (Bot's Analysis) ==========
+The bot expects the following sequence of moves:
+
+  Move 1 - circle will push from (7,8) to (8,8) pushing to (9,2)
+  Move 2 - square will move from (7,7) to (7,8)
+  Move 3 - circle will move from (9,2) to (8,2)
+==========================================================
+
+Selected: push from (7,8) to (8,8)
+📊 Board state recorded. History size: 6
+----- Debug Heuristic -----
+Vertical Push: 702.500
+Pieces in Scoring (Attack): 7000.000
+Horizontal Attack Self: 0.000
+Inactive Self: 0.000
+Pieces Blocking Vertical Self: 0.000
+Horizontal Base Self: 0.000
+Horizontal Negative Self: 0.000
+--- Opponent ---
+Pieces in Scoring (Defense): 0.000
+Pieces Blocking Vertical Opp: 0.000
+Horizontal Base Opp: 0.000
+Horizontal Attack Opp: 0.000
+Inactive Opp: 0.000
+Total Evaluation: 7702.500
+---------------------------
+
+⏱️  Time taken: 0.182 seconds
+📊 Performance data logged to minimax_performance.csv
+Move returned in 0.182 seconds.
+TT Hit Rate: 15.491% (18290 hits, 99781 misses)
+Total moves made by agent: 12
+=========================================
+Doing Minimax for player: square at depth 3
+Legal moves available: 103
+
+--- Pruning Statistics ---
+Nodes visited: 14717
+Nodes pruned: 46358
+Total nodes (visited + pruned): 61075
+Pruning efficiency: 75.903%
+-------------------------
+
+
+========== PRINCIPAL VARIATION (Bot's Analysis) ==========
+The bot expects the following sequence of moves:
+
+  Move 1 - square will move from (7,7) to (7,8)
+  Move 2 - circle will move from (9,2) to (8,2)
+  Move 3 - square will push from (8,3) to (8,2) pushing to (8,0)
+==========================================================
+
+Selected: move from (7,7) to (7,8)
+📊 Board state recorded. History size: 6
+----- Debug Heuristic -----
+Vertical Push: 602.500
+Pieces in Scoring (Attack): 3200.000
+Horizontal Attack Self: 0.000
+Inactive Self: 0.000
+Pieces Blocking Vertical Self: 0.000
+Horizontal Base Self: 0.000
+Horizontal Negative Self: 0.000
+--- Opponent ---
+Pieces in Scoring (Defense): -7000.000
+Pieces Blocking Vertical Opp: 0.000
+Horizontal Base Opp: 0.000
+Horizontal Attack Opp: 0.000
+Inactive Opp: 0.000
+Total Evaluation: -3197.500
+---------------------------
+
+⏱️  Time taken: 0.180 seconds
+📊 Performance data logged to minimax_performance.csv
+Move returned in 0.180 seconds.
+TT Hit Rate: 18.301% (16450 hits, 73434 misses)
+Total moves made by agent: 12
+=========================================
+Doing Minimax for player: circle at depth 3
+Legal moves available: 97
+
+--- Pruning Statistics ---
+Nodes visited: 15686
+Nodes pruned: 36675
+Total nodes (visited + pruned): 52361
+Pruning efficiency: 70.043%
+-------------------------
+
+
+========== PRINCIPAL VARIATION (Bot's Analysis) ==========
+The bot expects the following sequence of moves:
+
+  Move 1 - circle will flip at (9,2)
+  Move 2 - square will push from (8,3) to (8,4) pushing to (8,2)
+  Move 3 - circle will push from (9,2) to (8,2) pushing to (11,2)
+==========================================================
+
+Selected: flip from (9,2) to (9,2)
+📊 Board state recorded. History size: 6
+----- Debug Heuristic -----
+Vertical Push: 702.500
+Pieces in Scoring (Attack): 7000.000
+Horizontal Attack Self: 150.000
+Inactive Self: 0.000
+Pieces Blocking Vertical Self: 0.000
+Horizontal Base Self: 0.000
+Horizontal Negative Self: 0.000
+--- Opponent ---
+Pieces in Scoring (Defense): -3200.000
+Pieces Blocking Vertical Opp: 0.000
+Horizontal Base Opp: 0.000
+Horizontal Attack Opp: 0.000
+Inactive Opp: 0.000
+Total Evaluation: 4652.500
+---------------------------
+
+⏱️  Time taken: 0.180 seconds
+📊 Performance data logged to minimax_performance.csv
+Move returned in 0.180 seconds.
+TT Hit Rate: 15.134% (20242 hits, 113514 misses)
+Total moves made by agent: 13
+=========================================
+Doing Minimax for player: square at depth 3
+Legal moves available: 103
+
+--- Pruning Statistics ---
+Nodes visited: 14844
+Nodes pruned: 62780
+Total nodes (visited + pruned): 77624
+Pruning efficiency: 80.877%
+-------------------------
+
+
+========== PRINCIPAL VARIATION (Bot's Analysis) ==========
+The bot expects the following sequence of moves:
+
+  Move 1 - square will move from (8,4) to (8,2)
+  Move 2 - circle will push from (3,9) to (3,8) pushing to (3,4)
+  Move 3 - square will move from (3,3) to (2,9)
+==========================================================
+
+Selected: move from (8,4) to (8,2)
+📊 Board state recorded. History size: 6
+----- Debug Heuristic -----
+Vertical Push: 602.500
+Pieces in Scoring (Attack): 3200.000
+Horizontal Attack Self: 0.000
+Inactive Self: 0.000
+Pieces Blocking Vertical Self: 0.000
+Horizontal Base Self: 0.000
+Horizontal Negative Self: 0.000
+--- Opponent ---
+Pieces in Scoring (Defense): -7000.000
+Pieces Blocking Vertical Opp: -150.000
+Horizontal Base Opp: 0.000
+Horizontal Attack Opp: 0.000
+Inactive Opp: 0.000
+Total Evaluation: -3347.500
+---------------------------
+
+⏱️  Time taken: 0.189 seconds
+📊 Performance data logged to minimax_performance.csv
+Move returned in 0.190 seconds.
+TT Hit Rate: 19.083% (19985 hits, 84742 misses)
+Total moves made by agent: 13
+=========================================
+Doing Minimax for player: circle at depth 3
+Legal moves available: 103
+
+--- Pruning Statistics ---
+Nodes visited: 21804
+Nodes pruned: 70326
+Total nodes (visited + pruned): 92130
+Pruning efficiency: 76.333%
+-------------------------
+
+
+========== PRINCIPAL VARIATION (Bot's Analysis) ==========
+The bot expects the following sequence of moves:
+
+  Move 1 - circle will move from (9,2) to (9,1)
+  Move 2 - square will push from (8,3) to (8,2) pushing to (8,1)
+  Move 3 - circle will push from (9,1) to (8,1) pushing to (0,1)
+==========================================================
+
+Selected: move from (9,2) to (9,1)
+📊 Board state recorded. History size: 6
+----- Debug Heuristic -----
+Vertical Push: 735.000
+Pieces in Scoring (Attack): 7000.000
+Horizontal Attack Self: 100.000
+Inactive Self: 0.000
+Pieces Blocking Vertical Self: 150.000
+Horizontal Base Self: 0.000
+Horizontal Negative Self: 0.000
+--- Opponent ---
+Pieces in Scoring (Defense): -3200.000
+Pieces Blocking Vertical Opp: 0.000
+Horizontal Base Opp: 0.000
+Horizontal Attack Opp: 0.000
+Inactive Opp: 0.000
+Total Evaluation: 4785.000
+---------------------------
+
+⏱️  Time taken: 0.255 seconds
+📊 Performance data logged to minimax_performance.csv
+Move returned in 0.256 seconds.
+TT Hit Rate: 14.845% (23093 hits, 132466 misses)
+Total moves made by agent: 14
+=========================================
+Doing Minimax for player: square at depth 3
+Legal moves available: 103
+
+--- Pruning Statistics ---
+Nodes visited: 17227
+Nodes pruned: 68769
+Total nodes (visited + pruned): 85996
+Pruning efficiency: 79.968%
+-------------------------
+
+
+========== PRINCIPAL VARIATION (Bot's Analysis) ==========
+The bot expects the following sequence of moves:
+
+  Move 1 - square will move from (8,3) to (7,7)
+  Move 2 - circle will move from (6,9) to (7,9)
+  Move 3 - square will move from (3,3) to (2,9)
+==========================================================
+
+Selected: move from (8,3) to (7,7)
+📊 Board state recorded. History size: 6
+----- Debug Heuristic -----
+Vertical Push: 472.500
+Pieces in Scoring (Attack): 3200.000
+Horizontal Attack Self: 0.000
+Inactive Self: 0.000
+Pieces Blocking Vertical Self: 0.000
+Horizontal Base Self: 0.000
+Horizontal Negative Self: 0.000
+--- Opponent ---
+Pieces in Scoring (Defense): -7000.000
+Pieces Blocking Vertical Opp: 0.000
+Horizontal Base Opp: 0.000
+Horizontal Attack Opp: -100.000
+Inactive Opp: 0.000
+Total Evaluation: -3427.500
+---------------------------
+
+⏱️  Time taken: 0.216 seconds
+📊 Performance data logged to minimax_performance.csv
+Move returned in 0.216 seconds.
+TT Hit Rate: 18.475% (22531 hits, 99422 misses)
+Total moves made by agent: 14
+=========================================
+Doing Minimax for player: circle at depth 3
+Legal moves available: 115
+
+--- Pruning Statistics ---
+Nodes visited: 14357
+Nodes pruned: 54443
+Total nodes (visited + pruned): 68800
+Pruning efficiency: 79.132%
+-------------------------
+
+
+========== PRINCIPAL VARIATION (Bot's Analysis) ==========
+The bot expects the following sequence of moves:
+
+  Move 1 - circle will move from (6,9) to (7,9)
+  Move 2 - square will move from (3,3) to (2,11)
+  Move 3 - circle will move from (3,8) to (3,2)
+==========================================================
+
+Selected: move from (6,9) to (7,9)
+📊 Board state recorded. History size: 6
+----- Debug Heuristic -----
+Vertical Push: 767.500
+Pieces in Scoring (Attack): 7000.000
+Horizontal Attack Self: 100.000
+Inactive Self: 0.000
+Pieces Blocking Vertical Self: 0.000
+Horizontal Base Self: 0.000
+Horizontal Negative Self: 0.000
+--- Opponent ---
+Pieces in Scoring (Defense): -3200.000
+Pieces Blocking Vertical Opp: 0.000
+Horizontal Base Opp: 0.000
+Horizontal Attack Opp: 0.000
+Inactive Opp: 0.000
+Total Evaluation: 4667.500
+---------------------------
+
+⏱️  Time taken: 0.170 seconds
+📊 Performance data logged to minimax_performance.csv
+Move returned in 0.170 seconds.
+TT Hit Rate: 16.717% (28405 hits, 141510 misses)
+Total moves made by agent: 15
+=========================================
+Doing Minimax for player: square at depth 3
+Legal moves available: 90
+
+--- Pruning Statistics ---
+Nodes visited: 10378
+Nodes pruned: 32088
+Total nodes (visited + pruned): 42466
+Pruning efficiency: 75.562%
+-------------------------
+
+
+========== PRINCIPAL VARIATION (Bot's Analysis) ==========
+The bot expects the following sequence of moves:
+
+  Move 1 - square will move from (8,2) to (8,3)
+  Move 2 - circle will move from (9,1) to (8,1)
+  Move 3 - square will move from (3,3) to (2,10)
+==========================================================
+
+Selected: move from (8,2) to (8,3)
+📊 Board state recorded. History size: 6
+----- Debug Heuristic -----
+Vertical Push: 472.500
+Pieces in Scoring (Attack): 3200.000
+Horizontal Attack Self: 0.000
+Inactive Self: 0.000
+Pieces Blocking Vertical Self: 0.000
+Horizontal Base Self: 0.000
+Horizontal Negative Self: 0.000
+--- Opponent ---
+Pieces in Scoring (Defense): -7000.000
+Pieces Blocking Vertical Opp: 0.000
+Horizontal Base Opp: 0.000
+Horizontal Attack Opp: -100.000
+Inactive Opp: 0.000
+Total Evaluation: -3427.500
+---------------------------
+
+⏱️  Time taken: 0.138 seconds
+📊 Performance data logged to minimax_performance.csv
+Move returned in 0.138 seconds.
+TT Hit Rate: 18.122% (23981 hits, 108349 misses)
+Total moves made by agent: 15
+=========================================
+Doing Minimax for player: circle at depth 3
+Legal moves available: 115
+
+--- Pruning Statistics ---
+Nodes visited: 27646
+Nodes pruned: 48075
+Total nodes (visited + pruned): 75721
+Pruning efficiency: 63.490%
+-------------------------
+
+
+========== PRINCIPAL VARIATION (Bot's Analysis) ==========
+The bot expects the following sequence of moves:
+
+  Move 1 - circle will move from (8,8) to (6,1)
+  Move 2 - square will push from (7,3) to (8,3) pushing to (8,11)
+  Move 3 - circle will move from (6,1) to (6,2)
+==========================================================
+
+Selected: move from (8,8) to (6,1)
+📊 Board state recorded. History size: 6
+----- Debug Heuristic -----
+Vertical Push: 735.000
+Pieces in Scoring (Attack): 21000.000
+Horizontal Attack Self: 100.000
+Inactive Self: 0.000
+Pieces Blocking Vertical Self: 0.000
+Horizontal Base Self: 0.000
+Horizontal Negative Self: 0.000
+--- Opponent ---
+Pieces in Scoring (Defense): -3200.000
+Pieces Blocking Vertical Opp: -150.000
+Horizontal Base Opp: 0.000
+Horizontal Attack Opp: 0.000
+Inactive Opp: 0.000
+Total Evaluation: 18485.000
+---------------------------
+
+⏱️  Time taken: 0.286 seconds
+📊 Performance data logged to minimax_performance.csv
+Move returned in 0.287 seconds.
+TT Hit Rate: 15.666% (30949 hits, 166611 misses)
+Total moves made by agent: 16
+=========================================
+Doing Minimax for player: square at depth 3
+Legal moves available: 104
+
+--- Pruning Statistics ---
+Nodes visited: 11282
+Nodes pruned: 25640
+Total nodes (visited + pruned): 36922
+Pruning efficiency: 69.444%
+-------------------------
+
+
+========== PRINCIPAL VARIATION (Bot's Analysis) ==========
+The bot expects the following sequence of moves:
+
+  Move 1 - square will push from (7,3) to (8,3) pushing to (8,10)
+  Move 2 - circle will push from (8,9) to (8,10) pushing to (8,4)
+  Move 3 - square will move from (3,3) to (2,11)
+==========================================================
+
+Selected: push from (7,3) to (8,3)
+📊 Board state recorded. History size: 6
+----- Debug Heuristic -----
+Vertical Push: 472.500
+Pieces in Scoring (Attack): 17200.000
+Horizontal Attack Self: 0.000
+Inactive Self: 0.000
+Pieces Blocking Vertical Self: 150.000
+Horizontal Base Self: 0.000
+Horizontal Negative Self: 0.000
+--- Opponent ---
+Pieces in Scoring (Defense): -21000.000
+Pieces Blocking Vertical Opp: 0.000
+Horizontal Base Opp: 0.000
+Horizontal Attack Opp: -100.000
+Inactive Opp: 0.000
+Total Evaluation: -3277.500
+---------------------------
+
+⏱️  Time taken: 0.119 seconds
+📊 Performance data logged to minimax_performance.csv
+Move returned in 0.120 seconds.
+TT Hit Rate: 19.721% (28321 hits, 115290 misses)
+Total moves made by agent: 16
+=========================================
+Doing Minimax for player: circle at depth 3
+Legal moves available: 88
+
+--- Pruning Statistics ---
+Nodes visited: 11519
+Nodes pruned: 28619
+Total nodes (visited + pruned): 40138
+Pruning efficiency: 71.302%
+-------------------------
+
+
+========== PRINCIPAL VARIATION (Bot's Analysis) ==========
+The bot expects the following sequence of moves:
+
+  Move 1 - circle will push from (8,9) to (8,10) pushing to (8,4)
+  Move 2 - square will move from (3,3) to (2,11)
+  Move 3 - circle will move from (6,1) to (6,2)
+==========================================================
+
+Selected: push from (8,9) to (8,10)
+📊 Board state recorded. History size: 6
+----- Debug Heuristic -----
+Vertical Push: 572.500
+Pieces in Scoring (Attack): 21000.000
+Horizontal Attack Self: 100.000
+Inactive Self: 0.000
+Pieces Blocking Vertical Self: 0.000
+Horizontal Base Self: 0.000
+Horizontal Negative Self: 0.000
+--- Opponent ---
+Pieces in Scoring (Defense): -3200.000
+Pieces Blocking Vertical Opp: 0.000
+Horizontal Base Opp: 0.000
+Horizontal Attack Opp: 0.000
+Inactive Opp: 0.000
+Total Evaluation: 18472.500
+---------------------------
+
+⏱️  Time taken: 0.131 seconds
+📊 Performance data logged to minimax_performance.csv
+Move returned in 0.132 seconds.
+TT Hit Rate: 15.914% (33273 hits, 175805 misses)
+Total moves made by agent: 17
+=========================================
+Doing Minimax for player: square at depth 3
+Legal moves available: 94
+
+--- Pruning Statistics ---
+Nodes visited: 8843
+Nodes pruned: 13616
+Total nodes (visited + pruned): 22459
+Pruning efficiency: 60.626%
+-------------------------
+
+
+========== PRINCIPAL VARIATION (Bot's Analysis) ==========
+The bot expects the following sequence of moves:
+
+  Move 1 - square will move from (3,3) to (2,11)
+  Move 2 - circle will move from (6,1) to (6,2)
+  Move 3 - square will move from (2,11) to (3,11)
+==========================================================
+
+Selected: move from (3,3) to (2,11)
+📊 Board state recorded. History size: 6
+----- Debug Heuristic -----
+Vertical Push: 472.500
+Pieces in Scoring (Attack): 10200.000
+Horizontal Attack Self: 0.000
+Inactive Self: 0.000
+Pieces Blocking Vertical Self: 0.000
+Horizontal Base Self: 0.000
+Horizontal Negative Self: 0.000
+--- Opponent ---
+Pieces in Scoring (Defense): -21000.000
+Pieces Blocking Vertical Opp: 0.000
+Horizontal Base Opp: 0.000
+Horizontal Attack Opp: -100.000
+Inactive Opp: 0.000
+Total Evaluation: -10427.500
+---------------------------
+
+⏱️  Time taken: 0.086 seconds
+📊 Performance data logged to minimax_performance.csv
+Move returned in 0.087 seconds.
+TT Hit Rate: 20.942% (31927 hits, 120526 misses)
+Total moves made by agent: 17
+=========================================
+Doing Minimax for player: circle at depth 3
+Legal moves available: 86
+
+--- Pruning Statistics ---
+Nodes visited: 13221
+Nodes pruned: 17473
+Total nodes (visited + pruned): 30694
+Pruning efficiency: 56.926%
+-------------------------
+
+
+========== PRINCIPAL VARIATION (Bot's Analysis) ==========
+The bot expects the following sequence of moves:
+
+  Move 1 - circle will move from (3,8) to (3,2)
+  Move 2 - square will move from (2,11) to (3,11)
+  Move 3 - circle will move from (3,2) to (4,2)
+==========================================================
+
+Selected: move from (3,8) to (3,2)
+📊 Board state recorded. History size: 6
+----- Debug Heuristic -----
+Vertical Push: 702.500
+Pieces in Scoring (Attack): 35000.000
+Horizontal Attack Self: 100.000
+Inactive Self: 0.000
+Pieces Blocking Vertical Self: 0.000
+Horizontal Base Self: 0.000
+Horizontal Negative Self: 0.000
+--- Opponent ---
+Pieces in Scoring (Defense): -10200.000
+Pieces Blocking Vertical Opp: 0.000
+Horizontal Base Opp: 0.000
+Horizontal Attack Opp: 0.000
+Inactive Opp: 0.000
+Total Evaluation: 25602.500
+---------------------------
+
+⏱️  Time taken: 0.128 seconds
+📊 Performance data logged to minimax_performance.csv
+Move returned in 0.129 seconds.
+TT Hit Rate: 16.209% (36033 hits, 186265 misses)
+Total moves made by agent: 18
+=========================================
+Doing Minimax for player: square at depth 3
+Legal moves available: 72
+
+--- Pruning Statistics ---
+Nodes visited: 6019
+Nodes pruned: 18534
+Total nodes (visited + pruned): 24553
+Pruning efficiency: 75.486%
+-------------------------
+
+
+========== PRINCIPAL VARIATION (Bot's Analysis) ==========
+The bot expects the following sequence of moves:
+
+  Move 1 - square will move from (4,3) to (3,3)
+  Move 2 - circle will move from (3,2) to (4,2)
+  Move 3 - square will move from (2,3) to (3,10)
+==========================================================
+
+Selected: move from (4,3) to (3,3)
+📊 Board state recorded. History size: 6
+----- Debug Heuristic -----
+Vertical Push: 545.000
+Pieces in Scoring (Attack): 10200.000
+Horizontal Attack Self: 0.000
+Inactive Self: 0.000
+Pieces Blocking Vertical Self: 0.000
+Horizontal Base Self: 0.000
+Horizontal Negative Self: 0.000
+--- Opponent ---
+Pieces in Scoring (Defense): -35000.000
+Pieces Blocking Vertical Opp: 0.000
+Horizontal Base Opp: 0.000
+Horizontal Attack Opp: -100.000
+Inactive Opp: 0.000
+Total Evaluation: -24355.000
+---------------------------
+
+⏱️  Time taken: 0.071 seconds
+📊 Performance data logged to minimax_performance.csv
+Move returned in 0.071 seconds.
+TT Hit Rate: 21.691% (34374 hits, 124097 misses)
+Total moves made by agent: 18
+=========================================
+Doing Minimax for player: circle at depth 3
+Legal moves available: 82
+
+--- Pruning Statistics ---
+Nodes visited: 10277
+Nodes pruned: 11081
+Total nodes (visited + pruned): 21358
+Pruning efficiency: 51.882%
+-------------------------
+
+
+========== PRINCIPAL VARIATION (Bot's Analysis) ==========
+The bot expects the following sequence of moves:
+
+  Move 1 - circle will move from (3,2) to (4,2)
+  Move 2 - square will move from (2,3) to (3,10)
+  Move 3 - circle will move from (6,1) to (6,2)
+==========================================================
+
+Selected: move from (3,2) to (4,2)
+📊 Board state recorded. History size: 6
+----- Debug Heuristic -----
+Vertical Push: 572.500
+Pieces in Scoring (Attack): 4079000.000
+Horizontal Attack Self: 100.000
+Inactive Self: 0.000
+Pieces Blocking Vertical Self: 0.000
+Horizontal Base Self: 0.000
+Horizontal Negative Self: 0.000
+--- Opponent ---
+Pieces in Scoring (Defense): -10200.000
+Pieces Blocking Vertical Opp: 0.000
+Horizontal Base Opp: 0.000
+Horizontal Attack Opp: 0.000
+Inactive Opp: 0.000
+Total Evaluation: 4069472.500
+---------------------------
+
+⏱️  Time taken: 0.103 seconds
+📊 Performance data logged to minimax_performance.csv
+Move returned in 0.104 seconds.
+TT Hit Rate: 16.188% (37649 hits, 194925 misses)
+Total moves made by agent: 19
+=========================================
+Doing Minimax for player: square at depth 3
+Legal moves available: 91
+
+--- Pruning Statistics ---
+Nodes visited: 8495
+Nodes pruned: 13570
+Total nodes (visited + pruned): 22065
+Pruning efficiency: 61.500%
+-------------------------
+
+
+========== PRINCIPAL VARIATION (Bot's Analysis) ==========
+The bot expects the following sequence of moves:
+
+  Move 1 - square will move from (2,3) to (3,10)
+  Move 2 - circle will move from (6,1) to (6,2)
+  Move 3 - square will move from (3,10) to (4,10)
+==========================================================
+
+Selected: move from (2,3) to (3,10)
+📊 Board state recorded. History size: 6
+----- Debug Heuristic -----
+Vertical Push: 317.500
+Pieces in Scoring (Attack): 24200.000
+Horizontal Attack Self: 0.000
+Inactive Self: 0.000
+Pieces Blocking Vertical Self: 0.000
+Horizontal Base Self: 0.000
+Horizontal Negative Self: 0.000
+--- Opponent ---
+Pieces in Scoring (Defense): -4079000.000
+Pieces Blocking Vertical Opp: 0.000
+Horizontal Base Opp: 0.000
+Horizontal Attack Opp: -100.000
+Inactive Opp: 0.000
+Total Evaluation: -4054582.500
+---------------------------
+
+⏱️  Time taken: 0.086 seconds
+📊 Performance data logged to minimax_performance.csv
+Move returned in 0.087 seconds.
+TT Hit Rate: 22.820% (38101 hits, 128864 misses)
+Total moves made by agent: 19
+=========================================
+Doing Minimax for player: circle at depth 3
+Legal moves available: 84
+
+--- Pruning Statistics ---
+Nodes visited: 9651
+Nodes pruned: 18214
+Total nodes (visited + pruned): 27865
+Pruning efficiency: 65.365%
+-------------------------
+
+
+========== PRINCIPAL VARIATION (Bot's Analysis) ==========
+The bot expects the following sequence of moves:
+
+  Move 1 - circle will move from (6,8) to (6,7)
+  Move 2 - square will move from (3,10) to (4,10)
+  Move 3 - circle will move from (6,7) to (7,2)
+==========================================================
+
+Selected: move from (6,8) to (6,7)
+📊 Board state recorded. History size: 6
+----- Debug Heuristic -----
+Vertical Push: 572.500
+Pieces in Scoring (Attack): 4079000.000
+Horizontal Attack Self: 100.000
+Inactive Self: 0.000
+Pieces Blocking Vertical Self: 0.000
+Horizontal Base Self: 0.000
+Horizontal Negative Self: 0.000
+--- Opponent ---
+Pieces in Scoring (Defense): -24200.000
+Pieces Blocking Vertical Opp: 0.000
+Horizontal Base Opp: 0.000
+Horizontal Attack Opp: 0.000
+Inactive Opp: 0.000
+Total Evaluation: 4055472.500
+---------------------------
+
+⏱️  Time taken: 0.103 seconds
+📊 Performance data logged to minimax_performance.csv
+Move returned in 0.104 seconds.
+TT Hit Rate: 16.539% (40061 hits, 202163 misses)
+Total moves made by agent: 20
+=========================================
+Doing Minimax for player: square at depth 3
+Legal moves available: 82
+
+--- Pruning Statistics ---
+Nodes visited: 7865
+Nodes pruned: 13744
+Total nodes (visited + pruned): 21609
+Pruning efficiency: 63.603%
+-------------------------
+
+
+========== PRINCIPAL VARIATION (Bot's Analysis) ==========
+The bot expects the following sequence of moves:
+
+  Move 1 - square will move from (3,10) to (4,10)
+  Move 2 - circle will move from (6,1) to (6,2)
+  Move 3 - square will flip at (4,10)
+==========================================================
+
+Selected: move from (3,10) to (4,10)
+📊 Board state recorded. History size: 6
+----- Debug Heuristic -----
+Vertical Push: 275.000
+Pieces in Scoring (Attack): 4016200.000
+Horizontal Attack Self: 0.000
+Inactive Self: 0.000
+Pieces Blocking Vertical Self: 0.000
+Horizontal Base Self: 0.000
+Horizontal Negative Self: 0.000
+--- Opponent ---
+Pieces in Scoring (Defense): -4079000.000
+Pieces Blocking Vertical Opp: 0.000
+Horizontal Base Opp: 0.000
+Horizontal Attack Opp: -100.000
+Inactive Opp: 0.000
+Total Evaluation: -62625.000
+---------------------------
+
+⏱️  Time taken: 0.089 seconds
+📊 Performance data logged to minimax_performance.csv
+Move returned in 0.089 seconds.
+TT Hit Rate: 22.961% (40142 hits, 134687 misses)
+Total moves made by agent: 20
+=========================================
+Doing Minimax for player: circle at depth 3
+Legal moves available: 86
+
+--- Pruning Statistics ---
+Nodes visited: 10199
+Nodes pruned: 22955
+Total nodes (visited + pruned): 33154
+Pruning efficiency: 69.237%
+-------------------------
+
+
+========== PRINCIPAL VARIATION (Bot's Analysis) ==========
+The bot expects the following sequence of moves:
+
+  Move 1 - circle will move from (6,1) to (6,2)
+  Move 2 - square will flip at (7,7)
+  Move 3 - circle will move from (4,9) to (3,2)
+==========================================================
+
+Selected: move from (6,1) to (6,2)
+📊 Board state recorded. History size: 6
+----- Debug Heuristic -----
+Vertical Push: 572.500
+Pieces in Scoring (Attack): 8091000.000
+Horizontal Attack Self: 100.000
+Inactive Self: 0.000
+Pieces Blocking Vertical Self: 0.000
+Horizontal Base Self: 0.000
+Horizontal Negative Self: 0.000
+--- Opponent ---
+Pieces in Scoring (Defense): -4016200.000
+Pieces Blocking Vertical Opp: 0.000
+Horizontal Base Opp: 0.000
+Horizontal Attack Opp: 0.000
+Inactive Opp: 0.000
+Total Evaluation: 4075472.500
+---------------------------
+
+⏱️  Time taken: 0.111 seconds
+📊 Performance data logged to minimax_performance.csv
+Move returned in 0.112 seconds.
+TT Hit Rate: 16.928% (42730 hits, 209692 misses)
+Total moves made by agent: 21
+=========================================
+Doing Minimax for player: square at depth 3
+Legal moves available: 74
+
+--- Pruning Statistics ---
+Nodes visited: 6924
+Nodes pruned: 12380
+Total nodes (visited + pruned): 19304
+Pruning efficiency: 64.132%
+-------------------------
+
+
+========== PRINCIPAL VARIATION (Bot's Analysis) ==========
+The bot expects the following sequence of moves:
+
+  Move 1 - square will flip at (4,10)
+  Move 2 - circle will move from (4,9) to (3,1)
+  Move 3 - square will move from (2,11) to (3,11)
+==========================================================
+
+Selected: flip from (4,10) to (4,10)
+📊 Board state recorded. History size: 6
+----- Debug Heuristic -----
+Vertical Push: 230.000
+Pieces in Scoring (Attack): 4056200.000
+Horizontal Attack Self: 0.000
+Inactive Self: 0.000
+Pieces Blocking Vertical Self: 0.000
+Horizontal Base Self: 0.000
+Horizontal Negative Self: 0.000
+--- Opponent ---
+Pieces in Scoring (Defense): -8091000.000
+Pieces Blocking Vertical Opp: 0.000
+Horizontal Base Opp: 0.000
+Horizontal Attack Opp: -100.000
+Inactive Opp: 0.000
+Total Evaluation: -4034670.000
+---------------------------
+
+⏱️  Time taken: 0.079 seconds
+📊 Performance data logged to minimax_performance.csv
+Move returned in 0.079 seconds.
+TT Hit Rate: 23.031% (41860 hits, 139892 misses)
+Total moves made by agent: 21
+=========================================
+Doing Minimax for player: circle at depth 3
+Legal moves available: 86
+
+--- Pruning Statistics ---
+Nodes visited: 57531
+Nodes pruned: 98689
+Total nodes (visited + pruned): 156220
+Pruning efficiency: 63.173%
+-------------------------
+
+
+========== PRINCIPAL VARIATION (Bot's Analysis) ==========
+The bot expects the following sequence of moves:
+
+  Move 1 - circle will move from (4,9) to (3,2)
+  Move 2 - square will rotate at (7,7)
+  Move 3 - circle will move from (9,1) to (8,1)
+==========================================================
+
+Selected: move from (4,9) to (3,2)
+📊 Board state recorded. History size: 6
+----- Debug Heuristic -----
+Vertical Push: 547.500
+Pieces in Scoring (Attack): 8113000.000
+Horizontal Attack Self: 100.000
+Inactive Self: 0.000
+Pieces Blocking Vertical Self: 0.000
+Horizontal Base Self: 0.000
+Horizontal Negative Self: 0.000
+--- Opponent ---
+Pieces in Scoring (Defense): -4056200.000
+Pieces Blocking Vertical Opp: 0.000
+Horizontal Base Opp: 0.000
+Horizontal Attack Opp: 0.000
+Inactive Opp: 0.000
+Total Evaluation: 4057447.500
+---------------------------
+
+⏱️  Time taken: 0.507 seconds
+📊 Performance data logged to minimax_performance.csv
+Move returned in 0.508 seconds.
+TT Hit Rate: 15.992% (49566 hits, 260386 misses)
+Total moves made by agent: 22
+=========================================
+Doing Minimax for player: square at depth 3
+Legal moves available: 82
+
+--- Pruning Statistics ---
+Nodes visited: 9556
+Nodes pruned: 28570
+Total nodes (visited + pruned): 38126
+Pruning efficiency: 74.936%
+-------------------------
+
+
+========== PRINCIPAL VARIATION (Bot's Analysis) ==========
+The bot expects the following sequence of moves:
+
+  Move 1 - square will move from (3,3) to (3,11)
+  Move 2 - circle will move from (9,1) to (8,1)
+  Move 3 - square will move from (2,11) to (3,10)
+==========================================================
+
+Selected: move from (3,3) to (3,11)
+📊 Board state recorded. History size: 6
+----- Debug Heuristic -----
+Vertical Push: 100.000
+Pieces in Scoring (Attack): 4072200.000
+Horizontal Attack Self: 0.000
+Inactive Self: 0.000
+Pieces Blocking Vertical Self: 0.000
+Horizontal Base Self: 0.000
+Horizontal Negative Self: 0.000
+--- Opponent ---
+Pieces in Scoring (Defense): -8113000.000
+Pieces Blocking Vertical Opp: 0.000
+Horizontal Base Opp: 0.000
+Horizontal Attack Opp: -100.000
+Inactive Opp: 0.000
+Total Evaluation: -4040800.000
+---------------------------
+
+⏱️  Time taken: 0.111 seconds
+📊 Performance data logged to minimax_performance.csv
+Move returned in 0.112 seconds.
+TT Hit Rate: 23.085% (44163 hits, 147144 misses)
+Total moves made by agent: 22
+=========================================
+Doing Minimax for player: circle at depth 3
+Legal moves available: 88
+
+--- Pruning Statistics ---
+Nodes visited: 61145
+Nodes pruned: 82276
+Total nodes (visited + pruned): 143421
+Pruning efficiency: 57.367%
+-------------------------
+
+
+========== PRINCIPAL VARIATION (Bot's Analysis) ==========
+The bot expects the following sequence of moves:
+
+  Move 1 - circle will rotate at (3,2)
+  Move 2 - square will rotate at (7,7)
+  Move 3 - circle will push from (3,2) to (4,2) pushing to (5,2)
+==========================================================
+
+Selected: rotate from (3,2) to (3,2)
+📊 Board state recorded. History size: 6
+----- Debug Heuristic -----
+Vertical Push: 612.500
+Pieces in Scoring (Attack): 8113000.000
+Horizontal Attack Self: 220.000
+Inactive Self: 0.000
+Pieces Blocking Vertical Self: 0.000
+Horizontal Base Self: 0.000
+Horizontal Negative Self: 0.000
+--- Opponent ---
+Pieces in Scoring (Defense): -4072200.000
+Pieces Blocking Vertical Opp: 0.000
+Horizontal Base Opp: 0.000
+Horizontal Attack Opp: 0.000
+Inactive Opp: 0.000
+Total Evaluation: 4041632.500
+---------------------------
+
+⏱️  Time taken: 0.525 seconds
+📊 Performance data logged to minimax_performance.csv
+Move returned in 0.526 seconds.
+TT Hit Rate: 15.614% (57944 hits, 313152 misses)
+Total moves made by agent: 23
+=========================================
+Doing Minimax for player: square at depth 3
+Legal moves available: 95
+
+--- Pruning Statistics ---
+Nodes visited: 11157
+Nodes pruned: 18464
+Total nodes (visited + pruned): 29621
+Pruning efficiency: 62.334%
+-------------------------
+
+
+========== PRINCIPAL VARIATION (Bot's Analysis) ==========
+The bot expects the following sequence of moves:
+
+  Move 1 - square will move from (2,11) to (3,10)
+  Move 2 - circle will push from (3,9) to (3,10) pushing to (0,2)
+  Move 3 - square will push from (3,11) to (3,10) pushing to (3,12)
+==========================================================
+
+Selected: move from (2,11) to (3,10)
+📊 Board state recorded. History size: 6
+----- Debug Heuristic -----
+Vertical Push: 100.000
+Pieces in Scoring (Attack): 4085200.000
+Horizontal Attack Self: 0.000
+Inactive Self: 0.000
+Pieces Blocking Vertical Self: 0.000
+Horizontal Base Self: 0.000
+Horizontal Negative Self: 0.000
+--- Opponent ---
+Pieces in Scoring (Defense): -8113000.000
+Pieces Blocking Vertical Opp: 0.000
+Horizontal Base Opp: 0.000
+Horizontal Attack Opp: -220.000
+Inactive Opp: 0.000
+Total Evaluation: -4027920.000
+---------------------------
+
+⏱️  Time taken: 0.117 seconds
+📊 Performance data logged to minimax_performance.csv
+Move returned in 0.118 seconds.
+TT Hit Rate: 23.248% (47069 hits, 155394 misses)
+Total moves made by agent: 23
+=========================================
+Doing Minimax for player: circle at depth 3
+Legal moves available: 91
+
+--- Pruning Statistics ---
+Nodes visited: 12499
+Nodes pruned: 11738
+Total nodes (visited + pruned): 24237
+Pruning efficiency: 48.430%
+-------------------------
+
+
+========== PRINCIPAL VARIATION (Bot's Analysis) ==========
+The bot expects the following sequence of moves:
+
+  Move 1 - circle will move from (6,7) to (7,2)
+  Move 2 - square will push from (6,3) to (6,4) pushing to (6,10)
+  Move 3 - circle will push from (3,2) to (4,2) pushing to (5,2)
+==========================================================
+
+Selected: move from (6,7) to (7,2)
+📊 Board state recorded. History size: 6
+----- Debug Heuristic -----
+Vertical Push: 612.500
+Pieces in Scoring (Attack): 12153000.000
+Horizontal Attack Self: 220.000
+Inactive Self: 0.000
+Pieces Blocking Vertical Self: 0.000
+Horizontal Base Self: 0.000
+Horizontal Negative Self: 0.000
+--- Opponent ---
+Pieces in Scoring (Defense): -4085200.000
+Pieces Blocking Vertical Opp: 0.000
+Horizontal Base Opp: 0.000
+Horizontal Attack Opp: 0.000
+Inactive Opp: 0.000
+Total Evaluation: 8068632.500
+---------------------------
+
+⏱️  Time taken: 0.125 seconds
+📊 Performance data logged to minimax_performance.csv
+Move returned in 0.125 seconds.
+TT Hit Rate: 15.689% (60182 hits, 323412 misses)
+Total moves made by agent: 24
+=========================================
+Doing Minimax for player: square at depth 3
+Legal moves available: 100
+
+--- Pruning Statistics ---
+Nodes visited: 381
+Nodes pruned: 16564
+Total nodes (visited + pruned): 16945
+Pruning efficiency: 97.752%
+-------------------------
+
+
+========== PRINCIPAL VARIATION (Bot's Analysis) ==========
+The bot expects the following sequence of moves:
+
+  Move 1 - square will move from (6,4) to (6,10)
+  Move 2 - circle will push from (3,2) to (4,2) pushing to (5,2)
+==========================================================
+
+Selected: move from (6,4) to (6,10)
+📊 Board state recorded. History size: 6
+----- Debug Heuristic -----
+Vertical Push: 235.000
+Pieces in Scoring (Attack): 8131200.000
+Horizontal Attack Self: 0.000
+Inactive Self: 0.000
+Pieces Blocking Vertical Self: 0.000
+Horizontal Base Self: 0.000
+Horizontal Negative Self: 0.000
+--- Opponent ---
+Pieces in Scoring (Defense): -12153000.000
+Pieces Blocking Vertical Opp: 0.000
+Horizontal Base Opp: 0.000
+Horizontal Attack Opp: -220.000
+Inactive Opp: 0.000
+Total Evaluation: -4021785.000
+---------------------------
+
+⏱️  Time taken: 0.041 seconds
+📊 Performance data logged to minimax_performance.csv
+Move returned in 0.041 seconds.
+TT Hit Rate: 23.205% (47069 hits, 155774 misses)
+Total moves made by agent: 24
+=========================================
+Doing Minimax for player: circle at depth 3
+Legal moves available: 91
+
+--- Pruning Statistics ---
+Nodes visited: 7709
+Nodes pruned: 8310
+Total nodes (visited + pruned): 16019
+Pruning efficiency: 51.876%
+-------------------------
+
+
+========== PRINCIPAL VARIATION (Bot's Analysis) ==========
+The bot expects the following sequence of moves:
+
+  Move 1 - circle will push from (3,2) to (4,2) pushing to (5,2)
+==========================================================
+
+Selected: push from (3,2) to (4,2)
+📊 Board state recorded. History size: 6
+----- Debug Heuristic -----
+Vertical Push: 0.000
+Pieces in Scoring (Attack): 0.000
+Horizontal Attack Self: 0.000
+Inactive Self: 0.000
+Pieces Blocking Vertical Self: 0.000
+Horizontal Base Self: 0.000
+Horizontal Negative Self: 0.000
+--- Opponent ---
+Pieces in Scoring (Defense): 0.000
+Pieces Blocking Vertical Opp: 0.000
+Horizontal Base Opp: 0.000
+Horizontal Attack Opp: 0.000
+Inactive Opp: 0.000
+Total Evaluation: 1000000000.000
+---------------------------
+
+⏱️  Time taken: 0.082 seconds
+📊 Performance data logged to minimax_performance.csv
+Move returned in 0.083 seconds.
+TT Hit Rate: 16.071% (62885 hits, 328417 misses)
+Total moves made by agent: 25
+pygame 2.6.1 (SDL 2.28.4, Python 3.13.7)
+Hello from the pygame community. https://www.pygame.org/contribute.html
+
+=== Transposition Table Statistics ===
+Hits: 47069
+Misses: 155774
+Stores: 155799
+Collisions: 4345
+Hit Rate: 23.205%
+
+=== Transposition Table Statistics ===
+Hits: 62885
+Misses: 328417
+Stores: 328442
+Collisions: 18534
+Hit Rate: 16.071%

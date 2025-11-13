@@ -1,0 +1,3 @@
+/Users/arinjaysinghal/Desktop/Stones-and-Rivers-COL333/tournament_bots/bot1/build/CMakeFiles/bot1_module.dir
+/Users/arinjaysinghal/Desktop/Stones-and-Rivers-COL333/tournament_bots/bot1/build/CMakeFiles/edit_cache.dir
+/Users/arinjaysinghal/Desktop/Stones-and-Rivers-COL333/tournament_bots/bot1/build/CMakeFiles/rebuild_cache.dir

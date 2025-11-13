@@ -241,8 +241,8 @@ def main():
     parser.add_argument("player", choices=["circle", "square"], help="Player side")
     parser.add_argument("port", type=int, help="Server port (8181 for circle, 8182 for square)")
     parser.add_argument("--server", default="localhost", help="Server host (default: localhost)")
-    parser.add_argument("--strategy", default="random", choices=["random", "student", "student_cpp"],
-                       help="Bot strategy (default: random)")
+    parser.add_argument("--strategy", default="random",
+                       help="Bot strategy: 'random', 'student', 'student_cpp', or tournament bot name (e.g., 'bot1', 'bot2')")
     parser.add_argument("--verbose", "-v", action="store_true", help="Verbose logging")
     
     args = parser.parse_args()

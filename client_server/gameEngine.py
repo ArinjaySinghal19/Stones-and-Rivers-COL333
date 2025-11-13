@@ -1206,7 +1206,7 @@ def run_gui(mode:str, circle_strategy:str, square_strategy:str, load_file:Option
 
 
 # ---------------- CLI interactive runner ----------------
-def run_cli(mode:str, circle_strategy:str, square_strategy:str, load_file:Optional[str], rows:int, cols:int, time_per_player:float):
+def run_cli(mode:str, circle_strategy:str, square_strategy:str, load_file:Optional[str], rows:int, cols:int, time_per_player:float, no_pause:bool=False):
     score_cols = score_cols_for(cols)
     board = default_start_board(rows, cols)
     agent_circle = get_agent("circle", circle_strategy)
@@ -1351,10 +1351,11 @@ def run_cli(mode:str, circle_strategy:str, square_strategy:str, load_file:Option
             print("Turn limit reached -> draw"); break
 
         # Press Enter pause for readability — DO NOT count this time as player's clock (unchanged behavior)
-        try:
-            _ = input("\nPress Enter to continue...")
-        except KeyboardInterrupt:
-            pass
+        if not no_pause:
+            try:
+                _ = input("\nPress Enter to continue...")
+            except KeyboardInterrupt:
+                pass
         
     # compute and print final scores with remaining times accounted for (CHANGED: pass timers)
     final_scores = compute_final_scores(board, winner, rows, cols, score_cols,
@@ -1369,10 +1370,13 @@ def run_cli(mode:str, circle_strategy:str, square_strategy:str, load_file:Option
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--mode", choices=["hvh","hvai","aivai"], default="hvai")
-    ap.add_argument("--circle", choices=["random","student","student_cpp"], default="random")
-    ap.add_argument("--square", choices=["random","student","student_cpp"], default="random")
+    ap.add_argument("--circle", default="random", 
+                    help="Circle player: random, student, student_cpp, or tournament bot name (e.g., bot1)")
+    ap.add_argument("--square", default="random",
+                    help="Square player: random, student, student_cpp, or tournament bot name (e.g., bot2)")
     ap.add_argument("--load", default=None)
     ap.add_argument("--nogui", action="store_true")
+    ap.add_argument("--no-pause", action="store_true", help="Skip 'Press Enter' pauses (for automated tournaments)")
     ap.add_argument("--time", type=float, default=1.0, help="Time per player in minutes (default: 1.0)")
     ap.add_argument("--board-size", choices=["small", "medium", "large"], default="small", 
                     help="Board size: small (13x12, 12 pieces), medium (15x14, 14 pieces), large (17x16, 16 pieces)")
@@ -1390,7 +1394,7 @@ def main():
     time_per_player = args.time * 60  # Convert minutes to seconds
 
     if args.nogui:
-        run_cli(args.mode, args.circle, args.square, args.load, rows, cols, time_per_player)
+        run_cli(args.mode, args.circle, args.square, args.load, rows, cols, time_per_player, args.no_pause)
     else:
         run_gui(args.mode, args.circle, args.square, args.load, rows, cols, time_per_player)
 
