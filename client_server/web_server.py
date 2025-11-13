@@ -264,7 +264,25 @@ class GameCoordinator:
             
             return {"success": True, "message": message, "winner": winner}
         else:
-            return {"success": False, "error": message}
+            # Invalid move: opponent wins immediately
+            winner = "square" if player == "circle" else "circle"
+            game["winner"] = winner
+            game["game_status"] = "finished"
+            # Calculate final scores with player who made invalid move as loser
+            final_scores = compute_final_scores(
+                game["board"], winner, game["rows"], game["cols"], game["score_cols"],
+                remaining_times={
+                    "circle": game["players"]["circle"]["time_left"],
+                    "square": game["players"]["square"]["time_left"]
+                }
+            )
+            game["final_scores"] = final_scores
+            logger.info(f"Invalid move by {player}: {message}. Winner: {winner}")
+            
+            # Broadcast update to web clients
+            self._broadcast_game_update(game)
+            
+            return {"success": False, "error": message, "invalid_move": True, "winner": winner}
     
     def _broadcast_game_update(self, game: Dict[str, Any]):
         """Broadcast game state update to web clients"""

@@ -884,11 +884,17 @@ def run_gui(mode:str, circle_strategy:str, square_strategy:str, load_file:Option
                         selected=None; highlights=set(); action_mode=None; push_stage=None; push_candidate=None
                         turn_start = time.time()  # NEW: reset timer when switching to next (human) turn
                     else:
-                        current = opponent(current)
-                        turn_start = time.time()
+                        # Invalid move: opponent wins immediately
+                        winner = opponent(current)
+                        game_over = True
+                        msg = f"INVALID MOVE by {current.title()}! {winner.title()} wins!"
+                        print(f"Invalid move by {current}: {info}")
                 else:
-                    current = opponent(current)
-                    turn_start = time.time()
+                    # No move returned: opponent wins immediately
+                    winner = opponent(current)
+                    game_over = True
+                    msg = f"NO MOVE by {current.title()}! {winner.title()} wins!"
+                    print(f"No move returned by {current}")
             draw_board(screen, board, rows, cols, score_cols, selected, highlights, msg, timers, current)
             turn += 1
             if turn > 1000:
@@ -1265,24 +1271,17 @@ def run_cli(mode:str, circle_strategy:str, square_strategy:str, load_file:Option
                 break
 
             if move is None:
-                print(f"AI {current} has no moves; pass")
-                current = opponent(current)
-                turn += 1
-                if turn > 1000:
-                    print("Turn limit reached -> draw"); break
-                # do not count the "press enter to continue" as clock time; skip it
-                input("\nPress Enter to continue...")  # keep for readability
-                continue
+                print(f"AI {current} returned no move - INVALID!")
+                winner = opponent(current)
+                print(f"{current.title()} loses due to no move. {winner.title()} wins!")
+                break
             ok,msg = validate_and_apply_move(board, move, current, rows, cols, score_cols)
             print(f"AI {current} -> {move}")
             print(f"Result: {msg}")
             if not ok:
-                current = opponent(current)
-                turn += 1
-                if turn > 1000:
-                    print("Turn limit reached -> draw"); break
-                input("\nPress Enter to continue...")
-                continue
+                winner = opponent(current)
+                print(f"{current.title()} made invalid move. {winner.title()} wins!")
+                break
             else:
                 moves_since_last_check += 1
         else:

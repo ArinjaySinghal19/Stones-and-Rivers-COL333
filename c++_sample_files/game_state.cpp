@@ -257,6 +257,158 @@ std::vector<std::pair<int,int>> get_river_flow_destinations(
     return out;
 }
 
+// ===== OPTIMIZED ENCODED VERSIONS FOR get_legal_moves =====
+// These versions use encoded_board instead of string-based board for performance
+
+std::vector<std::pair<int,int>> get_river_flow_destinations_encoded(
+    const std::vector<std::vector<EncodedCell>>& encoded_board,
+    int rx, int ry, int sx, int sy, const std::string& player,
+    int rows, int cols, const std::vector<int>& score_cols,
+    EncodedCell river_push_cell) {
+    
+    std::vector<std::pair<int,int>> destinations;
+    std::set<std::pair<int,int>> visited;
+    std::queue<std::pair<int,int>> queue;
+    
+    queue.push({rx, ry});
+    
+    while (!queue.empty()) {
+        auto [x, y] = queue.front();
+        queue.pop();
+        
+        if (visited.count({x, y}) || !in_bounds(x, y, rows, cols)) continue;
+        visited.insert({x, y});
+        
+        EncodedCell cell = encoded_board[y][x];
+        
+        // Handle special case for river_push
+        if (river_push_cell != 0 && x == rx && y == ry) {
+            cell = river_push_cell;
+        }
+        
+        if (GameState::is_empty(cell)) {
+            if (is_opponent_score_cell(x, y, player, rows, cols, score_cols)) {
+                // Block entering opponent score
+                continue;
+            } else {
+                destinations.push_back({x, y});
+            }
+            continue;
+        }
+        
+        if (!GameState::is_river(cell)) {
+            continue;
+        }
+        
+        // Get directions based on river orientation
+        std::vector<std::pair<int,int>> dirs;
+        if (GameState::is_horizontal_river(cell)) {
+            dirs = {{1, 0}, {-1, 0}};
+        } else {
+            dirs = {{0, 1}, {0, -1}};
+        }
+        
+        for (auto [dx, dy] : dirs) {
+            int nx = x + dx, ny = y + dy;
+            while (in_bounds(nx, ny, rows, cols)) {
+                if (is_opponent_score_cell(nx, ny, player, rows, cols, score_cols)) {
+                    break;
+                }
+                
+                EncodedCell next_cell = encoded_board[ny][nx];
+                if (GameState::is_empty(next_cell)) {
+                    destinations.push_back({nx, ny});
+                    nx += dx; ny += dy;
+                    continue;
+                }
+                if (nx == sx && ny == sy) {
+                    nx += dx; ny += dy;
+                    continue;
+                }
+                if (GameState::is_river(next_cell)) {
+                    queue.push({nx, ny});
+                    break;
+                }
+                break;
+            }
+        }
+    }
+    
+    // Remove duplicates
+    std::vector<std::pair<int,int>> out;
+    std::set<std::pair<int,int>> seen;
+    for (const auto& d : destinations) {
+        if (seen.find(d) == seen.end()) {
+            seen.insert(d);
+            out.push_back(d);
+        }
+    }
+    return out;
+}
+
+ValidTargets compute_valid_targets_encoded(
+    const std::vector<std::vector<EncodedCell>>& encoded_board,
+    int sx, int sy, const std::string& player,
+    int rows, int cols, const std::vector<int>& score_cols) {
+    
+    ValidTargets result;
+    
+    if (!in_bounds(sx, sy, rows, cols)) {
+        return result;
+    }
+    
+    EncodedCell piece = encoded_board[sy][sx];
+    if (GameState::is_empty(piece) || !GameState::is_owner(piece, player)) {
+        return result;
+    }
+    
+    std::vector<std::pair<int,int>> dirs = {{1,0}, {-1,0}, {0,1}, {0,-1}};
+    
+    for (auto [dx, dy] : dirs) {
+        int tx = sx + dx, ty = sy + dy;
+        if (!in_bounds(tx, ty, rows, cols)) continue;
+        
+        // Block entering opponent score cell
+        if (is_opponent_score_cell(tx, ty, player, rows, cols, score_cols)) {
+            continue;
+        }
+        
+        EncodedCell target = encoded_board[ty][tx];
+        if (GameState::is_empty(target)) {
+            result.moves.insert({tx, ty});
+        } else if (GameState::is_river(target)) {
+            auto flow = get_river_flow_destinations_encoded(encoded_board, tx, ty, sx, sy, player, rows, cols, score_cols);
+            for (const auto& d : flow) {
+                result.moves.insert(d);
+            }
+        } else {
+            // Stone occupied
+            if (GameState::is_stone(piece)) {
+                int px = tx + dx, py = ty + dy;
+                std::string pushed_player = GameState::is_circle(target) ? "circle" : "square";
+                if (in_bounds(px, py, rows, cols) && GameState::is_empty(encoded_board[py][px]) && 
+                    !is_opponent_score_cell(px, py, pushed_player, rows, cols, score_cols) && 
+                    !is_opponent_score_cell(tx, ty, player, rows, cols, score_cols)) {
+                    result.pushes.push_back({{tx, ty}, {px, py}});
+                }
+            } else {
+                // River pushing stone
+                std::string pushed_player = GameState::is_circle(target) ? "circle" : "square";
+                auto flow = get_river_flow_destinations_encoded(encoded_board, tx, ty, sx, sy, pushed_player, rows, cols, score_cols, piece);
+                for (const auto& d : flow) {
+                    if (!is_opponent_score_cell(d.first, d.second, pushed_player, rows, cols, score_cols)) {
+                        result.pushes.push_back({{tx, ty}, d});
+                    }
+                }
+            }
+        }
+    }
+    
+    return result;
+}
+
+// ===== END OPTIMIZED ENCODED VERSIONS =====
+
 // Compute valid targets for a piece (based on compute_valid_targets in gameEngine.py)
 ValidTargets compute_valid_targets(
     const std::vector<std::vector<std::map<std::string, std::string>>>& board,
@@ -570,75 +722,85 @@ void GameState::apply_move(const Move& move) {
 std::vector<Move> GameState::get_legal_moves() const {
     std::vector<Move> moves;
 
-    // Iterate over board to find current player's pieces
+    // Iterate over board to find current player's pieces using ENCODED board for performance
     for (int y = 0; y < rows; y++) {
         for (int x = 0; x < cols; x++) {
-            const auto &cell = board[y][x];
-            if (cell.empty()) continue;
+            EncodedCell cell = encoded_board[y][x];
+            if (is_empty(cell)) continue;
 
-            if (cell.at("owner") != current_player) continue; // only current player's pieces
+            if (!is_owner(cell, current_player)) continue; // only current player's pieces
 
-            std::string side_type = cell.at("side");
+            bool is_stone_piece = is_stone(cell);
+            bool is_river_piece = is_river(cell);
 
             // ---- MOVES (including river flow) ----
-            auto valid_targets = compute_valid_targets(board, x, y, current_player, rows, cols, score_cols);
+            auto valid_targets = compute_valid_targets_encoded(encoded_board, x, y, current_player, rows, cols, score_cols);
 
             // Add regular moves and river flow moves
             for (const auto& target : valid_targets.moves) {
                 moves.push_back({"move", {x,y}, {target.first, target.second}, {}, ""});
-                }
+            }
 
-                // ---- PUSHES (including river flow pushes) ----
-                for (const auto& push : valid_targets.pushes) {
-                    auto target_pos = push.first;
-                    auto pushed_pos = push.second;
-                    moves.push_back({"push", {x,y}, {target_pos.first, target_pos.second}, 
-                                   {pushed_pos.first, pushed_pos.second}, ""});
-                }
-            // }
+            // ---- PUSHES (including river flow pushes) ----
+            for (const auto& push : valid_targets.pushes) {
+                auto target_pos = push.first;
+                auto pushed_pos = push.second;
+                moves.push_back({"push", {x,y}, {target_pos.first, target_pos.second}, 
+                               {pushed_pos.first, pushed_pos.second}, ""});
+            }
 
             // ---- FLIP ----
-            if (side_type == "stone") {
-
-                    // Check if flipping to river would be safe (not flowing into opponent score)
-                    for (const std::string& orientation : {"horizontal", "vertical"}) {
-                        // Simulate the flip and check resulting flow
-                        bool safe = true;
-                        
-                        // Create a temporary modified board to test the flip
-                        auto test_board = board;
-                        test_board[y][x]["side"] = "river";
-                        test_board[y][x]["orientation"] = orientation;
-                        
-                        auto flow = get_river_flow_destinations(test_board, x, y, x, y, current_player, rows, cols, score_cols);
-                        for (const auto& dest : flow) {
-                            if (is_opponent_score_cell(dest.first, dest.second, current_player, rows, cols, score_cols)) {
-                                safe = false;
-                                break;
-                            }
-                        }
-                        
-                        if (safe) {
-                            moves.push_back({"flip", {x,y}, {x,y}, {}, orientation});
+            if (is_stone_piece) {
+                // Check if flipping to river would be safe (not flowing into opponent score)
+                for (const std::string& orientation : {"horizontal", "vertical"}) {
+                    // Simulate the flip and check resulting flow
+                    bool safe = true;
+                    
+                    // Create a temporary modified encoded board to test the flip
+                    auto test_encoded_board = encoded_board;
+                    // Encode river with orientation
+                    EncodedCell test_cell;
+                    if (current_player[0] == 's') {  // square
+                        test_cell = (orientation == "horizontal") ? 1 : 2;
+                    } else {  // circle
+                        test_cell = (orientation == "horizontal") ? 4 : 5;
+                    }
+                    test_encoded_board[y][x] = test_cell;
+                    
+                    auto flow = get_river_flow_destinations_encoded(test_encoded_board, x, y, x, y, current_player, rows, cols, score_cols);
+                    for (const auto& dest : flow) {
+                        if (is_opponent_score_cell(dest.first, dest.second, current_player, rows, cols, score_cols)) {
+                            safe = false;
+                            break;
                         }
                     }
-            } else if (side_type == "river") {
+                    
+                    if (safe) {
+                        moves.push_back({"flip", {x,y}, {x,y}, {}, orientation});
+                    }
+                }
+            } else if (is_river_piece) {
                 // Always allow flipping river to stone (including in scoring area)
                 moves.push_back({"flip", {x,y}, {x,y}, {}, ""});
             }
 
             // ---- ROTATE ----
             // Only allow rotation of rivers
-            if (side_type == "river") {
+            if (is_river_piece) {
                 // Check if rotation would be safe
-                std::string current_orientation = cell.at("orientation");
-                std::string new_orientation = (current_orientation == "horizontal") ? "vertical" : "horizontal";
+                bool is_horizontal = is_horizontal_river(cell);
                 
-                // Create a temporary modified board to test the rotation
-                auto test_board = board;
-                test_board[y][x]["orientation"] = new_orientation;
+                // Create a temporary modified encoded board to test the rotation
+                auto test_encoded_board = encoded_board;
+                EncodedCell rotated_cell;
+                if (is_circle(cell)) {
+                    rotated_cell = is_horizontal ? 5 : 4;  // circle: 4=horizontal, 5=vertical
+                } else {
+                    rotated_cell = is_horizontal ? 2 : 1;  // square: 1=horizontal, 2=vertical
+                }
+                test_encoded_board[y][x] = rotated_cell;
                 
-                auto flow = get_river_flow_destinations(test_board, x, y, x, y, current_player, rows, cols, score_cols);
+                auto flow = get_river_flow_destinations_encoded(test_encoded_board, x, y, x, y, current_player, rows, cols, score_cols);
                 bool safe = true;
                 for (const auto& dest : flow) {
                     if (is_opponent_score_cell(dest.first, dest.second, current_player, rows, cols, score_cols)) {

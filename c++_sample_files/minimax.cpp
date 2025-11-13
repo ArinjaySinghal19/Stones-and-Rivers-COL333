@@ -3,6 +3,9 @@
 #include <algorithm>
 #include <random>
 #include <iostream>
+#include <fstream>
+#include <chrono>
+#include <iomanip>
 
 // Global empty move for default parameter
 Move g_empty_move = {"", {}, {}, {}, ""};
@@ -340,13 +343,19 @@ void record_board_state(const GameState& state, std::deque<uint64_t>& recent_boa
 Move run_minimax_with_repetition_check(const GameState& initial_state, int max_depth,
                                        const std::string& side, std::deque<uint64_t>& recent_board_hashes,
                                        TranspositionTable* tt) {
+    // Start timing
+    auto start_time = std::chrono::high_resolution_clock::now();
+    
     std::vector<Move> legal_moves = initial_state.get_legal_moves();
+    int num_legal_moves = legal_moves.size();
+    
     if (legal_moves.empty()) {
         return {"move", {0,0}, {0,0}, {}, ""};
     }
 
     std::cout << "=========================================\n";
     std::cout << "Doing Minimax for player: " << side << " at depth " << max_depth << "\n";
+    std::cout << "Legal moves available: " << num_legal_moves << "\n";
     
     // Reset pruning statistics
     nodes_visited = 0;
@@ -436,6 +445,45 @@ Move run_minimax_with_repetition_check(const GameState& initial_state, int max_d
     // Debug output
     Heuristics::HeuristicsInfo debug_info = Heuristics::evaluate_position(after_state, initial_state.current_player, false);
     Heuristics::debug_heuristic(debug_info);
+    
+    // End timing and calculate duration
+    auto end_time = std::chrono::high_resolution_clock::now();
+    auto duration = std::chrono::duration_cast<std::chrono::milliseconds>(end_time - start_time);
+    double time_seconds = duration.count() / 1000.0;
+    
+    std::cout << "\n⏱️  Time taken: " << std::fixed << std::setprecision(3) << time_seconds << " seconds\n";
+    
+    // Log to CSV file
+    std::ofstream csv_file;
+    csv_file.open("minimax_performance.csv", std::ios::app);
+    
+    // Check if file is empty to write header
+    std::ifstream check_file("minimax_performance.csv");
+    bool is_empty = check_file.peek() == std::ifstream::traits_type::eof();
+    check_file.close();
+    
+    if (is_empty) {
+        csv_file << "timestamp,player,depth,num_legal_moves,time_seconds,nodes_visited,nodes_pruned,pruning_efficiency\n";
+    }
+    
+    // Get current timestamp
+    auto now = std::chrono::system_clock::now();
+    auto now_time_t = std::chrono::system_clock::to_time_t(now);
+    auto now_ms = std::chrono::duration_cast<std::chrono::milliseconds>(now.time_since_epoch()) % 1000;
+    
+    csv_file << std::put_time(std::localtime(&now_time_t), "%Y-%m-%d %H:%M:%S")
+             << "." << std::setfill('0') << std::setw(3) << now_ms.count()
+             << "," << side
+             << "," << max_depth
+             << "," << num_legal_moves
+             << "," << std::fixed << std::setprecision(3) << time_seconds
+             << "," << nodes_visited
+             << "," << nodes_pruned
+             << "," << std::fixed << std::setprecision(2) << pruning_efficiency
+             << "\n";
+    
+    csv_file.close();
+    std::cout << "📊 Performance data logged to minimax_performance.csv\n";
     
     return selected;
 }

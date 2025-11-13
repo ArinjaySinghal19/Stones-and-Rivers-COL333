@@ -166,4 +166,16 @@ ValidTargets compute_valid_targets(
     int sx, int sy, const std::string& player,
     int rows, int cols, const std::vector<int>& score_cols);
 
+// ---- Optimized encoded versions (for performance in get_legal_moves) ----
+std::vector<std::pair<int,int>> get_river_flow_destinations_encoded(
+    const std::vector<std::vector<EncodedCell>>& encoded_board,
+    int rx, int ry, int sx, int sy, const std::string& player,
+    int rows, int cols, const std::vector<int>& score_cols,
+    EncodedCell river_push_cell = 0);
+
+ValidTargets compute_valid_targets_encoded(
+    const std::vector<std::vector<EncodedCell>>& encoded_board,
+    int sx, int sy, const std::string& player,
+    int rows, int cols, const std::vector<int>& score_cols);
+
 #endif // GAME_STATE_H
