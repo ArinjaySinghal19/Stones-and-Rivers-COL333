@@ -194,10 +194,26 @@ MinimaxResult minimax_alpha_beta(GameState& state, int depth, double alpha, doub
             my_heuristics = Heuristics::evaluate_position(state, original_player, true, parent_heuristics, &move);
         }
 
-        // Recursive call with TT parameter passed through
-        // allow_tt_cutoff=true for all recursive calls (only root is false)
-        MinimaxResult result = minimax_alpha_beta(state, depth - 1, alpha, beta,
-                                                  !maximizing_player, original_player, tt, true, move_to_ignore, &my_heuristics);
+        // Principal Variation Search (PVS):
+        // First (best-ordered) move gets full window; subsequent moves get a null-window search,
+        // and only on a potential improvement do we re-search with the full window.
+        MinimaxResult result = (i == 0)
+            ? minimax_alpha_beta(state, depth - 1, alpha, beta,
+                                  !maximizing_player, original_player, tt, true, move_to_ignore, &my_heuristics)
+            : [&]() {
+                  double pvs_alpha = maximizing_player ? alpha : (beta - 1);
+                  double pvs_beta  = maximizing_player ? (alpha + 1) : beta;
+                  MinimaxResult narrow = minimax_alpha_beta(state, depth - 1, pvs_alpha, pvs_beta,
+                                                           !maximizing_player, original_player, tt, true, move_to_ignore, &my_heuristics);
+                  bool needs_full_window = maximizing_player
+                                           ? (narrow.value > alpha && narrow.value < beta)
+                                           : (narrow.value < beta && narrow.value > alpha);
+                  if (needs_full_window) {
+                      return minimax_alpha_beta(state, depth - 1, alpha, beta,
+                                                !maximizing_player, original_player, tt, true, move_to_ignore, &my_heuristics);
+                  }
+                  return narrow;
+              }();
         state.undo_move(move, undo);
 
         if (maximizing_player) {
