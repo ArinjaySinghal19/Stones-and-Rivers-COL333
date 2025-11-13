@@ -1115,56 +1115,19 @@ int Heuristics::terminal_result(const GameState& state, const std::string& playe
 
 // Main evaluation function
 Heuristics::HeuristicsInfo Heuristics::evaluate_position(const GameState& state, const std::string& player, bool use_parent_heuristics, HeuristicsInfo* parent_info, Move* last_move) {
-    HeuristicsInfo info;
-    if (state.is_terminal()){
-        info.total_score = terminal_result(state, player, true);
-        return info;
+    // Dispatch to appropriate size-specific evaluation function based on board size
+    int rows = state.rows;
+    
+    if (rows <= 13) {
+        // Small board (13x12)
+        return evaluate_position_small(state, player, use_parent_heuristics, parent_info, last_move);
+    } else if (rows <= 15) {
+        // Medium board (15x14)
+        return evaluate_position_medium(state, player, use_parent_heuristics, parent_info, last_move);
+    } else {
+        // Large board (17x16)
+        return evaluate_position_large(state, player, use_parent_heuristics, parent_info, last_move);
     }
-    
-    double final_score = 0.0;
-
-    // Self heuristics
-    info.vertical_push_value = weights_.vertical_push * vertical_push_h(state, player, true, use_parent_heuristics, parent_info, last_move, &info);
-    final_score += info.vertical_push_value;
-    
-    info.pieces_in_scoring_attack_value = weights_.pieces_in_scoring_attack * (pieces_in_scoring_virgin_cols(state, player, true) + pieces_in_scoring_zonewise(state, player, true, use_parent_heuristics, parent_info, last_move, &info));
-    final_score += info.pieces_in_scoring_attack_value;
-    
-    info.horizontal_attack_self_value = weights_.horizontal_attack_self * horizontal_attack(state, player, true);
-    final_score += info.horizontal_attack_self_value;
-    
-    info.inactive_self_value = weights_.inactive_self * inactive_pieces(state, player, true, use_parent_heuristics, parent_info, last_move, &info);
-    final_score += info.inactive_self_value;
-    
-    info.pieces_blocking_vertical_self_value = weights_.pieces_blocking_vertical_self * pieces_blocking_vertical_h(state, player, true, use_parent_heuristics, parent_info, last_move, &info);
-    final_score += info.pieces_blocking_vertical_self_value;
-    
-    info.horizontal_base_self_value = weights_.horizontal_base_self * horizontal_base_rivers(state, player, true);
-    final_score += info.horizontal_base_self_value;
-    
-    info.horizontal_negative_self_value = weights_.horizontal_negative_self * horizontal_negative(state, player, true);
-    final_score += info.horizontal_negative_self_value;
-
-    // Opponent heuristics
-    std::string opponent = get_opponent(player);
-    
-    info.pieces_in_scoring_defense_value = weights_.pieces_in_scoring_defense * (pieces_in_scoring_virgin_cols(state, player, false) + pieces_in_scoring_zonewise(state, player, false, use_parent_heuristics, parent_info, last_move, &info));
-    final_score += info.pieces_in_scoring_defense_value;
-    
-    info.pieces_blocking_vertical_opp_value = weights_.pieces_blocking_vertical_opp * pieces_blocking_vertical_h(state, opponent, false, use_parent_heuristics, parent_info, last_move, &info);
-    final_score += info.pieces_blocking_vertical_opp_value;
-    
-    info.horizontal_base_opp_value = weights_.horizontal_base_opp * horizontal_base_rivers(state, opponent, false);
-    final_score += info.horizontal_base_opp_value;
-    
-    info.horizontal_attack_opp_value = weights_.horizontal_attack_opp * horizontal_attack(state, opponent, false);
-    final_score += info.horizontal_attack_opp_value;
-    
-    info.inactive_opp_value = weights_.inactive_opp * inactive_pieces(state, opponent, false, use_parent_heuristics, parent_info, last_move, &info);
-    final_score += info.inactive_opp_value;
-
-    info.total_score = final_score;
-    return info;
 }
 
 void Heuristics::debug_heuristic(HeuristicsInfo& info) {
@@ -1186,4 +1149,285 @@ void Heuristics::debug_heuristic(HeuristicsInfo& info) {
     
     std::cout << "Total Evaluation: " << info.total_score << std::endl;
     std::cout << "---------------------------" << std::endl;
+}
+
+// ========== SMALL BOARD SIZE FUNCTIONS ==========
+
+double Heuristics::vertical_push_h_small(const GameState& state, const std::string& player, bool wrt_self, bool use_parent, HeuristicsInfo* parent_info, Move* last_move, HeuristicsInfo* my_info) {
+    return vertical_push_h(state, player, wrt_self, use_parent, parent_info, last_move, my_info);
+}
+
+double Heuristics::vertical_push_h_medium(const GameState& state, const std::string& player, bool wrt_self, bool use_parent, HeuristicsInfo* parent_info, Move* last_move, HeuristicsInfo* my_info) {
+    return vertical_push_h(state, player, wrt_self, use_parent, parent_info, last_move, my_info);
+}
+
+double Heuristics::vertical_push_h_large(const GameState& state, const std::string& player, bool wrt_self, bool use_parent, HeuristicsInfo* parent_info, Move* last_move, HeuristicsInfo* my_info) {
+    return vertical_push_h(state, player, wrt_self, use_parent, parent_info, last_move, my_info);
+}
+
+int Heuristics::pieces_in_scoring_virgin_cols_small(const GameState& state, const std::string& player, bool wrt_self) {
+    return pieces_in_scoring_virgin_cols(state, player, wrt_self);
+}
+
+int Heuristics::pieces_in_scoring_virgin_cols_medium(const GameState& state, const std::string& player, bool wrt_self) {
+    return pieces_in_scoring_virgin_cols(state, player, wrt_self);
+}
+
+int Heuristics::pieces_in_scoring_virgin_cols_large(const GameState& state, const std::string& player, bool wrt_self) {
+    return pieces_in_scoring_virgin_cols(state, player, wrt_self);
+}
+
+int Heuristics::pieces_in_scoring_zonewise_small(const GameState& state, const std::string& player, bool wrt_self, bool use_parent, HeuristicsInfo* parent_info, Move* last_move, HeuristicsInfo* my_info) {
+    return pieces_in_scoring_zonewise(state, player, wrt_self, use_parent, parent_info, last_move, my_info);
+}
+
+int Heuristics::pieces_in_scoring_zonewise_medium(const GameState& state, const std::string& player, bool wrt_self, bool use_parent, HeuristicsInfo* parent_info, Move* last_move, HeuristicsInfo* my_info) {
+    return pieces_in_scoring_zonewise(state, player, wrt_self, use_parent, parent_info, last_move, my_info);
+}
+
+int Heuristics::pieces_in_scoring_zonewise_large(const GameState& state, const std::string& player, bool wrt_self, bool use_parent, HeuristicsInfo* parent_info, Move* last_move, HeuristicsInfo* my_info) {
+    return pieces_in_scoring_zonewise(state, player, wrt_self, use_parent, parent_info, last_move, my_info);
+}
+
+int Heuristics::pieces_blocking_vertical_h_small(const GameState& state, const std::string& player, bool wrt_self, bool use_parent, HeuristicsInfo* parent_info, Move* last_move, HeuristicsInfo* my_info) {
+    return pieces_blocking_vertical_h(state, player, wrt_self, use_parent, parent_info, last_move, my_info);
+}
+
+int Heuristics::pieces_blocking_vertical_h_medium(const GameState& state, const std::string& player, bool wrt_self, bool use_parent, HeuristicsInfo* parent_info, Move* last_move, HeuristicsInfo* my_info) {
+    return pieces_blocking_vertical_h(state, player, wrt_self, use_parent, parent_info, last_move, my_info);
+}
+
+int Heuristics::pieces_blocking_vertical_h_large(const GameState& state, const std::string& player, bool wrt_self, bool use_parent, HeuristicsInfo* parent_info, Move* last_move, HeuristicsInfo* my_info) {
+    return pieces_blocking_vertical_h(state, player, wrt_self, use_parent, parent_info, last_move, my_info);
+}
+
+int Heuristics::horizontal_base_rivers_small(const GameState& state, const std::string& player, bool wrt_self) {
+    return horizontal_base_rivers(state, player, wrt_self);
+}
+
+int Heuristics::horizontal_base_rivers_medium(const GameState& state, const std::string& player, bool wrt_self) {
+    return horizontal_base_rivers(state, player, wrt_self);
+}
+
+int Heuristics::horizontal_base_rivers_large(const GameState& state, const std::string& player, bool wrt_self) {
+    return horizontal_base_rivers(state, player, wrt_self);
+}
+
+int Heuristics::horizontal_negative_small(const GameState& state, const std::string& player, bool wrt_self) {
+    return horizontal_negative(state, player, wrt_self);
+}
+
+int Heuristics::horizontal_negative_medium(const GameState& state, const std::string& player, bool wrt_self) {
+    return horizontal_negative(state, player, wrt_self);
+}
+
+int Heuristics::horizontal_negative_large(const GameState& state, const std::string& player, bool wrt_self) {
+    return horizontal_negative(state, player, wrt_self);
+}
+
+int Heuristics::horizontal_attack_small(const GameState& state, const std::string& player, bool wrt_self) {
+    return horizontal_attack(state, player, wrt_self);
+}
+
+int Heuristics::horizontal_attack_medium(const GameState& state, const std::string& player, bool wrt_self) {
+    return horizontal_attack(state, player, wrt_self);
+}
+
+int Heuristics::horizontal_attack_large(const GameState& state, const std::string& player, bool wrt_self) {
+    return horizontal_attack(state, player, wrt_self);
+}
+
+int Heuristics::inactive_pieces_small(const GameState& state, const std::string& player, bool wrt_self, bool use_parent, HeuristicsInfo* parent_info, Move* last_move, HeuristicsInfo* my_info) {
+    return inactive_pieces(state, player, wrt_self, use_parent, parent_info, last_move, my_info);
+}
+
+int Heuristics::inactive_pieces_medium(const GameState& state, const std::string& player, bool wrt_self, bool use_parent, HeuristicsInfo* parent_info, Move* last_move, HeuristicsInfo* my_info) {
+    return inactive_pieces(state, player, wrt_self, use_parent, parent_info, last_move, my_info);
+}
+
+int Heuristics::inactive_pieces_large(const GameState& state, const std::string& player, bool wrt_self, bool use_parent, HeuristicsInfo* parent_info, Move* last_move, HeuristicsInfo* my_info) {
+    return inactive_pieces(state, player, wrt_self, use_parent, parent_info, last_move, my_info);
+}
+
+int Heuristics::terminal_result_small(const GameState& state, const std::string& player, bool wrt_self) {
+    return terminal_result(state, player, wrt_self);
+}
+
+int Heuristics::terminal_result_medium(const GameState& state, const std::string& player, bool wrt_self) {
+    return terminal_result(state, player, wrt_self);
+}
+
+int Heuristics::terminal_result_large(const GameState& state, const std::string& player, bool wrt_self) {
+    return terminal_result(state, player, wrt_self);
+}
+
+// ========== MEDIUM BOARD SIZE FUNCTIONS ==========
+// (Same as small, just different names for now)
+
+// ========== LARGE BOARD SIZE FUNCTIONS ==========
+// (Same as small, just different names for now)
+
+// ========== SIZE-SPECIFIC EVALUATE POSITION FUNCTIONS ==========
+
+Heuristics::HeuristicsInfo Heuristics::evaluate_position_small(const GameState& state, const std::string& player, bool use_parent_heuristics, HeuristicsInfo* parent_info, Move* last_move) {
+    HeuristicsInfo info;
+    if (state.is_terminal()){
+        info.total_score = terminal_result_small(state, player, true);
+        return info;
+    }
+    
+    double final_score = 0.0;
+
+    // Self heuristics
+    info.vertical_push_value = weights_.vertical_push * vertical_push_h_small(state, player, true, use_parent_heuristics, parent_info, last_move, &info);
+    final_score += info.vertical_push_value;
+    
+    info.pieces_in_scoring_attack_value = weights_.pieces_in_scoring_attack * (pieces_in_scoring_virgin_cols_small(state, player, true) + pieces_in_scoring_zonewise_small(state, player, true, use_parent_heuristics, parent_info, last_move, &info));
+    final_score += info.pieces_in_scoring_attack_value;
+    
+    info.horizontal_attack_self_value = weights_.horizontal_attack_self * horizontal_attack_small(state, player, true);
+    final_score += info.horizontal_attack_self_value;
+    
+    info.inactive_self_value = weights_.inactive_self * inactive_pieces_small(state, player, true, use_parent_heuristics, parent_info, last_move, &info);
+    final_score += info.inactive_self_value;
+    
+    info.pieces_blocking_vertical_self_value = weights_.pieces_blocking_vertical_self * pieces_blocking_vertical_h_small(state, player, true, use_parent_heuristics, parent_info, last_move, &info);
+    final_score += info.pieces_blocking_vertical_self_value;
+    
+    info.horizontal_base_self_value = weights_.horizontal_base_self * horizontal_base_rivers_small(state, player, true);
+    final_score += info.horizontal_base_self_value;
+    
+    info.horizontal_negative_self_value = weights_.horizontal_negative_self * horizontal_negative_small(state, player, true);
+    final_score += info.horizontal_negative_self_value;
+
+    // Opponent heuristics
+    std::string opponent = get_opponent(player);
+    
+    info.pieces_in_scoring_defense_value = weights_.pieces_in_scoring_defense * (pieces_in_scoring_virgin_cols_small(state, player, false) + pieces_in_scoring_zonewise_small(state, player, false, use_parent_heuristics, parent_info, last_move, &info));
+    final_score += info.pieces_in_scoring_defense_value;
+    
+    info.pieces_blocking_vertical_opp_value = weights_.pieces_blocking_vertical_opp * pieces_blocking_vertical_h_small(state, opponent, false, use_parent_heuristics, parent_info, last_move, &info);
+    final_score += info.pieces_blocking_vertical_opp_value;
+    
+    info.horizontal_base_opp_value = weights_.horizontal_base_opp * horizontal_base_rivers_small(state, opponent, false);
+    final_score += info.horizontal_base_opp_value;
+    
+    info.horizontal_attack_opp_value = weights_.horizontal_attack_opp * horizontal_attack_small(state, opponent, false);
+    final_score += info.horizontal_attack_opp_value;
+    
+    info.inactive_opp_value = weights_.inactive_opp * inactive_pieces_small(state, opponent, false, use_parent_heuristics, parent_info, last_move, &info);
+    final_score += info.inactive_opp_value;
+
+    info.total_score = final_score;
+    return info;
+}
+
+Heuristics::HeuristicsInfo Heuristics::evaluate_position_medium(const GameState& state, const std::string& player, bool use_parent_heuristics, HeuristicsInfo* parent_info, Move* last_move) {
+    HeuristicsInfo info;
+    info.total_score = 0.0; // CHANGE THIS!!!!
+    return info;
+    if (state.is_terminal()){
+        info.total_score = terminal_result_medium(state, player, true);
+        return info;
+    }
+    
+    double final_score = 0.0;
+
+    // Self heuristics
+    info.vertical_push_value = weights_.vertical_push * vertical_push_h_medium(state, player, true, use_parent_heuristics, parent_info, last_move, &info);
+    final_score += info.vertical_push_value;
+    
+    info.pieces_in_scoring_attack_value = weights_.pieces_in_scoring_attack * (pieces_in_scoring_virgin_cols_medium(state, player, true) + pieces_in_scoring_zonewise_medium(state, player, true, use_parent_heuristics, parent_info, last_move, &info));
+    final_score += info.pieces_in_scoring_attack_value;
+    
+    info.horizontal_attack_self_value = weights_.horizontal_attack_self * horizontal_attack_medium(state, player, true);
+    final_score += info.horizontal_attack_self_value;
+    
+    info.inactive_self_value = weights_.inactive_self * inactive_pieces_medium(state, player, true, use_parent_heuristics, parent_info, last_move, &info);
+    final_score += info.inactive_self_value;
+    
+    info.pieces_blocking_vertical_self_value = weights_.pieces_blocking_vertical_self * pieces_blocking_vertical_h_medium(state, player, true, use_parent_heuristics, parent_info, last_move, &info);
+    final_score += info.pieces_blocking_vertical_self_value;
+    
+    info.horizontal_base_self_value = weights_.horizontal_base_self * horizontal_base_rivers_medium(state, player, true);
+    final_score += info.horizontal_base_self_value;
+    
+    info.horizontal_negative_self_value = weights_.horizontal_negative_self * horizontal_negative_medium(state, player, true);
+    final_score += info.horizontal_negative_self_value;
+
+    // Opponent heuristics
+    std::string opponent = get_opponent(player);
+    
+    info.pieces_in_scoring_defense_value = weights_.pieces_in_scoring_defense * (pieces_in_scoring_virgin_cols_medium(state, player, false) + pieces_in_scoring_zonewise_medium(state, player, false, use_parent_heuristics, parent_info, last_move, &info));
+    final_score += info.pieces_in_scoring_defense_value;
+    
+    info.pieces_blocking_vertical_opp_value = weights_.pieces_blocking_vertical_opp * pieces_blocking_vertical_h_medium(state, opponent, false, use_parent_heuristics, parent_info, last_move, &info);
+    final_score += info.pieces_blocking_vertical_opp_value;
+    
+    info.horizontal_base_opp_value = weights_.horizontal_base_opp * horizontal_base_rivers_medium(state, opponent, false);
+    final_score += info.horizontal_base_opp_value;
+    
+    info.horizontal_attack_opp_value = weights_.horizontal_attack_opp * horizontal_attack_medium(state, opponent, false);
+    final_score += info.horizontal_attack_opp_value;
+    
+    info.inactive_opp_value = weights_.inactive_opp * inactive_pieces_medium(state, opponent, false, use_parent_heuristics, parent_info, last_move, &info);
+    final_score += info.inactive_opp_value;
+
+    info.total_score = final_score;
+    return info;
+}
+
+Heuristics::HeuristicsInfo Heuristics::evaluate_position_large(const GameState& state, const std::string& player, bool use_parent_heuristics, HeuristicsInfo* parent_info, Move* last_move) {
+    HeuristicsInfo info;
+    info.total_score = 0.0; // CHANGE THIS!!!!
+    return info;
+    if (state.is_terminal()){
+        info.total_score = terminal_result_large(state, player, true);
+        return info;
+    }
+    
+    double final_score = 0.0;
+
+    // Self heuristics
+    info.vertical_push_value = weights_.vertical_push * vertical_push_h_large(state, player, true, use_parent_heuristics, parent_info, last_move, &info);
+    final_score += info.vertical_push_value;
+    
+    info.pieces_in_scoring_attack_value = weights_.pieces_in_scoring_attack * (pieces_in_scoring_virgin_cols_large(state, player, true) + pieces_in_scoring_zonewise_large(state, player, true, use_parent_heuristics, parent_info, last_move, &info));
+    final_score += info.pieces_in_scoring_attack_value;
+    
+    info.horizontal_attack_self_value = weights_.horizontal_attack_self * horizontal_attack_large(state, player, true);
+    final_score += info.horizontal_attack_self_value;
+    
+    info.inactive_self_value = weights_.inactive_self * inactive_pieces_large(state, player, true, use_parent_heuristics, parent_info, last_move, &info);
+    final_score += info.inactive_self_value;
+    
+    info.pieces_blocking_vertical_self_value = weights_.pieces_blocking_vertical_self * pieces_blocking_vertical_h_large(state, player, true, use_parent_heuristics, parent_info, last_move, &info);
+    final_score += info.pieces_blocking_vertical_self_value;
+    
+    info.horizontal_base_self_value = weights_.horizontal_base_self * horizontal_base_rivers_large(state, player, true);
+    final_score += info.horizontal_base_self_value;
+    
+    info.horizontal_negative_self_value = weights_.horizontal_negative_self * horizontal_negative_large(state, player, true);
+    final_score += info.horizontal_negative_self_value;
+
+    // Opponent heuristics
+    std::string opponent = get_opponent(player);
+    
+    info.pieces_in_scoring_defense_value = weights_.pieces_in_scoring_defense * (pieces_in_scoring_virgin_cols_large(state, player, false) + pieces_in_scoring_zonewise_large(state, player, false, use_parent_heuristics, parent_info, last_move, &info));
+    final_score += info.pieces_in_scoring_defense_value;
+    
+    info.pieces_blocking_vertical_opp_value = weights_.pieces_blocking_vertical_opp * pieces_blocking_vertical_h_large(state, opponent, false, use_parent_heuristics, parent_info, last_move, &info);
+    final_score += info.pieces_blocking_vertical_opp_value;
+    
+    info.horizontal_base_opp_value = weights_.horizontal_base_opp * horizontal_base_rivers_large(state, opponent, false);
+    final_score += info.horizontal_base_opp_value;
+    
+    info.horizontal_attack_opp_value = weights_.horizontal_attack_opp * horizontal_attack_large(state, opponent, false);
+    final_score += info.horizontal_attack_opp_value;
+    
+    info.inactive_opp_value = weights_.inactive_opp * inactive_pieces_large(state, opponent, false, use_parent_heuristics, parent_info, last_move, &info);
+    final_score += info.inactive_opp_value;
+
+    info.total_score = final_score;
+    return info;
 }

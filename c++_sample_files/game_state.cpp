@@ -118,8 +118,8 @@ void GameState::initialize_hash(const TranspositionTable* tt) {
     zobrist_hash = 0;
     
     // XOR in each piece on the board (including empty cells with piece=0)
-    for (int row = 0; row < rows && row < 16; ++row) {
-        for (int col = 0; col < cols && col < 12; ++col) {
+    for (int row = 0; row < rows && row < 18; ++row) {
+        for (int col = 0; col < cols && col < 18; ++col) {
             EncodedCell piece = encoded_board[row][col];
             if (piece < 7) {  // Valid piece encoding (0-6)
                 zobrist_hash ^= tt->get_zobrist_piece(row, col, piece);

@@ -30,12 +30,12 @@ void TranspositionTable::init_zobrist() {
     std::uniform_int_distribution<uint64_t> dist;
     
     // Allocate Zobrist tables for board positions
-    // Dimensions: [rows=16][cols=12][piece_types=7]
+    // Dimensions: [rows=18][cols=18][piece_types=7] to support all board sizes
     // piece_types: 0=empty, 1-6=encoded pieces (see game_state.h)
-    zobrist_pieces_.resize(16);
-    for (int row = 0; row < 16; ++row) {
-        zobrist_pieces_[row].resize(12);
-        for (int col = 0; col < 12; ++col) {
+    zobrist_pieces_.resize(18);
+    for (int row = 0; row < 18; ++row) {
+        zobrist_pieces_[row].resize(18);
+        for (int col = 0; col < 18; ++col) {
             zobrist_pieces_[row][col].resize(7);
             for (int piece = 0; piece < 7; ++piece) {
                 zobrist_pieces_[row][col][piece] = dist(rng);
@@ -55,8 +55,8 @@ uint64_t TranspositionTable::compute_hash(const GameState& state) const {
     
     // XOR in each piece on the board
     // Using encoded_board for O(1) access instead of map lookups
-    for (int row = 0; row < state.rows && row < 16; ++row) {
-        for (int col = 0; col < state.cols && col < 12; ++col) {
+    for (int row = 0; row < state.rows && row < 18; ++row) {
+        for (int col = 0; col < state.cols && col < 18; ++col) {
             EncodedCell piece = state.encoded_board[row][col];
             if (piece < 7) {  // Valid piece encoding
                 hash ^= zobrist_pieces_[row][col][piece];

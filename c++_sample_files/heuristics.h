@@ -70,6 +70,44 @@ public:
     static int inactive_pieces(const GameState& state, const std::string& player, bool wrt_self = true, bool use_parent = false, HeuristicsInfo* parent_info = nullptr, Move* last_move = nullptr, HeuristicsInfo* my_info = nullptr);
     static int terminal_result(const GameState& state, const std::string& player, bool wrt_self = true);
     static void debug_heuristic(HeuristicsInfo& info);
+
+    // Size-specific heuristic evaluation functions
+    static HeuristicsInfo evaluate_position_small(const GameState& state, const std::string& player, bool use_parent_heuristics, HeuristicsInfo* parent_info = nullptr, Move* last_move = nullptr);
+    static HeuristicsInfo evaluate_position_medium(const GameState& state, const std::string& player, bool use_parent_heuristics, HeuristicsInfo* parent_info = nullptr, Move* last_move = nullptr);
+    static HeuristicsInfo evaluate_position_large(const GameState& state, const std::string& player, bool use_parent_heuristics, HeuristicsInfo* parent_info = nullptr, Move* last_move = nullptr);
+    
+    // Size-specific individual heuristic components - SMALL
+    static double vertical_push_h_small(const GameState& state, const std::string& player, bool wrt_self = true, bool use_parent = false, HeuristicsInfo* parent_info = nullptr, Move* last_move = nullptr, HeuristicsInfo* my_info = nullptr);
+    static int pieces_in_scoring_virgin_cols_small(const GameState& state, const std::string& player, bool wrt_self);
+    static int pieces_in_scoring_zonewise_small(const GameState& state, const std::string& player, bool wrt_self, bool use_parent = false, HeuristicsInfo* parent_info = nullptr, Move* last_move = nullptr, HeuristicsInfo* my_info = nullptr);
+    static int pieces_blocking_vertical_h_small(const GameState& state, const std::string& player, bool wrt_self = true, bool use_parent = false, HeuristicsInfo* parent_info = nullptr, Move* last_move = nullptr, HeuristicsInfo* my_info = nullptr);
+    static int horizontal_base_rivers_small(const GameState& state, const std::string& player, bool wrt_self = true);
+    static int horizontal_negative_small(const GameState& state, const std::string& player, bool wrt_self = true);
+    static int horizontal_attack_small(const GameState& state, const std::string& player, bool wrt_self = true);
+    static int inactive_pieces_small(const GameState& state, const std::string& player, bool wrt_self = true, bool use_parent = false, HeuristicsInfo* parent_info = nullptr, Move* last_move = nullptr, HeuristicsInfo* my_info = nullptr);
+    static int terminal_result_small(const GameState& state, const std::string& player, bool wrt_self = true);
+    
+    // Size-specific individual heuristic components - MEDIUM
+    static double vertical_push_h_medium(const GameState& state, const std::string& player, bool wrt_self = true, bool use_parent = false, HeuristicsInfo* parent_info = nullptr, Move* last_move = nullptr, HeuristicsInfo* my_info = nullptr);
+    static int pieces_in_scoring_virgin_cols_medium(const GameState& state, const std::string& player, bool wrt_self);
+    static int pieces_in_scoring_zonewise_medium(const GameState& state, const std::string& player, bool wrt_self, bool use_parent = false, HeuristicsInfo* parent_info = nullptr, Move* last_move = nullptr, HeuristicsInfo* my_info = nullptr);
+    static int pieces_blocking_vertical_h_medium(const GameState& state, const std::string& player, bool wrt_self = true, bool use_parent = false, HeuristicsInfo* parent_info = nullptr, Move* last_move = nullptr, HeuristicsInfo* my_info = nullptr);
+    static int horizontal_base_rivers_medium(const GameState& state, const std::string& player, bool wrt_self = true);
+    static int horizontal_negative_medium(const GameState& state, const std::string& player, bool wrt_self = true);
+    static int horizontal_attack_medium(const GameState& state, const std::string& player, bool wrt_self = true);
+    static int inactive_pieces_medium(const GameState& state, const std::string& player, bool wrt_self = true, bool use_parent = false, HeuristicsInfo* parent_info = nullptr, Move* last_move = nullptr, HeuristicsInfo* my_info = nullptr);
+    static int terminal_result_medium(const GameState& state, const std::string& player, bool wrt_self = true);
+    
+    // Size-specific individual heuristic components - LARGE
+    static double vertical_push_h_large(const GameState& state, const std::string& player, bool wrt_self = true, bool use_parent = false, HeuristicsInfo* parent_info = nullptr, Move* last_move = nullptr, HeuristicsInfo* my_info = nullptr);
+    static int pieces_in_scoring_virgin_cols_large(const GameState& state, const std::string& player, bool wrt_self);
+    static int pieces_in_scoring_zonewise_large(const GameState& state, const std::string& player, bool wrt_self, bool use_parent = false, HeuristicsInfo* parent_info = nullptr, Move* last_move = nullptr, HeuristicsInfo* my_info = nullptr);
+    static int pieces_blocking_vertical_h_large(const GameState& state, const std::string& player, bool wrt_self = true, bool use_parent = false, HeuristicsInfo* parent_info = nullptr, Move* last_move = nullptr, HeuristicsInfo* my_info = nullptr);
+    static int horizontal_base_rivers_large(const GameState& state, const std::string& player, bool wrt_self = true);
+    static int horizontal_negative_large(const GameState& state, const std::string& player, bool wrt_self = true);
+    static int horizontal_attack_large(const GameState& state, const std::string& player, bool wrt_self = true);
+    static int inactive_pieces_large(const GameState& state, const std::string& player, bool wrt_self = true, bool use_parent = false, HeuristicsInfo* parent_info = nullptr, Move* last_move = nullptr, HeuristicsInfo* my_info = nullptr);
+    static int terminal_result_large(const GameState& state, const std::string& player, bool wrt_self = true);
     
 private:
     static int max(int a, int b);
