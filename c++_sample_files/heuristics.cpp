@@ -1878,9 +1878,10 @@ int Heuristics::horizontal_base_rivers(const GameState& state, const std::string
                     if(state.rows == 13 && x >= 5 && x <= 6){
                         count+=2;
                     }
-                    if(state.rows == 15 && x >= 5 && x <= 7){
-                        if(x==6) count++;
+                    if(state.rows == 15 && x >= 4 && x <= 8){
                         count++;
+                        if(x==6) count++;
+                        if(x==5 || x==7) count+=2;
                     }
                     if(state.rows == 17 && x >= 6 && x <= 9){
                         if(x==7 || x==8) count++;
