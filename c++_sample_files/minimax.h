@@ -8,6 +8,8 @@
 #include <deque>
 #include <string>
 
+// Helper function to format a move as a readable string
+std::string format_move(const Move& move);
 
 // ---- Minimax with Alpha-Beta Pruning ----
 struct MinimaxResult {

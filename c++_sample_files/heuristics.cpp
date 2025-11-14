@@ -242,11 +242,11 @@ void Heuristics::initialize_scoring_weights_medium(int rows) {
 
 void Heuristics::initialize_scoring_weights_large(int rows) {
     const int w1 = 100000;  // Pieces in scoring row
-    const int w2 = 350;     // Zone 1: rows±0-1, cols 3-8
-    const int w3 = 175;     // Zone 2: rows±(-1)-1, cols 2-9
-    const int w4 = 80;      // Zone 3: rows±(-2)-2, cols 2-11
-    const int w5 = 4;       // Zone 4: rows±(-2)-2, cols 1-14   
-    const int w6 = 2;       // Zone 5: rows±(-3)-3, cols 0-15
+    const int w2 = 500;     // Zone 1: rows±0-1, cols 3-8
+    const int w3 = 240;     // Zone 2: rows±(-1)-1, cols 2-9
+    const int w4 = 110;      // Zone 3: rows±(-2)-2, cols 2-11
+    const int w5 = 50;       // Zone 4: rows±(-2)-2, cols 1-14   
+    const int w6 = 20;       // Zone 5: rows±(-3)-3, cols 0-15
     
     // Initialize for circle (player_type = 0)
     int target_row = top_score_row();
@@ -1883,9 +1883,10 @@ int Heuristics::horizontal_base_rivers(const GameState& state, const std::string
                         if(x==6) count++;
                         if(x==5 || x==7) count+=2;
                     }
-                    if(state.rows == 17 && x >= 6 && x <= 9){
-                        if(x==7 || x==8) count++;
+                    if(state.rows == 17 && x >= 5 && x <= 10){
                         count++;
+                        if(x>=6 && x<=9) count+=2;
+                        if(x==7 || x==8) count--;
                     }
                     count++;
                 }
@@ -2183,6 +2184,8 @@ int Heuristics::inactive_pieces(const GameState& state, const std::string& playe
 // Terminal result: check for win condition
 int Heuristics::terminal_result(const GameState& state, const std::string& player, bool wrt_self) {
     int WIN_COUNT = 4;
+    if(state.rows == 15) WIN_COUNT = 5;
+    if(state.rows == 17) WIN_COUNT = 6;
     int top = top_score_row();
     int bot = bottom_score_row(state.rows);
     int ccount = 0, scount = 0;
@@ -2274,6 +2277,13 @@ Heuristics::HeuristicsInfo Heuristics::evaluate_position(const GameState& state,
     final_score += info.pieces_blocking_vertical_self_value;
     
     info.horizontal_base_self_value = weights_.horizontal_base_self * horizontal_base_rivers(state, player, true);
+    if(state.rows == 15){
+        info.horizontal_base_self_value *= 1.5;
+    }
+    if(state.rows == 17){
+        info.horizontal_base_self_value *= 2.0;
+    }
+
     final_score += info.horizontal_base_self_value;
     
     info.horizontal_negative_self_value = weights_.horizontal_negative_self * horizontal_negative(state, player, true);

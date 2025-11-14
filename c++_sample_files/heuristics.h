@@ -42,16 +42,16 @@ public:
         double vertical_push = 10.0;
         double pieces_in_scoring_attack = 40.0;
         double horizontal_attack_self = 225.0;
-        double inactive_self = 50.0;
+        double inactive_self = 400.0;
         double pieces_blocking_vertical_self = 150.0;
-        double horizontal_base_self = 60.0;
+        double horizontal_base_self = 50.0;
         double horizontal_negative_self = 20.0;
 
         double pieces_in_scoring_defense = 40.0;
         double pieces_blocking_vertical_opp = 150.0;
         double horizontal_base_opp = 0.0;
         double horizontal_attack_opp = 225.0;
-        double inactive_opp = 50.0;
+        double inactive_opp = 400.0;
     };
 
     // Main heuristic evaluation function
