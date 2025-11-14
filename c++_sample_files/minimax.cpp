@@ -114,7 +114,7 @@ OrderedMovesWithHeuristics order_moves_by_heuristic(GameState& state, const std:
 MinimaxResult minimax_alpha_beta(GameState& state, int depth, double alpha, double beta,
                                  bool maximizing_player, const std::string& original_player,
                                  TranspositionTable* tt, bool allow_tt_cutoff,
-                                 Move& move_to_ignore,
+                                 std::vector<Move>& move_to_ignore,
                                  Heuristics::HeuristicsInfo* parent_heuristics) {
     // Increment nodes visited counter
     nodes_visited++;
@@ -144,8 +144,10 @@ MinimaxResult minimax_alpha_beta(GameState& state, int depth, double alpha, doub
     }
 
     std::vector<Move> legal_moves = state.get_legal_moves();
-    if (std::find(legal_moves.begin(), legal_moves.end(), move_to_ignore) != legal_moves.end()) {
-        legal_moves.erase(std::remove(legal_moves.begin(), legal_moves.end(), move_to_ignore), legal_moves.end());
+    for (const Move& move : move_to_ignore) {
+        if (std::find(legal_moves.begin(), legal_moves.end(), move) != legal_moves.end()) {
+            legal_moves.erase(std::remove(legal_moves.begin(), legal_moves.end(), move), legal_moves.end());
+        }
     }
     if (legal_moves.empty()) {
         double eval = Heuristics::evaluate_position(state, original_player, false).total_score;
@@ -360,7 +362,8 @@ Move run_minimax_with_repetition_check(const GameState& initial_state, int max_d
         working_state.initialize_hash(tt);
     }
     
-    Move move_to_ignore = {"", {}, {}, {}, ""};
+    // Move move_to_ignore = {"", {}, {}, {}, ""};
+    std::vector <Move> move_to_ignore;
     // Use standard alpha-beta minimax with the specified depth and TT
     // IMPORTANT: allow_tt_cutoff=false at root to ensure we get actual best move
     MinimaxResult result = minimax_alpha_beta(working_state, max_depth,
@@ -388,10 +391,10 @@ Move run_minimax_with_repetition_check(const GameState& initial_state, int max_d
     print_principal_variation(result.principal_variation, side);
 
     // Check for stalemate (alternating repetition pattern) and find alternative if needed
-    if (would_cause_stalemate(working_state, selected, recent_board_hashes, tt)) {
+    while (would_cause_stalemate(working_state, selected, recent_board_hashes, tt) && result.value != -1e9) {
         std::cout << "🔄 Stalemate would occur! Looking for alternative move...\n";
         
-        move_to_ignore = selected;
+        move_to_ignore.push_back(selected);
         // Rerun minimax ignoring the stalemate-causing move
         
         // Reset pruning statistics for the re-run

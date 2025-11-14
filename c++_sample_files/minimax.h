@@ -26,12 +26,14 @@ struct MinimaxResult {
 // Added TranspositionTable* parameter for caching (nullptr = no caching)
 // Added allow_tt_cutoff parameter to prevent returning from TT at root (need actual move)
 // Forward declaration for default parameter
-extern Move g_empty_move;
+
+// Helper to provide default empty vector for move_to_ignore
+static std::vector<Move> g_empty_moves_to_ignore;
 
 MinimaxResult minimax_alpha_beta(GameState& state, int depth, double alpha, double beta,
                                 bool maximizing_player, const std::string& original_player,
                                 TranspositionTable* tt = nullptr, bool allow_tt_cutoff = true,
-                                Move& move_to_ignore = g_empty_move,
+                                std::vector<Move>& move_to_ignore = g_empty_moves_to_ignore,
                                 Heuristics::HeuristicsInfo* parent_heuristics = nullptr);
 
 // ---- Repetition Detection Functions (using board state hashing) ----
