@@ -276,18 +276,18 @@ MinimaxResult minimax_alpha_beta(GameState& state, int depth, double alpha, doub
 bool would_cause_stalemate(GameState& initial_state, const Move& move,
                           const std::deque<uint64_t>& recent_board_hashes,
                           TranspositionTable* tt) {
-    // Check if making this move would create a board state that repeats
-    // GameEngine.py checks for 3 consecutive identical states at alternating positions
-    // We need at least 4 previous states to check pattern (current would be 5th)
-    // Pattern: state[-4] == state[-2] == new_state (checking 3 occurrences)
-    if (tt == nullptr || recent_board_hashes.size() < 4) {
+    // Match gameEngine.py stalemate rule: draw when the same recorded board
+    // state appears three times in a row (three consecutive identical entries).
+    // recent_board_hashes contains the previously recorded states (not yet including
+    // the state that would result from applying `move`). So we require at least
+    // two previous entries to compare against.
+    if (tt == nullptr || recent_board_hashes.size() < 2) {
         return false;
     }
-    
+
     // Simulate the move using make_move/undo_move to get the resulting board hash
-    // This is more efficient than creating a copy
     GameState::UndoInfo undo = initial_state.make_move(move);
-    
+
     // Use incremental hash if available, otherwise compute from scratch
     uint64_t new_hash;
     if (initial_state.hash_initialized && initial_state.tt_for_hashing == tt) {
@@ -295,40 +295,21 @@ bool would_cause_stalemate(GameState& initial_state, const Move& move,
     } else {
         new_hash = tt->compute_hash(initial_state);
     }
-    
+
     initial_state.undo_move(move, undo);
-    
-    // Check for alternating repetition pattern (states at -4, -2, and new are identical)
-    // This corresponds to the same board position appearing every 2 moves
-    uint64_t state_minus_4 = recent_board_hashes[recent_board_hashes.size() - 4];
+
+    // Check if the new_hash would make three consecutive identical recorded states:
+    // recent[-2] == recent[-1] == new_hash
+    uint64_t state_minus_1 = recent_board_hashes[recent_board_hashes.size() - 1];
     uint64_t state_minus_2 = recent_board_hashes[recent_board_hashes.size() - 2];
-    
-    // Debug: print hash comparison
-    // std::cout << "   Stalemate check: new=" << new_hash << " -2=" << state_minus_2 << " -4=" << state_minus_4 << "\n";
-    
-    // Check if this move would create the 3rd occurrence of a position
-    if (new_hash == state_minus_2 && state_minus_2 == state_minus_4) {
-        std::cout << "⚠️  STALEMATE WARNING: Board state repeating every 2 moves (3 times)!\n";
-        std::cout << "   This indicates both players are cycling moves.\n";
-        std::cout << "   Avoiding this move to prevent draw by repetition.\n";
+
+    if (new_hash == state_minus_1 && state_minus_1 == state_minus_2) {
+        std::cout << "⚠️  STALEMATE WARNING: Board state repeated 3 times consecutively!\n";
+        std::cout << "   This would result in a draw by repetition (matching gameEngine.py).\n";
+        std::cout << "   Avoiding this move to prevent a stalemate/draw.\n";
         return true;
     }
-    
-    // ALSO check if we're setting up opponent to repeat and cause stalemate
-    // If -2 == -4 (opponent has repeated), and opponent could repeat again
-    // We need to check if our new position would be the same as -3 and -1
-    // But we don't store those. Instead, check if -1 exists and equals new_hash
-    if (recent_board_hashes.size() >= 2) {
-        uint64_t state_minus_1 = recent_board_hashes[recent_board_hashes.size() - 1];
-        if (new_hash == state_minus_1 && state_minus_2 == state_minus_4) {
-            // We're repeating our position, and opponent has been repeating theirs
-            // This will lead to stalemate on opponent's next turn
-            std::cout << "⚠️  STALEMATE WARNING: Would set up opponent to cause stalemate!\n";
-            std::cout << "   Both players repeating positions. Avoiding this move.\n";
-            return true;
-        }
-    }
-    
+
     return false;
 }
 
