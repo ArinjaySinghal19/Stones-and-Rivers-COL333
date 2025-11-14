@@ -310,6 +310,17 @@ bool would_cause_stalemate(GameState& initial_state, const Move& move,
         return true;
     }
 
+    if(recent_board_hashes.size() >=4){
+        uint64_t state_minus_3 = recent_board_hashes[recent_board_hashes.size() - 3];
+        uint64_t state_minus_4 = recent_board_hashes[recent_board_hashes.size() - 4];
+        if(new_hash == state_minus_2 && state_minus_2 == state_minus_4){
+            std::cout << "⚠️  STALEMATE WARNING: Board state repeated in alternating pattern!\n";
+            std::cout << "   This would result in a draw by repetition (matching gameEngine.py).\n";
+            std::cout << "   Avoiding this move to prevent a stalemate/draw.\n";
+            return true;
+        }
+    }
+
     return false;
 }
 

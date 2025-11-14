@@ -41,16 +41,16 @@ public:
     struct Weights {
         double vertical_push = 10.0;
         double pieces_in_scoring_attack = 40.0;
-        double horizontal_attack_self = 10.0;
+        double horizontal_attack_self = 250.0;
         double inactive_self = 50.0;
         double pieces_blocking_vertical_self = 150.0;
-        double horizontal_base_self = 10.0;
+        double horizontal_base_self = 50.0;
         double horizontal_negative_self = 20.0;
 
         double pieces_in_scoring_defense = 40.0;
         double pieces_blocking_vertical_opp = 150.0;
-        double horizontal_base_opp = 10.0;
-        double horizontal_attack_opp = 10.0;
+        double horizontal_base_opp = 0.0;
+        double horizontal_attack_opp = 250.0;
         double inactive_opp = 50.0;
     };
 

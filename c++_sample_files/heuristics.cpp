@@ -450,16 +450,16 @@ double Heuristics::vertical_push_h_small(const GameState& state, const std::stri
 
     // Column weights
     col_weight[0] = 1.0;
-    col_weight[1] = 1.5;
-    col_weight[2] = 2;
-    col_weight[3] = 3.25;
-    col_weight[4] = 3.25;
+    col_weight[1] = 3;
+    col_weight[2] = 4;
+    col_weight[3] = 2.5;
+    col_weight[4] = 2;
     col_weight[5] = 1.0;
     col_weight[6] = 1.0;
-    col_weight[7] = 3.25;
-    col_weight[8] = 3.25;
-    col_weight[9] = 2.0;
-    col_weight[10] = 1.5;
+    col_weight[7] = 2;
+    col_weight[8] = 2.5;
+    col_weight[9] = 4;
+    col_weight[10] = 3;
     col_weight[11] = 1.0;  
 
     if(use_parent && parent_info != nullptr && last_move != nullptr){
@@ -641,19 +641,19 @@ double Heuristics::vertical_push_h_medium(const GameState& state, const std::str
 
     // Column weights
     col_weight[0] = 1;
-    col_weight[1] = 2;
-    col_weight[2] = 3.25;
+    col_weight[1] = 3.25;
+    col_weight[2] = 4;
     col_weight[3] = 3.25;
-    col_weight[4] = 3.25;
+    col_weight[4] = 2;
     col_weight[5] = 1.5;
     col_weight[6] = 1;
     col_weight[7] = 1.5;
-    col_weight[8] = 3.25;
+    col_weight[8] = 2;
     col_weight[9] = 3.25;
-    col_weight[10] = 3.25;
-    col_weight[11] = 3.25;
-    col_weight[12] = 2;
-    col_weight[13] = 1;
+    col_weight[10] = 4;
+    col_weight[11] = 4.25;
+    col_weight[12] = 4.0;
+    col_weight[13] = 2.0;
 
     if(use_parent && parent_info != nullptr && last_move != nullptr){
         if(my_info != nullptr && !my_info->v_push_circle_vals.empty() && !my_info->v_push_square_vals.empty()){
@@ -834,20 +834,20 @@ double Heuristics::vertical_push_h_large(const GameState& state, const std::stri
 
     // Column weights
     col_weight[0] = 1;
-    col_weight[1] = 1.5;
-    col_weight[2] = 2;
+    col_weight[1] = 2;
+    col_weight[2] = 4;
     col_weight[3] = 3.25;
     col_weight[4] = 3.25;
-    col_weight[5] = 3.25;    
+    col_weight[5] = 2;    
     col_weight[6] = 1.5;
     col_weight[7] = 1;
     col_weight[8] = 1;
     col_weight[9] = 1.5;
-    col_weight[10] = 3.25;
+    col_weight[10] = 2;
     col_weight[11] = 3.25;
     col_weight[12] = 3.25;
-    col_weight[13] = 2;
-    col_weight[14] = 1.5;
+    col_weight[13] = 4;
+    col_weight[14] = 2;
     col_weight[15] = 1;
 
 
@@ -1864,10 +1864,10 @@ int Heuristics::horizontal_base_rivers(const GameState& state, const std::string
 
     if (player == "circle") {
         check_rows.push_back(bottom_score_row(rows) - 1);
-        check_rows.push_back(bottom_score_row(rows) - 2);
+        // check_rows.push_back(bottom_score_row(rows) - 2);
     } else {
         check_rows.push_back(top_score_row() + 1);
-        check_rows.push_back(top_score_row() + 2);
+        // check_rows.push_back(top_score_row() + 2);
     }
 
     for (int r : check_rows) {

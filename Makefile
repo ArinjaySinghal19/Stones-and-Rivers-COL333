@@ -136,7 +136,7 @@ run-gui-human: test
 	@echo "🎮 Starting Stones and Rivers Game (with GUI - Human vs AI)..."
 	@echo "============================================================="
 	@echo "Mode: hvai | Circle: human | Square: student_cpp"
-	@cd $(CLIENT_DIR) && PYTHONPATH=$(CPP_DIR):$$PYTHONPATH $(PYTHON) gameEngine.py --mode hvai --circle student_cpp --time 100 
+	@cd $(CLIENT_DIR) && PYTHONPATH=$(CPP_DIR):$$PYTHONPATH $(PYTHON) gameEngine.py --mode hvai --square student_cpp --time 100 --board-size large
 
 run-hvh: test
 	@echo "🎮 Starting Stones and Rivers Game (with GUI - Human vs Human)..."
