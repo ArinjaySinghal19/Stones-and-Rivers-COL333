@@ -145,8 +145,11 @@ public:
         auto minimax_start = std::chrono::high_resolution_clock::now();
         // Use Minimax with Alpha-Beta Pruning, stalemate avoidance, and Transposition Table
         // Adjust depth based on remaining time
+        double cut_off_time = 35.0;
+        if(rows==15) cut_off_time = 50.0;
+        if(rows==17) cut_off_time = 60.0;
         int MINIMAX_DEPTH = 3;
-        if (current_player_time >= 40.0) MINIMAX_DEPTH = 4;
+        if (current_player_time >= cut_off_time) MINIMAX_DEPTH = 4;
         selected = run_minimax_with_repetition_check(current_state, MINIMAX_DEPTH, side, recent_board_hashes, tt);
         auto minimax_end = std::chrono::high_resolution_clock::now();
         auto minimax_duration = std::chrono::duration_cast<std::chrono::microseconds>(minimax_end - minimax_start);

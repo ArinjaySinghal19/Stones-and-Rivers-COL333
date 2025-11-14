@@ -1876,12 +1876,14 @@ int Heuristics::horizontal_base_rivers(const GameState& state, const std::string
                 EncodedCell cell = encoded_board[r][x];
                 if (GameState::is_owner(cell, player) && GameState::is_horizontal_river(cell)) {
                     if(state.rows == 13 && x >= 5 && x <= 6){
-                        count++;
+                        count+=2;
                     }
                     if(state.rows == 15 && x >= 5 && x <= 7){
+                        if(x==6) count++;
                         count++;
                     }
                     if(state.rows == 17 && x >= 6 && x <= 9){
+                        if(x==7 || x==8) count++;
                         count++;
                     }
                     count++;
@@ -1996,6 +1998,9 @@ int Heuristics::horizontal_attack(const GameState& state, const std::string& pla
                         count += num_possible;
                     }
                     else {
+                        if (r == top_score_row() || r == bottom_score_row(rows)) {
+                            continue;
+                        }
                         int num_possible = 0;
                         int curr_col = x + 1;
                         while (in_bounds(curr_col, r, rows, cols)) {

@@ -443,7 +443,7 @@ Move run_minimax_with_repetition_check(const GameState& initial_state, int max_d
     auto duration = std::chrono::duration_cast<std::chrono::milliseconds>(end_time - start_time);
     double time_seconds = duration.count() / 1000.0;
     
-    std::cout << "\n⏱️  Time taken: " << std::fixed << std::setprecision(3) << time_seconds << " seconds\n";
+    std::cout << "\n  Time taken: " << std::fixed << std::setprecision(3) << time_seconds << " seconds\n";
     
     // Log to CSV file
     std::ofstream csv_file;
