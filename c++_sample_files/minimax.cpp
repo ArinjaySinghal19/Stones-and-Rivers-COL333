@@ -276,12 +276,8 @@ MinimaxResult minimax_alpha_beta(GameState& state, int depth, double alpha, doub
 bool would_cause_stalemate(GameState& initial_state, const Move& move,
                           const std::deque<uint64_t>& recent_board_hashes,
                           TranspositionTable* tt) {
-    // Match gameEngine.py stalemate rule: draw when the same recorded board
-    // state appears three times in a row (three consecutive identical entries).
-    // recent_board_hashes contains the previously recorded states (not yet including
-    // the state that would result from applying `move`). So we require at least
-    // two previous entries to compare against.
-    if (tt == nullptr || recent_board_hashes.size() < 2) {
+    // Check if the move would result in a board state that matches any of the last 6 recorded states
+    if (tt == nullptr || recent_board_hashes.empty()) {
         return false;
     }
 
@@ -298,24 +294,12 @@ bool would_cause_stalemate(GameState& initial_state, const Move& move,
 
     initial_state.undo_move(move, undo);
 
-    // Check if the new_hash would make three consecutive identical recorded states:
-    // recent[-2] == recent[-1] == new_hash
-    uint64_t state_minus_1 = recent_board_hashes[recent_board_hashes.size() - 1];
-    uint64_t state_minus_2 = recent_board_hashes[recent_board_hashes.size() - 2];
-
-    if (new_hash == state_minus_1 && state_minus_1 == state_minus_2) {
-        std::cout << "⚠️  STALEMATE WARNING: Board state repeated 3 times consecutively!\n";
-        std::cout << "   This would result in a draw by repetition (matching gameEngine.py).\n";
-        std::cout << "   Avoiding this move to prevent a stalemate/draw.\n";
-        return true;
-    }
-
-    if(recent_board_hashes.size() >=4){
-        uint64_t state_minus_3 = recent_board_hashes[recent_board_hashes.size() - 3];
-        uint64_t state_minus_4 = recent_board_hashes[recent_board_hashes.size() - 4];
-        if(new_hash == state_minus_2 && state_minus_2 == state_minus_4){
-            std::cout << "⚠️  STALEMATE WARNING: Board state repeated in alternating pattern!\n";
-            std::cout << "   This would result in a draw by repetition (matching gameEngine.py).\n";
+    // Check if new_hash matches any of the last 6 recorded states
+    for (size_t i = 0; i < recent_board_hashes.size(); ++i) {
+        if (new_hash == recent_board_hashes[i]) {
+            std::cout << "⚠️  STALEMATE WARNING: Board state would repeat a position from " 
+                      << (recent_board_hashes.size() - i) << " move(s) ago!\n";
+            std::cout << "   This would result in a draw by repetition.\n";
             std::cout << "   Avoiding this move to prevent a stalemate/draw.\n";
             return true;
         }

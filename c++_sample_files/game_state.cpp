@@ -48,7 +48,16 @@ bool is_my_score_cell(int x, int y, const std::string& player, int rows, int col
 
 bool check_win_state(const std::vector<std::vector<std::map<std::string, std::string>>>& board,
                      int rows, int cols, const std::vector<int>& score_cols) {
-    int WIN_COUNT = 4;
+    // Dynamic win count based on board size (matches gameEngine.py logic)
+    int WIN_COUNT;
+    if (cols <= 12) {
+        WIN_COUNT = 4;
+    } else if (cols <= 14) {
+        WIN_COUNT = 5;
+    } else {
+        WIN_COUNT = 6;
+    }
+    
     int top = top_score_row();
     int bot = bottom_score_row(rows);
     int ccount = 0, scount = 0;
