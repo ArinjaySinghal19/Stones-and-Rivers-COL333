@@ -46,7 +46,7 @@ void Heuristics::initialize_scoring_weights_small(int rows) {
     
     // w2: Zone 1 (rows±0-1, cols 3-8)
     for (int col = 3; col <= 8; col++) {
-        for (int r = 0; r <= 1; r++) {
+        for (int r = -1; r <= 1; r++) {
             int check_row = target_row + direction * r;
             if (check_row >= 0 && check_row < rows) {
                 scoring_area_weights_small_[0][check_row][col] = std::max(scoring_area_weights_small_[0][check_row][col], w2);
@@ -152,7 +152,7 @@ void Heuristics::initialize_scoring_weights_medium(int rows) {
     
     // w2: Zone 1 (rows±0-1, cols 3-9)
     for (int col = 3; col <= 9; col++) {
-        for (int r = 0; r <= 1; r++) {
+        for (int r = -1; r <= 1; r++) {
             int check_row = target_row + direction * r;
             if (check_row >= 0 && check_row < rows) {
                 scoring_area_weights_medium_[0][check_row][col] = std::max(scoring_area_weights_medium_[0][check_row][col], w2);
@@ -449,8 +449,8 @@ double Heuristics::vertical_push_h_small(const GameState& state, const std::stri
     std::vector<double> col_weight(12);
 
     // Column weights
-    col_weight[0] = 1.0;
-    col_weight[1] = 3;
+    col_weight[0] = 1.5;
+    col_weight[1] = 5;
     col_weight[2] = 4;
     col_weight[3] = 2.5;
     col_weight[4] = 2;
@@ -459,8 +459,8 @@ double Heuristics::vertical_push_h_small(const GameState& state, const std::stri
     col_weight[7] = 2;
     col_weight[8] = 2.5;
     col_weight[9] = 4;
-    col_weight[10] = 3;
-    col_weight[11] = 1.0;  
+    col_weight[10] = 5;
+    col_weight[11] = 1.5;  
 
     if(use_parent && parent_info != nullptr && last_move != nullptr){
         if(my_info != nullptr && !my_info->v_push_circle_vals.empty() && !my_info->v_push_square_vals.empty()){
