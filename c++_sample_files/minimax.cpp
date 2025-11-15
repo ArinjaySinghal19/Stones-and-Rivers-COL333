@@ -2,6 +2,7 @@
 #include "heuristics.h"
 #include <algorithm>
 #include <random>
+#include <iostream>
 
 // Global empty move for default parameter
 Move g_empty_move = {"", {}, {}, {}, ""};
@@ -91,9 +92,22 @@ MinimaxResult minimax_alpha_beta(GameState& state, int depth, double alpha, doub
                                  bool maximizing_player, const std::string& original_player,
                                  TranspositionTable* tt, bool allow_tt_cutoff,
                                  std::vector<Move>& move_to_ignore,
-                                 Heuristics::HeuristicsInfo* parent_heuristics) {
+                                 Heuristics::HeuristicsInfo* parent_heuristics,
+                                 std::chrono::high_resolution_clock::time_point* start_time,
+                                 double timeout_seconds) {
     // Increment nodes visited counter
     nodes_visited++;
+    
+    // Check timeout
+    if (start_time != nullptr && timeout_seconds > 0.0) {
+        auto current_time = std::chrono::high_resolution_clock::now();
+        std::chrono::duration<double> elapsed = current_time - *start_time;
+        if (elapsed.count() >= timeout_seconds) {
+            // Timeout exceeded - return current evaluation immediately
+            double eval = Heuristics::evaluate_position(state, original_player, false).total_score;
+            return MinimaxResult(eval, {"move", {0,0}, {0,0}, {}, ""}, {});
+        }
+    }
     
     // ===== TRANSPOSITION TABLE PROBE =====
     // Check if we've already evaluated this position at sufficient depth
@@ -177,18 +191,18 @@ MinimaxResult minimax_alpha_beta(GameState& state, int depth, double alpha, doub
         // and only on a potential improvement do we re-search with the full window.
         MinimaxResult result = (i == 0)
             ? minimax_alpha_beta(state, depth - 1, alpha, beta,
-                                  !maximizing_player, original_player, tt, true, move_to_ignore, &my_heuristics)
+                                  !maximizing_player, original_player, tt, true, move_to_ignore, &my_heuristics, start_time, timeout_seconds)
             : [&]() {
                   double pvs_alpha = maximizing_player ? alpha : (beta - 1);
                   double pvs_beta  = maximizing_player ? (alpha + 1) : beta;
                   MinimaxResult narrow = minimax_alpha_beta(state, depth - 1, pvs_alpha, pvs_beta,
-                                                           !maximizing_player, original_player, tt, true, move_to_ignore, &my_heuristics);
+                                                           !maximizing_player, original_player, tt, true, move_to_ignore, &my_heuristics, start_time, timeout_seconds);
                   bool needs_full_window = maximizing_player
                                            ? (narrow.value > alpha && narrow.value < beta)
                                            : (narrow.value < beta && narrow.value > alpha);
                   if (needs_full_window) {
                       return minimax_alpha_beta(state, depth - 1, alpha, beta,
-                                                !maximizing_player, original_player, tt, true, move_to_ignore, &my_heuristics);
+                                                !maximizing_player, original_player, tt, true, move_to_ignore, &my_heuristics, start_time, timeout_seconds);
                   }
                   return narrow;
               }();
@@ -306,7 +320,9 @@ void record_board_state(const GameState& state, std::deque<uint64_t>& recent_boa
 
 Move run_minimax_with_repetition_check(const GameState& initial_state, int max_depth,
                                        const std::string& side, std::deque<uint64_t>& recent_board_hashes,
-                                       TranspositionTable* tt) {
+                                       TranspositionTable* tt,
+                                       std::chrono::high_resolution_clock::time_point* start_time,
+                                       double timeout_seconds) {
     
     std::vector<Move> legal_moves = initial_state.get_legal_moves();
     int num_legal_moves = legal_moves.size();
@@ -328,6 +344,11 @@ Move run_minimax_with_repetition_check(const GameState& initial_state, int max_d
     
     // Move move_to_ignore = {"", {}, {}, {}, ""};
     std::vector <Move> move_to_ignore;
+    
+    // Create internal start time if not provided
+    auto internal_start = std::chrono::high_resolution_clock::now();
+    auto* time_ptr = (start_time != nullptr) ? start_time : &internal_start;
+    
     // Use standard alpha-beta minimax with the specified depth and TT
     // IMPORTANT: allow_tt_cutoff=false at root to ensure we get actual best move
     MinimaxResult result = minimax_alpha_beta(working_state, max_depth,
@@ -338,7 +359,41 @@ Move run_minimax_with_repetition_check(const GameState& initial_state, int max_d
                                               tt,    // Pass TT to minimax
                                               false,
                                               move_to_ignore,
-                                              nullptr); // DON'T allow TT cutoff at root!
+                                              nullptr, // DON'T allow TT cutoff at root!
+                                              time_ptr,
+                                              timeout_seconds);
+    
+    // Check if we timed out and should retry with depth 3
+    auto end_time = std::chrono::high_resolution_clock::now();
+    std::chrono::duration<double> duration = end_time - *time_ptr;
+    
+    if (timeout_seconds > 0.0 && duration.count() >= timeout_seconds-0.5 && max_depth > 3) {
+        std::cout << "Depth " << max_depth << " search exceeded " << timeout_seconds 
+                  << "s timeout (" << duration.count() << "s). Falling back to depth 3..." << std::endl;
+        
+        // Reset for retry
+        nodes_visited = 0;
+        nodes_pruned = 0;
+        move_to_ignore.clear();
+        
+        auto retry_start = std::chrono::high_resolution_clock::now();
+        result = minimax_alpha_beta(working_state, 3,
+                                   -std::numeric_limits<double>::infinity(),
+                                   std::numeric_limits<double>::infinity(),
+                                   true,
+                                   initial_state.current_player,
+                                   tt,
+                                   false,
+                                   move_to_ignore,
+                                   nullptr,
+                                   nullptr,  // No timeout for fallback
+                                   0.0);
+        auto retry_end = std::chrono::high_resolution_clock::now();
+        std::chrono::duration<double> retry_duration = retry_end - retry_start;
+        std::cout << "Depth 3 fallback completed in " << retry_duration.count() << " seconds." << std::endl;
+    } else if (timeout_seconds > 0.0 || max_depth >= 3) {
+        std::cout << "Search completed in " << duration.count() << " seconds (depth " << max_depth << ")." << std::endl;
+    }
     Move selected = result.best_move;
 
     // Check for stalemate (alternating repetition pattern) and find alternative if needed
@@ -359,7 +414,9 @@ Move run_minimax_with_repetition_check(const GameState& initial_state, int max_d
                                     tt,    // Pass TT to minimax
                                     false,
                                     move_to_ignore,
-                                    nullptr); // DON'T allow TT cutoff at root!
+                                    nullptr, // DON'T allow TT cutoff at root!
+                                    start_time,
+                                    timeout_seconds);
         selected = result.best_move;
     }
 

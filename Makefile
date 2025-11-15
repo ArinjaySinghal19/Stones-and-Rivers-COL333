@@ -129,14 +129,14 @@ run-gui: test
 	@echo "Mode: aivai | Circle: student_cpp | Square: student_cpp"
 # 	@cd $(CLIENT_DIR) && PYTHONPATH=$(CPP_DIR):$$PYTHONPATH $(PYTHON) gameEngine.py --mode aivai --square aggressive --circle student_cpp
 # 	@cd $(CLIENT_DIR) && PYTHONPATH=$(CPP_DIR):$$PYTHONPATH $(PYTHON) gameEngine.py --mode aivai --square student_cpp --circle aggressive
-	@cd $(CLIENT_DIR) && PYTHONPATH=$(CPP_DIR):$$PYTHONPATH $(PYTHON) gameEngine.py --mode aivai --circle student_cpp --square student_cpp --time 0.1 --board-size small
+	@cd $(CLIENT_DIR) && PYTHONPATH=$(CPP_DIR):$$PYTHONPATH $(PYTHON) gameEngine.py --mode aivai --circle student_cpp --square student_cpp --time 3 --board-size large
 
 # Run the game with GUI (Human vs AI)
 run-gui-human: test
 	@echo "🎮 Starting Stones and Rivers Game (with GUI - Human vs AI)..."
 	@echo "============================================================="
 	@echo "Mode: hvai | Circle: human | Square: student_cpp"
-	@cd $(CLIENT_DIR) && PYTHONPATH=$(CPP_DIR):$$PYTHONPATH $(PYTHON) gameEngine.py --mode hvai --square student_cpp --time 100 --board-size large
+	@cd $(CLIENT_DIR) && PYTHONPATH=$(CPP_DIR):$$PYTHONPATH $(PYTHON) gameEngine.py --mode hvai --square student_cpp --time 100 --board-size small --circle student_cpp
 
 run-hvh: test
 	@echo "🎮 Starting Stones and Rivers Game (with GUI - Human vs Human)..."

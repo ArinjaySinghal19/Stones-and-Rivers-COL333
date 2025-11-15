@@ -121,7 +121,6 @@ public:
 
 
 
-        auto minimax_start = std::chrono::high_resolution_clock::now();
         // Use Minimax with Alpha-Beta Pruning, stalemate avoidance, and Transposition Table
         // Adjust depth based on remaining time
         double cut_off_time = 40.0;
@@ -130,11 +129,13 @@ public:
         int MINIMAX_DEPTH = 3;
         if (current_player_time >= cut_off_time) MINIMAX_DEPTH = 4;
         if (current_player_time <= 4.0) MINIMAX_DEPTH = 1;
-        selected = run_minimax_with_repetition_check(current_state, MINIMAX_DEPTH, side, recent_board_hashes, tt);
+        
+        // Set timeout to 15 seconds for depth 4, no timeout for other depths
+        double timeout = (MINIMAX_DEPTH == 4) ? 15.0 : 0.0;
+        
+        // Run minimax with timeout (timeout handling is done internally in minimax.cpp)
+        selected = run_minimax_with_repetition_check(current_state, MINIMAX_DEPTH, side, recent_board_hashes, tt, nullptr, timeout);
         move_count++;
-        auto end_time_point = std::chrono::high_resolution_clock::now();
-        std::chrono::duration<double> minimax_duration = end_time_point - minimax_start;
-        std::cout << "C++ agent returned move in " << minimax_duration.count() << " seconds." << std::endl;
         return selected;
     }
 

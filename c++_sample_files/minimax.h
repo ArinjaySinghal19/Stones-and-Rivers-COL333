@@ -7,6 +7,7 @@
 #include <limits>
 #include <deque>
 #include <string>
+#include <chrono>
 
 // Helper function to format a move as a readable string
 std::string format_move(const Move& move);
@@ -34,7 +35,9 @@ MinimaxResult minimax_alpha_beta(GameState& state, int depth, double alpha, doub
                                 bool maximizing_player, const std::string& original_player,
                                 TranspositionTable* tt = nullptr, bool allow_tt_cutoff = true,
                                 std::vector<Move>& move_to_ignore = g_empty_moves_to_ignore,
-                                Heuristics::HeuristicsInfo* parent_heuristics = nullptr);
+                                Heuristics::HeuristicsInfo* parent_heuristics = nullptr,
+                                std::chrono::high_resolution_clock::time_point* start_time = nullptr,
+                                double timeout_seconds = 0.0);
 
 // ---- Repetition Detection Functions (using board state hashing) ----
 // Check if a move would cause stalemate (3 identical board states at 2-move intervals)
@@ -53,6 +56,8 @@ Move flip_topmost_piece(const GameState& state, const std::string& side);
 // Uses board state hashing to detect and avoid alternating 3-state repetitions
 Move run_minimax_with_repetition_check(const GameState& initial_state, int max_depth, 
                                       const std::string& side, std::deque<uint64_t>& recent_board_hashes,
-                                      TranspositionTable* tt = nullptr);
+                                      TranspositionTable* tt = nullptr,
+                                      std::chrono::high_resolution_clock::time_point* start_time = nullptr,
+                                      double timeout_seconds = 0.0);
 
 #endif // MINIMAX_H
