@@ -2,6 +2,8 @@
 
 This repository contains the code supporting the code for Agent and Engine for the River and Stones.
 
+UPDATE: 🏆 Our team secured 1st place among 100+ participating teams in the tournament :)
+
 ## Details
 This is a course assignment for the graduate-level Artificial Intelligence course taught by [**Prof. Mausam**](https://www.cse.iitd.ac.in/~mausam/). The assignment documentation can be found on the Course website.
 
